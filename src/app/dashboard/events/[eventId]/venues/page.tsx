@@ -57,7 +57,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
     const v = venues.find(x => x.id === id);
     if (!v) return;
     setEditing(id);
-    setForm({ name: v.name, address: v.address, emoji: v.emoji || '📍', lat: v.lat, lng: v.lng });
+    setForm({ name: v.name, address: v.address, emoji: v.emoji || '📍', lat: v.lat || 0, lng: v.lng || 0 });
     setShowModal(true);
     setMapKey(k => k + 1);
   };
@@ -114,7 +114,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
               {/* Mini map preview */}
               {mapReady && (
                 <div style={{ height: 140, position: 'relative', pointerEvents: 'none', zIndex: 0, isolation: 'isolate', overflow: 'hidden', borderRadius: '1.25rem 1.25rem 0 0' }}>
-                  <MiniMap lat={v.lat} lng={v.lng} />
+                  <MiniMap lat={v.lat || 0} lng={v.lng || 0} />
                   <div style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, height: 40,
                     background: 'linear-gradient(transparent, var(--bg-card))',
@@ -159,7 +159,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                   fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace',
                 }}>
                   <Navigation size={10} />
-                  {v.lat.toFixed(4)}, {v.lng.toFixed(4)}
+                  {(v.lat || 0).toFixed(4)}, {(v.lng || 0).toFixed(4)}
                 </div>
               </div>
             </motion.div>

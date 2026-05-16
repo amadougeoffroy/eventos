@@ -62,11 +62,12 @@ export interface ProgramItem {
 
 export interface Venue {
   id: string;
-  eventId: string;
+  eventId?: string;
   name: string;
   address: string;
-  lat: number;
-  lng: number;
+  type?: string;
+  lat?: number;
+  lng?: number;
   emoji?: string;
 }
 

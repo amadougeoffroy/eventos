@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
-import { EventType, Event, ProgramItem } from '@/lib/types';
+import { EventType, Event, ProgramItem, Venue } from '@/lib/types';
 import {
   Sparkles, Plus, Trash2, ArrowRight, ArrowLeft, MapPin, Users,
   CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown
@@ -37,7 +37,7 @@ const SectionCard = ({ children, title, icon: IconComp }: { children: React.Reac
 
 export default function NewEventPage() {
   const router = useRouter();
-  const { addEvent, venues } = useApp();
+  const { addEvent, venues, addVenue } = useApp();
   const [step, setStep] = useState(1);
   const totalSteps = 4;
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
@@ -69,6 +69,28 @@ export default function NewEventPage() {
   ]);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState<string | null>(null);
   const emojiOptions = ['🎉','💒','🍽️','💃','🎂','🎵','📸','🥂','💐','🎤','🚗','⛪','💍','🎊','🌙','🕌','🏨','🎶','🌸','✨','🙏','👰','🤵','🎀','💝'];
+
+  // Inline venue creation
+  const [showVenueModal, setShowVenueModal] = useState(false);
+  const [newVenueName, setNewVenueName] = useState('');
+  const [newVenueAddress, setNewVenueAddress] = useState('');
+  const [newVenueType, setNewVenueType] = useState('reception');
+
+  const handleAddVenue = () => {
+    if (!newVenueName.trim()) return;
+    const venue: Venue = {
+      id: crypto.randomUUID(),
+      name: newVenueName.trim(),
+      address: newVenueAddress.trim(),
+      type: newVenueType,
+      emoji: newVenueType === 'ceremony' ? '⛪' : newVenueType === 'reception' ? '🏨' : '📍',
+    };
+    addVenue(venue);
+    setNewVenueName('');
+    setNewVenueAddress('');
+    setNewVenueType('reception');
+    setShowVenueModal(false);
+  };
 
   const addProgramItem = () => {
     setProgram(p => [...p, { id: `p-${Date.now()}`, time: '', title: '', description: '', icon: '🎉' }]);
@@ -455,7 +477,7 @@ export default function NewEventPage() {
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <SectionCard title="Programme de la journée" icon={Clock}>
                   {/* No venues hint */}
-                  {venues.length === 0 && (
+                  {venues.length === 0 ? (
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1rem',
                       background: 'rgba(200,169,110,0.06)', border: '1px dashed var(--gold)',
@@ -465,21 +487,104 @@ export default function NewEventPage() {
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flex: 1 }}>
                         Aucun lieu enregistré. Ajoutez vos lieux pour les associer au programme.
                       </span>
-                      <Link
-                        href="/dashboard/events/new"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          alert('Créez d\'abord l\'événement, puis ajoutez des lieux depuis sa page dédiée.');
-                        }}
+                      <button
+                        type="button"
+                        onClick={() => setShowVenueModal(true)}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                           fontSize: '0.75rem', fontWeight: 600, padding: '0.35rem 0.75rem', borderRadius: 8,
                           background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
-                          color: '#fff', textDecoration: 'none', flexShrink: 0, border: 'none',
+                          color: '#fff', flexShrink: 0, border: 'none', cursor: 'pointer',
                         }}
                       >
                         <Plus size={12} /> Ajouter des lieux
-                      </Link>
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '0.5rem',
+                      marginBottom: '0.85rem', flexWrap: 'wrap',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, flexWrap: 'wrap' }}>
+                        {venues.map(v => (
+                          <span key={v.id} style={{
+                            fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: 6,
+                            background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.15)',
+                            color: 'var(--text)',
+                          }}>{v.emoji || '📍'} {v.name}</span>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowVenueModal(true)}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                          fontSize: '0.7rem', fontWeight: 600, padding: '0.25rem 0.6rem', borderRadius: 6,
+                          background: 'rgba(200,169,110,0.1)', color: 'var(--gold)',
+                          border: '1px solid rgba(200,169,110,0.2)', cursor: 'pointer',
+                        }}
+                      >
+                        <Plus size={11} /> Ajouter
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Venue creation modal */}
+                  {showVenueModal && (
+                    <div style={{
+                      position: 'fixed', inset: 0, zIndex: 100,
+                      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      padding: '1rem',
+                    }} onClick={() => setShowVenueModal(false)}>
+                      <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                          background: 'var(--bg-card)', borderRadius: '1.25rem',
+                          padding: '1.75rem', width: '100%', maxWidth: 420,
+                          border: '1px solid var(--border-light)',
+                          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                        }}
+                      >
+                        <h3 className="font-display font-bold" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
+                          <MapPin size={18} style={{ display: 'inline', marginRight: '0.4rem', color: 'var(--gold)' }} />
+                          Ajouter un lieu
+                        </h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          <div>
+                            <label className="label">Nom du lieu *</label>
+                            <input className="input" placeholder="Église Saint-Paul" value={newVenueName} onChange={e => setNewVenueName(e.target.value)} autoFocus />
+                          </div>
+                          <div>
+                            <label className="label">Adresse</label>
+                            <input className="input" placeholder="123 rue de la Paix" value={newVenueAddress} onChange={e => setNewVenueAddress(e.target.value)} />
+                          </div>
+                          <div>
+                            <label className="label">Type</label>
+                            <select className="input" value={newVenueType} onChange={e => setNewVenueType(e.target.value)}>
+                              <option value="ceremony">⛪ Cérémonie</option>
+                              <option value="reception">🏨 Réception</option>
+                              <option value="party">🎉 Fête</option>
+                              <option value="other">📍 Autre</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => setShowVenueModal(false)}
+                            className="btn-secondary"
+                            style={{ flex: 1, padding: '0.7rem' }}
+                          >Annuler</button>
+                          <button
+                            type="button"
+                            onClick={handleAddVenue}
+                            className="btn-primary"
+                            style={{ flex: 1, padding: '0.7rem' }}
+                            disabled={!newVenueName.trim()}
+                          ><Plus size={14} /> Ajouter</button>
+                        </div>
+                      </div>
                     </div>
                   )}
 
