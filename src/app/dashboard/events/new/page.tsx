@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
 import { EventType, Event, ProgramItem, Venue } from '@/lib/types';
+import { VenueFormModal, VenueFormData } from '@/components/VenueFormModal';
 import {
   Sparkles, Plus, Trash2, ArrowRight, ArrowLeft, MapPin, Users,
   CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown
@@ -72,23 +73,17 @@ export default function NewEventPage() {
 
   // Inline venue creation
   const [showVenueModal, setShowVenueModal] = useState(false);
-  const [newVenueName, setNewVenueName] = useState('');
-  const [newVenueAddress, setNewVenueAddress] = useState('');
-  const [newVenueType, setNewVenueType] = useState('reception');
 
-  const handleAddVenue = () => {
-    if (!newVenueName.trim()) return;
+  const handleAddVenue = (data: VenueFormData) => {
     const venue: Venue = {
       id: crypto.randomUUID(),
-      name: newVenueName.trim(),
-      address: newVenueAddress.trim(),
-      type: newVenueType,
-      emoji: newVenueType === 'ceremony' ? '⛪' : newVenueType === 'reception' ? '🏨' : '📍',
+      name: data.name,
+      address: data.address,
+      emoji: data.emoji,
+      lat: data.lat,
+      lng: data.lng,
     };
     addVenue(venue);
-    setNewVenueName('');
-    setNewVenueAddress('');
-    setNewVenueType('reception');
     setShowVenueModal(false);
   };
 
@@ -529,63 +524,12 @@ export default function NewEventPage() {
                     </div>
                   )}
 
-                  {/* Venue creation modal */}
+                  {/* Venue creation modal with map */}
                   {showVenueModal && (
-                    <div style={{
-                      position: 'fixed', inset: 0, zIndex: 100,
-                      background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '1rem',
-                    }} onClick={() => setShowVenueModal(false)}>
-                      <div
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                          background: 'var(--bg-card)', borderRadius: '1.25rem',
-                          padding: '1.75rem', width: '100%', maxWidth: 420,
-                          border: '1px solid var(--border-light)',
-                          boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
-                        }}
-                      >
-                        <h3 className="font-display font-bold" style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>
-                          <MapPin size={18} style={{ display: 'inline', marginRight: '0.4rem', color: 'var(--gold)' }} />
-                          Ajouter un lieu
-                        </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          <div>
-                            <label className="label">Nom du lieu *</label>
-                            <input className="input" placeholder="Église Saint-Paul" value={newVenueName} onChange={e => setNewVenueName(e.target.value)} autoFocus />
-                          </div>
-                          <div>
-                            <label className="label">Adresse</label>
-                            <input className="input" placeholder="123 rue de la Paix" value={newVenueAddress} onChange={e => setNewVenueAddress(e.target.value)} />
-                          </div>
-                          <div>
-                            <label className="label">Type</label>
-                            <select className="input" value={newVenueType} onChange={e => setNewVenueType(e.target.value)}>
-                              <option value="ceremony">⛪ Cérémonie</option>
-                              <option value="reception">🏨 Réception</option>
-                              <option value="party">🎉 Fête</option>
-                              <option value="other">📍 Autre</option>
-                            </select>
-                          </div>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem' }}>
-                          <button
-                            type="button"
-                            onClick={() => setShowVenueModal(false)}
-                            className="btn-secondary"
-                            style={{ flex: 1, padding: '0.7rem' }}
-                          >Annuler</button>
-                          <button
-                            type="button"
-                            onClick={handleAddVenue}
-                            className="btn-primary"
-                            style={{ flex: 1, padding: '0.7rem' }}
-                            disabled={!newVenueName.trim()}
-                          ><Plus size={14} /> Ajouter</button>
-                        </div>
-                      </div>
-                    </div>
+                    <VenueFormModal
+                      onSave={handleAddVenue}
+                      onClose={() => setShowVenueModal(false)}
+                    />
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
