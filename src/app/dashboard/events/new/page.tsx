@@ -12,6 +12,29 @@ import {
   CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown
 } from 'lucide-react';
 
+/* ── Card wrapper for form sections (outside component to avoid re-renders) ─── */
+const SectionCard = ({ children, title, icon: IconComp }: { children: React.ReactNode; title: string; icon: React.ElementType }) => (
+  <div style={{
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border-light)',
+    borderRadius: '1rem',
+    padding: '1.5rem',
+    marginBottom: '1.25rem',
+  }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
+      <div style={{
+        width: 36, height: 36, borderRadius: 10,
+        background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.2)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <IconComp size={18} color="#C8A96E" />
+      </div>
+      <h3 className="font-semibold" style={{ fontSize: '1rem' }}>{title}</h3>
+    </div>
+    {children}
+  </div>
+);
+
 export default function NewEventPage() {
   const router = useRouter();
   const { addEvent, venues } = useApp();
@@ -89,29 +112,6 @@ export default function NewEventPage() {
   };
 
   const stepLabels = ['Type & Infos', 'Détails & Options', 'Personnalisation', 'Programme'];
-
-  /* ── Card wrapper for form sections ─── */
-  const SectionCard = ({ children, title, icon: IconComp }: { children: React.ReactNode; title: string; icon: React.ElementType }) => (
-    <div style={{
-      background: 'var(--bg-card)',
-      border: '1px solid var(--border-light)',
-      borderRadius: '1rem',
-      padding: '1.5rem',
-      marginBottom: '1.25rem',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.2)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <IconComp size={18} color="#C8A96E" />
-        </div>
-        <h3 className="font-semibold" style={{ fontSize: '1rem' }}>{title}</h3>
-      </div>
-      {children}
-    </div>
-  );
 
   return (
     <div className="flex">
