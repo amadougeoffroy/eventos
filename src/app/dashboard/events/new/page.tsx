@@ -67,9 +67,9 @@ export default function NewEventPage() {
 
   const handleCreate = () => {
     const slug = generateSlug();
-    const id = `evt-${Date.now()}`;
+    const tempId = crypto.randomUUID();
     const newEvent: Event = {
-      id, slug, type: eventType,
+      id: tempId, slug, type: eventType,
       name: name || `${eventTypeConfig[eventType].label}`,
       date, time, venue, venueAddress, dressCode, welcomeMessage,
       theme: eventType, primaryColor, secondaryColor,
@@ -85,7 +85,7 @@ export default function NewEventPage() {
       createdAt: new Date().toISOString(),
     };
     addEvent(newEvent);
-    router.push(`/dashboard/events/${id}`);
+    router.push('/dashboard');
   };
 
   const stepLabels = ['Type & Infos', 'Détails & Options', 'Personnalisation', 'Programme'];

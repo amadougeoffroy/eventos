@@ -1,11 +1,12 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue } from '@/lib/types';
 import {
-  mockEvents, mockGuests, mockGuestGroups, mockTables,
+  mockGuests, mockGuestGroups, mockTables,
   mockMenuCategories, mockMenuItems, mockOrders
 } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
+import { dbEventToApp, appEventToDb } from '@/lib/supabase/mappers';
 
 interface AppState {
   events: Event[];
@@ -54,13 +55,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     id: '', name: '', email: '',
   });
   const [authLoading, setAuthLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // Fetch profile from profiles table
+          setUserId(user.id);
           const { data: profile } = await supabase
             .from('profiles')
             .select('full_name, email, avatar_url')
@@ -74,18 +76,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
             avatar: profile?.avatar_url || undefined,
           });
         }
-      } catch {
-        // Not authenticated — currentUser stays empty
-      } finally {
+      } catch {} finally {
         setAuthLoading(false);
       }
     };
-
     fetchUser();
 
-    // Listen for auth changes (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
+        setUserId(session.user.id);
         setCurrentUser(prev => ({
           ...prev,
           id: session.user.id,
@@ -93,42 +92,98 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata?.full_name || prev.name,
         }));
       } else {
+        setUserId(null);
         setCurrentUser({ id: '', name: '', email: '' });
       }
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  // ─── Events (localStorage for now, will migrate to Supabase) ───
-  const [events, setEvents] = useState<Event[]>(mockEvents);
-  const EVENTS_KEY = 'eventos-events';
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(EVENTS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const savedIds = new Set(parsed.map((e: Event) => e.id));
-          const mockById = new Map(mockEvents.map(e => [e.id, e]));
-          const merged = [
-            ...parsed.map((e: Event) => ({
-              ...e,
-              plan: e.plan || mockById.get(e.id)?.plan,
-            })),
-            ...mockEvents.filter(e => !savedIds.has(e.id)),
-          ];
-          setEvents(merged);
-        }
-      }
-    } catch {}
-  }, []);
-  const syncEvents = (next: Event[]) => {
-    try { localStorage.setItem(EVENTS_KEY, JSON.stringify(next)); } catch {}
-    return next;
-  };
+  // ═══════════════════════════════════════════════════════════
+  // EVENTS — Supabase powered 🚀
+  // ═══════════════════════════════════════════════════════════
+  const [events, setEvents] = useState<Event[]>([]);
 
-  // ─── Other state (mock for now) ───
+  // Load events from Supabase when user is authenticated
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadEvents = async () => {
+      const { data, error } = await supabase
+        .from('events')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        setEvents(data.map(dbEventToApp));
+      }
+    };
+    loadEvents();
+  }, [userId]);
+
+  const addEvent = useCallback(async (event: Event) => {
+    if (!userId) return;
+
+    // Optimistic update
+    setEvents(prev => [event, ...prev]);
+
+    const payload = {
+      ...appEventToDb({ ...event, userId }),
+      slug: event.slug,
+    };
+
+    const { data, error } = await supabase
+      .from('events')
+      .insert(payload)
+      .select()
+      .single();
+
+    if (!error && data) {
+      // Replace the optimistic event with the real one (correct id)
+      const realEvent = dbEventToApp(data);
+      setEvents(prev => prev.map(e => e.id === event.id ? realEvent : e));
+    } else {
+      // Rollback on error
+      console.error('Error creating event:', error);
+      setEvents(prev => prev.filter(e => e.id !== event.id));
+    }
+  }, [userId, supabase]);
+
+  const updateEvent = useCallback(async (id: string, updates: Partial<Event>) => {
+    // Optimistic update
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, ...updates } : e));
+
+    const payload = appEventToDb(updates);
+    const { error } = await supabase
+      .from('events')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error updating event:', error);
+    }
+  }, [supabase]);
+
+  const removeEvent = useCallback(async (id: string) => {
+    // Optimistic update
+    const backup = events;
+    setEvents(prev => prev.filter(e => e.id !== id));
+
+    const { error } = await supabase
+      .from('events')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting event:', error);
+      setEvents(backup); // Rollback
+    }
+  }, [supabase, events]);
+
+  // ═══════════════════════════════════════════════════════════
+  // OTHER DATA — Still localStorage (will migrate next)
+  // ═══════════════════════════════════════════════════════════
   const [guests, setGuests] = useState<Guest[]>(mockGuests);
   const [guestGroups, setGuestGroups] = useState<GuestGroup[]>(mockGuestGroups);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
@@ -151,12 +206,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try { localStorage.setItem(VENUES_KEY, JSON.stringify(next)); } catch {}
     return next;
   };
-
-  // ─── Events CRUD ───
-  const addEvent = (event: Event) => setEvents(prev => syncEvents([event, ...prev]));
-  const updateEvent = (id: string, updates: Partial<Event>) =>
-    setEvents(prev => syncEvents(prev.map(e => e.id === id ? { ...e, ...updates } : e)));
-  const removeEvent = (id: string) => setEvents(prev => syncEvents(prev.filter(e => e.id !== id)));
 
   // ─── Guests CRUD ───
   const addGuest = (guest: Guest) => setGuests(prev => [...prev, guest]);
@@ -185,12 +234,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch {}
     setTablesReady(true);
   }, []);
-
   const syncTables = (next: EventTable[]) => {
     try { localStorage.setItem(TABLES_KEY, JSON.stringify(next)); } catch {}
     return next;
   };
-
   const addTable = (table: EventTable) => setTables(prev => {
     if (prev.find(t => t.id === table.id)) return prev;
     return syncTables([...prev, table]);
@@ -206,7 +253,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addMenuItem = (item: MenuItem) => setMenuItems(prev => [...prev, item]);
   const updateMenuItem = (id: string, updates: Partial<MenuItem>) =>
     setMenuItems(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-
   const addMenuCategory = (cat: MenuCategory) =>
     setMenuCategories(prev => [...prev, cat]);
 
