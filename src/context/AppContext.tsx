@@ -1,10 +1,11 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue } from '@/lib/types';
 import {
   mockEvents, mockGuests, mockGuestGroups, mockTables,
   mockMenuCategories, mockMenuItems, mockOrders
 } from '@/lib/mock-data';
+import { createClient } from '@/lib/supabase/client';
 
 interface AppState {
   events: Event[];
@@ -16,7 +17,8 @@ interface AppState {
   menuItems: MenuItem[];
   venues: Venue[];
   orders: Order[];
-  currentUser: { name: string; email: string; avatar?: string };
+  currentUser: { id: string; name: string; email: string; avatar?: string };
+  authLoading: boolean;
 }
 
 interface AppActions {
@@ -45,9 +47,61 @@ interface AppActions {
 const AppContext = createContext<(AppState & AppActions) | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useState<Event[]>(mockEvents);
+  const supabase = createClient();
 
-  // ─── Events localStorage persistence ───
+  // ─── Auth user from Supabase ───
+  const [currentUser, setCurrentUser] = useState<AppState['currentUser']>({
+    id: '', name: '', email: '',
+  });
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Fetch profile from profiles table
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, email, avatar_url')
+            .eq('id', user.id)
+            .single();
+
+          setCurrentUser({
+            id: user.id,
+            name: profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '',
+            email: profile?.email || user.email || '',
+            avatar: profile?.avatar_url || undefined,
+          });
+        }
+      } catch {
+        // Not authenticated — currentUser stays empty
+      } finally {
+        setAuthLoading(false);
+      }
+    };
+
+    fetchUser();
+
+    // Listen for auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setCurrentUser(prev => ({
+          ...prev,
+          id: session.user.id,
+          email: session.user.email || prev.email,
+          name: session.user.user_metadata?.full_name || prev.name,
+        }));
+      } else {
+        setCurrentUser({ id: '', name: '', email: '' });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ─── Events (localStorage for now, will migrate to Supabase) ───
+  const [events, setEvents] = useState<Event[]>(mockEvents);
   const EVENTS_KEY = 'eventos-events';
   useEffect(() => {
     try {
@@ -55,7 +109,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Merge: use saved data but keep mock events that aren't saved yet
           const savedIds = new Set(parsed.map((e: Event) => e.id));
           const mockById = new Map(mockEvents.map(e => [e.id, e]));
           const merged = [
@@ -75,6 +128,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return next;
   };
 
+  // ─── Other state (mock for now) ───
   const [guests, setGuests] = useState<Guest[]>(mockGuests);
   const [guestGroups, setGuestGroups] = useState<GuestGroup[]>(mockGuestGroups);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
@@ -98,18 +152,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return next;
   };
 
-  const currentUser = { name: "Amadou Geoffroy", email: "amadou@eventos.app" };
-
+  // ─── Events CRUD ───
   const addEvent = (event: Event) => setEvents(prev => syncEvents([event, ...prev]));
   const updateEvent = (id: string, updates: Partial<Event>) =>
     setEvents(prev => syncEvents(prev.map(e => e.id === id ? { ...e, ...updates } : e)));
   const removeEvent = (id: string) => setEvents(prev => syncEvents(prev.filter(e => e.id !== id)));
 
+  // ─── Guests CRUD ───
   const addGuest = (guest: Guest) => setGuests(prev => [...prev, guest]);
   const updateGuest = (id: string, updates: Partial<Guest>) =>
     setGuests(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
   const removeGuest = (id: string) => setGuests(prev => prev.filter(g => g.id !== id));
 
+  // ─── Guest Groups CRUD ───
   const addGuestGroup = (group: GuestGroup) => setGuestGroups(prev => [...prev, group]);
   const updateGuestGroup = (id: string, updates: Partial<GuestGroup>) =>
     setGuestGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
@@ -120,7 +175,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [tables, setTables] = useState<EventTable[]>(mockTables);
   const [tablesReady, setTablesReady] = useState(false);
 
-  // Hydrate from localStorage on mount (runs once, before other component effects)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(TABLES_KEY);
@@ -148,6 +202,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     syncTables(prev.filter(t => t.id !== id))
   );
 
+  // ─── Menu CRUD ───
   const addMenuItem = (item: MenuItem) => setMenuItems(prev => [...prev, item]);
   const updateMenuItem = (id: string, updates: Partial<MenuItem>) =>
     setMenuItems(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
@@ -155,10 +210,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const addMenuCategory = (cat: MenuCategory) =>
     setMenuCategories(prev => [...prev, cat]);
 
+  // ─── Orders CRUD ───
   const addOrder = (order: Order) => setOrders(prev => [...prev, order]);
   const updateOrder = (id: string, updates: Partial<Order>) =>
     setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
 
+  // ─── Venues CRUD ───
   const addVenue = (venue: Venue) => setVenues(prev => syncVenues([...prev, venue]));
   const updateVenue = (id: string, updates: Partial<Venue>) =>
     setVenues(prev => syncVenues(prev.map(v => v.id === id ? { ...v, ...updates } : v)));
@@ -166,7 +223,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders, currentUser,
+      events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders,
+      currentUser, authLoading,
       addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
       addGuestGroup, updateGuestGroup, removeGuestGroup,
       addTable, updateTable, removeTable, addMenuItem, updateMenuItem, addMenuCategory,

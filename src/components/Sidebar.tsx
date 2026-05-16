@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Sparkles, Home, PartyPopper, Users, UsersRound, Send, UtensilsCrossed,
   LayoutGrid, Radio, BarChart3, Settings, LogOut, ChevronDown, Plus, MapPin,
@@ -9,6 +9,7 @@ import {
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { planConfig } from '@/lib/mock-data';
+import { createClient } from '@/lib/supabase/client';
 
 interface SidebarProps {
   eventId?: string;
@@ -308,20 +309,24 @@ export default function Sidebar({ eventId }: SidebarProps) {
               {currentUser.email}
             </div>
           </div>
-          <Link
-            href="/"
+          <button
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              window.location.href = '/login';
+            }}
             title="Déconnexion"
             style={{
               width: 32, height: 32, borderRadius: 8,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: 'rgba(220,53,69,0.06)',
               border: '1px solid rgba(220,53,69,0.12)',
-              color: '#DC3545', textDecoration: 'none',
+              color: '#DC3545', cursor: 'pointer',
               flexShrink: 0, transition: 'all 0.2s ease',
             }}
           >
             <LogOut size={15} />
-          </Link>
+          </button>
         </div>
       </div>
     </>
