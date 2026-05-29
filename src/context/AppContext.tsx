@@ -104,20 +104,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ═══════════════════════════════════════════════════════════
   const [events, setEvents] = useState<Event[]>([]);
 
-  // Load events from Supabase when user is authenticated
+  // Load events + program items from Supabase when user is authenticated
   useEffect(() => {
     if (!userId) return;
 
     const loadEvents = async () => {
-      const { data, error } = await supabase
+      const { data: eventsData, error: eventsErr } = await supabase
         .from('events')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setEvents(data.map(dbEventToApp));
-      }
+      if (eventsErr || !eventsData) return;
+
+      // Load all program items for these events
+      const eventIds = eventsData.map(e => e.id);
+      const { data: programData } = await supabase
+        .from('program_items')
+        .select('*')
+        .in('event_id', eventIds.length > 0 ? eventIds : ['__none__'])
+        .order('sort_order', { ascending: true });
+
+      const programByEvent = new Map<string, Event['program']>();
+      (programData || []).forEach((row: any) => {
+        const items = programByEvent.get(row.event_id) || [];
+        items.push({
+          id: row.id,
+          time: row.time || '',
+          title: row.title || '',
+          description: row.description || '',
+          icon: row.icon || '🎉',
+          venueId: row.venue_id || undefined,
+        });
+        programByEvent.set(row.event_id, items);
+      });
+
+      setEvents(eventsData.map(row => ({
+        ...dbEventToApp(row),
+        program: programByEvent.get(row.id as string) || [],
+      })));
     };
     loadEvents();
   }, [userId]);
@@ -140,11 +165,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .single();
 
     if (!error && data) {
-      // Replace the optimistic event with the real one (correct id)
       const realEvent = dbEventToApp(data);
+
+      // Save program items
+      if (event.program && event.program.length > 0) {
+        const programRows = event.program.map((item, idx) => ({
+          event_id: data.id,
+          time: item.time || '00:00',
+          title: item.title || '',
+          description: item.description || '',
+          icon: item.icon || '🎉',
+          venue_id: item.venueId || null,
+          sort_order: idx,
+        }));
+
+        const { data: savedProgram } = await supabase
+          .from('program_items')
+          .insert(programRows)
+          .select();
+
+        if (savedProgram) {
+          realEvent.program = savedProgram.map((row: any) => ({
+            id: row.id,
+            time: row.time || '',
+            title: row.title || '',
+            description: row.description || '',
+            icon: row.icon || '🎉',
+            venueId: row.venue_id || undefined,
+          }));
+        }
+      }
+
       setEvents(prev => prev.map(e => e.id === event.id ? realEvent : e));
     } else {
-      // Rollback on error
       console.error('Error creating event:', error);
       setEvents(prev => prev.filter(e => e.id !== event.id));
     }

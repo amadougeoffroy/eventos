@@ -1,5 +1,6 @@
 'use client';
 import { useApp } from '@/context/AppContext';
+import { Event, Venue } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -72,7 +73,68 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   const { slug } = use(params);
   const searchParams = useSearchParams();
   const { events, guests, guestGroups, venues, updateGuest, addGuest } = useApp();
-  const event = events.find(e => e.slug === slug);
+  const contextEvent = events.find(e => e.slug === slug);
+
+  // For public visitors (not logged in), fetch event directly from Supabase
+  const [publicEvent, setPublicEvent] = useState<Event | null>(null);
+  const [publicVenues, setPublicVenues] = useState<Venue[]>([]);
+  const [publicLoading, setPublicLoading] = useState(!contextEvent);
+
+  useEffect(() => {
+    if (contextEvent) { setPublicLoading(false); return; }
+
+    const fetchPublicEvent = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
+      // Fetch event by slug (public, no user filter)
+      const { data: evtRow } = await supabase
+        .from('events')
+        .select('*')
+        .eq('slug', slug)
+        .single();
+
+      if (evtRow) {
+        // Fetch program items
+        const { data: programRows } = await supabase
+          .from('program_items')
+          .select('*')
+          .eq('event_id', evtRow.id)
+          .order('sort_order', { ascending: true });
+
+        const program = (programRows || []).map((row: any) => ({
+          id: row.id,
+          time: row.time || '',
+          title: row.title || '',
+          description: row.description || '',
+          icon: row.icon || '🎉',
+          venueId: row.venue_id || undefined,
+        }));
+
+        // Fetch venues for this event
+        const { data: venueRows } = await supabase
+          .from('venues')
+          .select('*')
+          .eq('event_id', evtRow.id);
+
+        if (venueRows) {
+          setPublicVenues(venueRows.map((v: any) => ({
+            id: v.id, eventId: v.event_id, name: v.name,
+            address: v.address, lat: v.lat, lng: v.lng,
+            emoji: v.emoji, type: v.type,
+          })));
+        }
+
+        const { dbEventToApp } = await import('@/lib/supabase/mappers');
+        setPublicEvent({ ...dbEventToApp(evtRow), program });
+      }
+      setPublicLoading(false);
+    };
+    fetchPublicEvent();
+  }, [contextEvent, slug]);
+
+  const event = contextEvent || publicEvent;
+  const allVenues = contextEvent ? venues : publicVenues;
 
   // ── Personalized link: detect known guest from URL ──
   const urlGuestParam = searchParams.get('guest');
@@ -102,12 +164,12 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     return event.program
       .filter(p => p.venueId)
       .map(p => {
-        const v = venues.find(x => x.id === p.venueId);
+        const v = allVenues.find(x => x.id === p.venueId);
         if (!v) return null;
         return { ...p, venue: v };
       })
-      .filter(Boolean) as Array<{ id: string; time: string; title: string; icon: string; venue: { name: string; address: string; lat: number; lng: number; emoji?: string } }>;
-  }, [event, venues]);
+      .filter(Boolean) as Array<{ id: string; time: string; title: string; icon: string; venue: { name: string; address: string; lat?: number; lng?: number; emoji?: string } }>;
+  }, [event, allVenues]);
 
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [rsvpChoice, setRsvpChoice] = useState<'confirmed' | 'declined' | 'maybe' | null>(null);
@@ -218,6 +280,19 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
       setTimeout(() => setShowConfetti(false), 4000);
     }
   };
+
+  if (publicLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg)' }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
+        >
+          <Sparkles size={40} style={{ color: 'var(--gold)' }} />
+        </motion.div>
+      </div>
+    );
+  }
 
   if (!event) {
     return (
@@ -605,7 +680,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             {event.program.map((item, idx) => {
-              const venue = item.venueId ? venues.find(v => v.id === item.venueId) : null;
+              const venue = item.venueId ? allVenues.find(v => v.id === item.venueId) : null;
               return (
                 <div key={item.id} style={{ display: 'flex', gap: '1rem', position: 'relative' }}>
                   {/* Vertical line */}
@@ -701,9 +776,82 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
               Comment <span className="gradient-gold">nous rejoindre</span>
             </h2>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-              {itineraryStops.length > 0 ? 'Retrouvez le trajet entre les différents lieux' : 'Retrouvez-nous à l\'adresse ci-dessous'}
+              {itineraryStops.length > 1
+                ? 'Suivez l\'itinéraire entre les différents lieux de la journée'
+                : 'Retrouvez-nous à l\'adresse ci-dessous'}
             </p>
           </motion.div>
+
+          {/* Multi-venue itinerary for weddings */}
+          {itineraryStops.length > 1 && (
+            <motion.div
+              style={{ display: 'flex', flexDirection: 'column', gap: '0', marginBottom: '1.5rem' }}
+              initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+            >
+              {itineraryStops.map((stop, idx) => (
+                <div key={stop.id} style={{ display: 'flex', gap: '0.75rem', position: 'relative' }}>
+                  {/* Vertical connector line */}
+                  {idx < itineraryStops.length - 1 && (
+                    <div style={{
+                      position: 'absolute', left: 15, top: 36, bottom: 0, width: 2,
+                      background: 'linear-gradient(to bottom, var(--gold), rgba(200,169,110,0.15))',
+                    }} />
+                  )}
+                  {/* Step circle */}
+                  <div style={{
+                    width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+                    background: idx === 0 ? 'linear-gradient(135deg, var(--gold), var(--gold-light))' : 'var(--bg-card)',
+                    border: idx === 0 ? 'none' : '2px solid var(--gold)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: idx === 0 ? '#fff' : 'var(--gold)',
+                    fontWeight: 700, fontSize: '0.75rem', zIndex: 1,
+                  }}>{stop.venue.emoji || (idx + 1)}</div>
+                  {/* Venue card */}
+                  <div style={{
+                    flex: 1, paddingBottom: idx < itineraryStops.length - 1 ? '1rem' : 0,
+                  }}>
+                    <div style={{
+                      background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+                      borderRadius: 14, padding: '0.75rem 1rem',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                        <div>
+                          <div style={{
+                            fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold)',
+                            padding: '0.1rem 0.4rem', borderRadius: 5,
+                            background: 'rgba(200,169,110,0.1)', display: 'inline-block',
+                            marginBottom: '0.25rem',
+                          }}>{stop.time}</div>
+                          <div className="font-semibold" style={{ fontSize: '0.85rem' }}>{stop.title}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                            <MapPin size={11} /> {stop.venue.name}
+                          </div>
+                          {stop.venue.address && (
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                              {stop.venue.address}
+                            </div>
+                          )}
+                        </div>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${stop.venue.lat || 0},${stop.venue.lng || 0}`}
+                          target="_blank" rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
+                            fontSize: '0.65rem', fontWeight: 600, color: '#fff',
+                            padding: '0.3rem 0.6rem', borderRadius: 8,
+                            background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                            textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <Navigation size={10} /> Y aller
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
 
           {/* Map */}
           <motion.div
@@ -719,7 +867,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
                   title="Itinéraire"
                   width="100%" height="100%" style={{ border: 0 }} loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
-                  src={`https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=${itineraryStops[0].venue.lat},${itineraryStops[0].venue.lng}&destination=${itineraryStops[itineraryStops.length - 1].venue.lat},${itineraryStops[itineraryStops.length - 1].venue.lng}${itineraryStops.length > 2 ? '&waypoints=' + itineraryStops.slice(1, -1).map(s => `${s.venue.lat},${s.venue.lng}`).join('|') : ''}&mode=driving`}
+                  src={`https://www.google.com/maps/embed/v1/directions?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&origin=${itineraryStops[0].venue.lat || 0},${itineraryStops[0].venue.lng || 0}&destination=${itineraryStops[itineraryStops.length - 1].venue.lat || 0},${itineraryStops[itineraryStops.length - 1].venue.lng || 0}${itineraryStops.length > 2 ? '&waypoints=' + itineraryStops.slice(1, -1).map(s => `${s.venue.lat || 0},${s.venue.lng || 0}`).join('|') : ''}&mode=driving`}
                 />
               ) : (
                 <iframe
@@ -734,7 +882,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
             <div style={{ padding: '1rem 1.5rem' }}>
               <a
                 href={itineraryStops.length > 1
-                  ? `https://www.google.com/maps/dir/${itineraryStops.map(s => `${s.venue.lat},${s.venue.lng}`).join('/')}`
+                  ? `https://www.google.com/maps/dir/${itineraryStops.map(s => `${s.venue.lat || 0},${s.venue.lng || 0}`).join('/')}`
                   : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + ', ' + (event.venueAddress || ''))}`
                 }
                 target="_blank" rel="noopener noreferrer" className="btn-secondary"
