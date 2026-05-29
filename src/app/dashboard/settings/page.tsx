@@ -3,6 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
+import ConfirmModal from '@/components/ConfirmModal';
 import {
   User, Mail, Phone, Shield, Bell, Palette,
   Trash2, Save, Check, Globe, ChevronDown,
@@ -66,6 +67,7 @@ export default function SettingsPage() {
 
   // Danger zone
   const [dangerOpen, setDangerOpen] = useState(false);
+  const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
 
   const handleSaveProfile = () => {
     setProfileSaved(true);
@@ -250,11 +252,7 @@ export default function SettingsPage() {
                   <p className="text-sm" style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
                     Cette action est irréversible. Toutes vos données seront définitivement supprimées.
                   </p>
-                  <button className="btn-danger" onClick={() => {
-                    if (confirm('Supprimer définitivement votre compte ? Cette action est irréversible.')) {
-                      alert('Compte supprimé (simulation)');
-                    }
-                  }}>
+                  <button className="btn-danger" onClick={() => setConfirmDeleteAccount(true)}>
                     <Trash2 size={16} /> Supprimer mon compte
                   </button>
                 </div>
@@ -264,6 +262,21 @@ export default function SettingsPage() {
 
         </div>
       </main>
+
+      {/* Delete account confirmation modal */}
+      <ConfirmModal
+        open={confirmDeleteAccount}
+        title="Supprimer votre compte"
+        message="Êtes-vous absolument sûr ? Toutes vos données, événements, invités et paramètres seront définitivement supprimés. Cette action est irréversible."
+        confirmLabel="Supprimer définitivement"
+        cancelLabel="Annuler"
+        variant="danger"
+        onConfirm={() => {
+          setConfirmDeleteAccount(false);
+          alert('Compte supprimé (simulation)');
+        }}
+        onCancel={() => setConfirmDeleteAccount(false)}
+      />
     </div>
   );
 }

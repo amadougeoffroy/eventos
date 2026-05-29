@@ -6,6 +6,7 @@ import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
 import { ProgramItem } from '@/lib/types';
+import ConfirmModal from '@/components/ConfirmModal';
 import {
   CalendarDays, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle,
   Send, UtensilsCrossed, LayoutGrid, Radio, ArrowRight, ExternalLink, Copy, TrendingUp,
@@ -40,11 +41,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
     updateEvent(eventId, { ...editForm, venueAddress: editForm.venueAddress || undefined, dressCode: editForm.dressCode || undefined, welcomeMessage: editForm.welcomeMessage || undefined });
     setShowEditEvent(false);
   };
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const handleDeleteEvent = () => {
-    if (confirm('Supprimer cet événement ? Cette action est irréversible.')) {
-      removeEvent(eventId);
-      window.location.href = '/dashboard';
-    }
+    removeEvent(eventId);
+    window.location.href = '/dashboard';
   };
 
   // Program CRUD state
@@ -173,7 +173,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                         fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 6,
                         background: 'rgba(200,169,110,0.1)', color: 'var(--gold)', border: 'none', cursor: 'pointer',
                       }}><Edit3 size={11} /> Modifier</button>
-                      <button onClick={handleDeleteEvent} style={{
+                      <button onClick={() => setConfirmDelete(true)} style={{
                         display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                         fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 6,
                         background: 'rgba(220,53,69,0.08)', color: '#DC3545', border: 'none', cursor: 'pointer',
@@ -671,6 +671,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
           )}
         </AnimatePresence>
       </main>
+
+      {/* Delete confirmation modal */}
+      <ConfirmModal
+        open={confirmDelete}
+        title="Supprimer l'événement"
+        message={`Êtes-vous sûr de vouloir supprimer "${event?.name}" ? Cette action est irréversible et toutes les données associées seront perdues.`}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        variant="danger"
+        onConfirm={handleDeleteEvent}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }
