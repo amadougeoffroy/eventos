@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue } from '@/lib/types';
 import {
-  mockGuests, mockGuestGroups, mockTables,
+  mockGuests, mockTables,
   mockMenuCategories, mockMenuItems, mockOrders
 } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
@@ -238,11 +238,115 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // OTHER DATA — Still localStorage (will migrate next)
   // ═══════════════════════════════════════════════════════════
   const [guests, setGuests] = useState<Guest[]>(mockGuests);
-  const [guestGroups, setGuestGroups] = useState<GuestGroup[]>(mockGuestGroups);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [venues, setVenues] = useState<Venue[]>([]);
+
+  // ═══════════════════════════════════════════════════════════
+  // GUEST GROUPS — Supabase powered 🚀
+  // ═══════════════════════════════════════════════════════════
+  const [guestGroups, setGuestGroups] = useState<GuestGroup[]>([]);
+
+  // Load guest groups from Supabase
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadGroups = async () => {
+      // Get all event IDs for this user first
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (!userEvents || userEvents.length === 0) return;
+
+      const eventIds = userEvents.map(e => e.id);
+      const { data, error } = await supabase
+        .from('guest_groups')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        setGuestGroups(data.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          name: row.name,
+          emoji: row.emoji || '👥',
+          color: row.color || '#C8A96E',
+          description: row.description || '',
+        })));
+      }
+    };
+    loadGroups();
+  }, [userId]);
+
+  const addGuestGroup = useCallback(async (group: GuestGroup) => {
+    // Optimistic update
+    setGuestGroups(prev => [...prev, group]);
+
+    const { data, error } = await supabase
+      .from('guest_groups')
+      .insert({
+        event_id: group.eventId,
+        name: group.name,
+        emoji: group.emoji,
+        color: group.color,
+        description: group.description || '',
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      // Replace optimistic entry with real one
+      const real: GuestGroup = {
+        id: data.id,
+        eventId: data.event_id,
+        name: data.name,
+        emoji: data.emoji,
+        color: data.color,
+        description: data.description || '',
+      };
+      setGuestGroups(prev => prev.map(g => g.id === group.id ? real : g));
+    } else {
+      console.error('Error creating group:', error);
+      setGuestGroups(prev => prev.filter(g => g.id !== group.id));
+    }
+  }, [supabase]);
+
+  const updateGuestGroup = useCallback(async (id: string, updates: Partial<GuestGroup>) => {
+    // Optimistic update
+    setGuestGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.emoji !== undefined) payload.emoji = updates.emoji;
+    if (updates.color !== undefined) payload.color = updates.color;
+    if (updates.description !== undefined) payload.description = updates.description;
+
+    const { error } = await supabase
+      .from('guest_groups')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) console.error('Error updating group:', error);
+  }, [supabase]);
+
+  const removeGuestGroup = useCallback(async (id: string) => {
+    const backup = guestGroups;
+    setGuestGroups(prev => prev.filter(g => g.id !== id));
+
+    const { error } = await supabase
+      .from('guest_groups')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting group:', error);
+      setGuestGroups(backup);
+    }
+  }, [supabase, guestGroups]);
 
   // ─── Venues localStorage persistence ───
   const VENUES_KEY = 'eventos-venues';
@@ -265,12 +369,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateGuest = (id: string, updates: Partial<Guest>) =>
     setGuests(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
   const removeGuest = (id: string) => setGuests(prev => prev.filter(g => g.id !== id));
-
-  // ─── Guest Groups CRUD ───
-  const addGuestGroup = (group: GuestGroup) => setGuestGroups(prev => [...prev, group]);
-  const updateGuestGroup = (id: string, updates: Partial<GuestGroup>) =>
-    setGuestGroups(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
-  const removeGuestGroup = (id: string) => setGuestGroups(prev => prev.filter(g => g.id !== id));
 
   // ─── Tables with localStorage persistence ───
   const TABLES_KEY = 'eventos-tables';

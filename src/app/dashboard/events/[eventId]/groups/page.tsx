@@ -4,6 +4,7 @@ import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useMemo, useState } from 'react';
 import { UsersRound, Plus, X, Users, Edit3, Trash2 } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -55,8 +56,11 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
     setEditingId(null);
   };
 
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
   const handleDelete = (id: string) => {
     removeGuestGroup(id);
+    setConfirmDeleteId(null);
   };
 
   // Count per side
@@ -150,7 +154,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
                         <Edit3 size={13} />
                       </button>
                       <button
-                        onClick={() => handleDelete(group.id)}
+                        onClick={() => setConfirmDeleteId(group.id)}
                         style={{
                           width: 30, height: 30, borderRadius: 8,
                           background: 'rgba(220,53,69,0.06)', border: '1px solid rgba(220,53,69,0.12)',
@@ -349,6 +353,18 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Delete confirmation modal */}
+        <ConfirmModal
+          open={!!confirmDeleteId}
+          title="Supprimer le groupe"
+          message={`Supprimer le groupe "${eventGroups.find(g => g.id === confirmDeleteId)?.name || ''}" ? Les invités du groupe ne seront pas supprimés.`}
+          confirmLabel="Supprimer"
+          cancelLabel="Annuler"
+          variant="danger"
+          onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+          onCancel={() => setConfirmDeleteId(null)}
+        />
       </main>
     </div>
   );
