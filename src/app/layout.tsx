@@ -1,11 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AppProvider } from "@/context/AppContext";
 
 export const metadata: Metadata = {
   title: "EventOS — La plateforme intelligente pour vos événements",
   description: "Gérez vos invitations, RSVP, menus et service à table pour tous vos événements depuis une seule plateforme.",
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1",
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
