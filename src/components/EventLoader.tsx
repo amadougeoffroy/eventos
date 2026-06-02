@@ -9,20 +9,10 @@ export default function EventLoader() {
       <Sidebar />
       <main className="main-content" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
         <motion.div
-          style={{ textAlign: 'center' }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
         >
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-            style={{ marginBottom: '1rem' }}
-          >
-            <Sparkles size={36} style={{ color: 'var(--gold)' }} />
-          </motion.div>
-          <p className="font-display text-sm" style={{ color: 'var(--text-muted)' }}>
-            Chargement de l&apos;événement…
-          </p>
+          <Sparkles size={40} style={{ color: 'var(--gold)' }} />
         </motion.div>
       </main>
     </div>
