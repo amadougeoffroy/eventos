@@ -10,7 +10,7 @@ import ConfirmModal from '@/components/ConfirmModal';
 import {
   CalendarDays, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle,
   Send, UtensilsCrossed, LayoutGrid, Radio, ArrowRight, ExternalLink, Copy, TrendingUp,
-  Plus, Edit3, Trash2, X, GripVertical, Image, Upload
+  Plus, Edit3, Trash2, X, GripVertical, Image, Upload, MessageCircleHeart
 } from 'lucide-react';
 
 const fadeUp = {
@@ -53,6 +53,25 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
   const [progForm, setProgForm] = useState({ time: '', title: '', description: '', icon: '🎉', venueId: '' });
 
   const emojiOptions = ['🎉','💒','🍽️','💃','🎂','🎵','📸','🥂','💐','🎤','🚗','⛪','💍','🎊','🌙'];
+
+  // ── Sweet messages from Supabase ──
+  const [sweetMessages, setSweetMessages] = useState<{id: string; author_name: string; message: string; created_at: string}[]>([]);
+
+  useEffect(() => {
+    const loadSweetMessages = async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        const { data } = await supabase
+          .from('sweet_messages')
+          .select('*')
+          .eq('event_id', eventId)
+          .order('created_at', { ascending: false });
+        if (data) setSweetMessages(data);
+      } catch {}
+    };
+    loadSweetMessages();
+  }, [eventId]);
 
   const openAddProgram = () => {
     setEditingProgram(null);
@@ -632,6 +651,54 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ── Petits mots doux ─────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+          <MessageCircleHeart size={18} style={{ color: 'var(--gold)' }} />
+          <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>Petits mots doux</h2>
+          {sweetMessages.length > 0 && (
+            <span style={{
+              fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem',
+              borderRadius: 20, background: 'rgba(200,169,110,0.12)', color: 'var(--gold)',
+            }}>{sweetMessages.length}</span>
+          )}
+        </div>
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={14}
+          className="card" style={{ marginBottom: '2rem' }}
+        >
+          {sweetMessages.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💌</div>
+              <p className="font-medium" style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Aucun message pour le moment</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Les invités pourront laisser un petit mot depuis le lien d&apos;invitation</p>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {sweetMessages.map(msg => (
+                <div key={msg.id} style={{
+                  padding: '0.85rem 1rem', borderRadius: 12,
+                  background: 'rgba(200,169,110,0.04)', border: '1px solid var(--border-light)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div style={{
+                        width: 28, height: 28, borderRadius: 8,
+                        background: 'linear-gradient(135deg, rgba(200,169,110,0.15), rgba(200,169,110,0.05))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.7rem', fontWeight: 700, color: 'var(--gold)',
+                      }}>{msg.author_name.charAt(0).toUpperCase()}</div>
+                      <span className="font-semibold" style={{ fontSize: '0.8rem' }}>{msg.author_name}</span>
+                    </div>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                      {new Date(msg.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{msg.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.div>
         {/* ── Edit Event Modal ─────────────────── */}
         <AnimatePresence>
           {showEditEvent && (

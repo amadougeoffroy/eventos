@@ -78,6 +78,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   // For public visitors (not logged in), fetch event directly from Supabase
   const [publicEvent, setPublicEvent] = useState<Event | null>(null);
   const [publicVenues, setPublicVenues] = useState<Venue[]>([]);
+  const [publicGroups, setPublicGroups] = useState<{id: string; name: string; emoji: string; color: string}[]>([]);
   const [publicLoading, setPublicLoading] = useState(!contextEvent);
 
   useEffect(() => {
@@ -127,6 +128,19 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
         const { dbEventToApp } = await import('@/lib/supabase/mappers');
         setPublicEvent({ ...dbEventToApp(evtRow), program });
+
+        // Fetch guest groups for this event
+        const { data: groupRows } = await supabase
+          .from('guest_groups')
+          .select('*')
+          .eq('event_id', evtRow.id)
+          .order('created_at', { ascending: true });
+
+        if (groupRows) {
+          setPublicGroups(groupRows.map((g: any) => ({
+            id: g.id, name: g.name, emoji: g.emoji || '👥', color: g.color || '#C8A96E',
+          })));
+        }
       }
       setPublicLoading(false);
     };
@@ -135,6 +149,9 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   const event = contextEvent || publicEvent;
   const allVenues = contextEvent ? venues : publicVenues;
+  const allGroups = contextEvent
+    ? guestGroups.filter(g => g.eventId === event?.id)
+    : publicGroups;
 
   // ── Personalized link: detect known guest from URL ──
   const urlGuestParam = searchParams.get('guest');
@@ -432,7 +449,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
               <h1
                 className="font-script"
                 style={{
-                  fontSize: 'clamp(3.5rem, 12vw, 7rem)',
+                  fontSize: 'clamp(4.5rem, 15vw, 9rem)',
                   color: '#FFFFFF',
                   fontWeight: 400,
                   lineHeight: 1,
@@ -584,7 +601,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
             <h2
               className="font-display"
               style={{
-                fontSize: 'clamp(2rem, 6vw, 3.5rem)',
+                fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
                 fontWeight: 700,
                 color: 'var(--text)',
                 lineHeight: 1.2,
@@ -902,14 +919,14 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
                       {guestGroup}
                     </div>
                   </div>
-                ) : guestGroups.length > 0 && (
+                ) : allGroups.length > 0 && (
                   <div className="mb-6">
                     <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <Users size={14} style={{ color: 'var(--gold)' }} />
                       Votre groupe
                     </label>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.5rem' }}>
-                      {guestGroups.map(g => {
+                      {allGroups.map(g => {
                         const selected = guestGroup === g.name;
                         return (
                           <button
@@ -1158,8 +1175,20 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
                   />
                   <button
                     className="btn-primary w-full py-3"
-                    onClick={() => {
-                      if (sweetMessage.trim()) setSweetMessageSent(true);
+                    onClick={async () => {
+                      if (!sweetMessage.trim() || !event) return;
+                      try {
+                        const { createClient } = await import('@/lib/supabase/client');
+                        const supabase = createClient();
+                        await supabase.from('sweet_messages').insert({
+                          event_id: event.id,
+                          author_name: guestName || 'Anonyme',
+                          message: sweetMessage.trim(),
+                        });
+                      } catch (e) {
+                        console.warn('Sweet message save failed (table may not exist):', e);
+                      }
+                      setSweetMessageSent(true);
                     }}
                     disabled={!sweetMessage.trim()}
                     style={{ opacity: !sweetMessage.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
