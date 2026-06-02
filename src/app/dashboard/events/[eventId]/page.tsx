@@ -73,6 +73,9 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
     loadSweetMessages();
   }, [eventId]);
 
+  const [origin, setOrigin] = useState('');
+  useEffect(() => { setOrigin(window.location.origin); }, []);
+
   const openAddProgram = () => {
     setEditingProgram(null);
     setProgForm({ time: '', title: '', description: '', icon: '🎉', venueId: '' });
@@ -118,8 +121,6 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
     { href: `/dashboard/events/${eventId}/live`, icon: Radio, label: 'Jour J', desc: 'Service en direct', color: '#22964F' },
   ];
 
-  const [origin, setOrigin] = useState('');
-  useEffect(() => { setOrigin(window.location.origin); }, []);
   const publicLink = `${origin}/e/${event.slug}`;
 
   const rsvpStats = [

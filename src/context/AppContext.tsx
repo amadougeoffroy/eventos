@@ -348,21 +348,83 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase, guestGroups]);
 
-  // ─── Venues localStorage persistence ───
-  const VENUES_KEY = 'eventos-venues';
+  // ═══════════════════════════════════════════════════════════
+  // VENUES — Supabase powered 🚀
+  // ═══════════════════════════════════════════════════════════
+
+  // Load venues from Supabase
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(VENUES_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setVenues(parsed);
+    if (!userId) return;
+
+    const loadVenues = async () => {
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (!userEvents || userEvents.length === 0) return;
+
+      const eventIds = userEvents.map(e => e.id);
+      const { data, error } = await supabase
+        .from('venues')
+        .select('*')
+        .in('event_id', eventIds);
+
+      if (!error && data) {
+        setVenues(data.map((v: any) => ({
+          id: v.id,
+          eventId: v.event_id,
+          name: v.name,
+          address: v.address || '',
+          lat: v.lat,
+          lng: v.lng,
+          emoji: v.emoji || '📍',
+          type: v.type || '',
+        })));
+
+        // Migrate localStorage venues that don't exist in Supabase
+        try {
+          const saved = localStorage.getItem('eventos-venues');
+          if (saved) {
+            const localVenues = JSON.parse(saved);
+            if (Array.isArray(localVenues) && localVenues.length > 0) {
+              const supaIds = new Set(data.map((v: any) => v.id));
+              const toMigrate = localVenues.filter((v: any) =>
+                !supaIds.has(v.id) && eventIds.includes(v.eventId)
+              );
+              if (toMigrate.length > 0) {
+                const rows = toMigrate.map((v: any) => ({
+                  id: v.id,
+                  event_id: v.eventId,
+                  name: v.name,
+                  address: v.address || '',
+                  lat: v.lat || null,
+                  lng: v.lng || null,
+                  emoji: v.emoji || '📍',
+                  type: v.type || '',
+                }));
+                await supabase.from('venues').upsert(rows);
+                // Reload after migration
+                const { data: refreshed } = await supabase
+                  .from('venues')
+                  .select('*')
+                  .in('event_id', eventIds);
+                if (refreshed) {
+                  setVenues(refreshed.map((v: any) => ({
+                    id: v.id, eventId: v.event_id, name: v.name,
+                    address: v.address || '', lat: v.lat, lng: v.lng,
+                    emoji: v.emoji || '📍', type: v.type || '',
+                  })));
+                }
+                localStorage.removeItem('eventos-venues');
+              }
+            }
+          }
+        } catch {}
       }
-    } catch {}
-  }, []);
-  const syncVenues = (next: Venue[]) => {
-    try { localStorage.setItem(VENUES_KEY, JSON.stringify(next)); } catch {}
-    return next;
-  };
+    };
+    loadVenues();
+  }, [userId]);
 
   // ─── Guests CRUD ───
   const addGuest = (guest: Guest) => setGuests(prev => [...prev, guest]);
@@ -412,11 +474,63 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateOrder = (id: string, updates: Partial<Order>) =>
     setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
 
-  // ─── Venues CRUD ───
-  const addVenue = (venue: Venue) => setVenues(prev => syncVenues([...prev, venue]));
-  const updateVenue = (id: string, updates: Partial<Venue>) =>
-    setVenues(prev => syncVenues(prev.map(v => v.id === id ? { ...v, ...updates } : v)));
-  const removeVenue = (id: string) => setVenues(prev => syncVenues(prev.filter(v => v.id !== id)));
+  // ─── Venues CRUD (Supabase) ───
+  const addVenue = useCallback(async (venue: Venue) => {
+    setVenues(prev => [...prev, venue]);
+
+    const { data, error } = await supabase
+      .from('venues')
+      .insert({
+        id: venue.id,
+        event_id: venue.eventId,
+        name: venue.name,
+        address: venue.address || '',
+        lat: venue.lat || null,
+        lng: venue.lng || null,
+        emoji: venue.emoji || '📍',
+        type: venue.type || '',
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      const real: Venue = {
+        id: data.id, eventId: data.event_id, name: data.name,
+        address: data.address || '', lat: data.lat, lng: data.lng,
+        emoji: data.emoji || '📍', type: data.type || '',
+      };
+      setVenues(prev => prev.map(v => v.id === venue.id ? real : v));
+    } else {
+      console.error('Error creating venue:', error);
+      setVenues(prev => prev.filter(v => v.id !== venue.id));
+    }
+  }, [supabase]);
+
+  const updateVenue = useCallback(async (id: string, updates: Partial<Venue>) => {
+    setVenues(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.address !== undefined) payload.address = updates.address;
+    if (updates.lat !== undefined) payload.lat = updates.lat;
+    if (updates.lng !== undefined) payload.lng = updates.lng;
+    if (updates.emoji !== undefined) payload.emoji = updates.emoji;
+    if (updates.type !== undefined) payload.type = updates.type;
+
+    const { error } = await supabase.from('venues').update(payload).eq('id', id);
+    if (error) console.error('Error updating venue:', error);
+  }, [supabase]);
+
+  const removeVenue = useCallback(async (id: string) => {
+    const backup = venues;
+    setVenues(prev => prev.filter(v => v.id !== id));
+
+    const { error } = await supabase.from('venues').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting venue:', error);
+      setVenues(backup);
+    }
+  }, [supabase, venues]);
 
   return (
     <AppContext.Provider value={{

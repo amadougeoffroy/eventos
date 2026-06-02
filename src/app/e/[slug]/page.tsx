@@ -449,7 +449,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
               <h1
                 className="font-script"
                 style={{
-                  fontSize: 'clamp(4.5rem, 15vw, 9rem)',
+                  fontSize: 'clamp(4.5rem, 14vw, 7.5rem)',
                   color: '#FFFFFF',
                   fontWeight: 400,
                   lineHeight: 1,
@@ -601,7 +601,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
             <h2
               className="font-display"
               style={{
-                fontSize: 'clamp(2.5rem, 8vw, 4.5rem)',
+                fontSize: 'clamp(2.5rem, 7vw, 4rem)',
                 fontWeight: 700,
                 color: 'var(--text)',
                 lineHeight: 1.2,
