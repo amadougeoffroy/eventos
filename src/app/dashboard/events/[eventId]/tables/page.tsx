@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo, useRef, useEffect, useCallback, createRef } from 'react';
@@ -19,7 +20,7 @@ type Assignment = { guestId: string; tableId: string; };
 
 export default function TablesPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, guests, tables, tablesReady, guestGroups, addTable, updateTable, removeTable, updateGuest } = useApp();
+  const { events, guests, tables, tablesReady, guestGroups, addTable, updateTable, removeTable, updateGuest, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
 
   // ---------- State ----------
@@ -246,7 +247,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     });
   };
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   return (
     <div className="flex">

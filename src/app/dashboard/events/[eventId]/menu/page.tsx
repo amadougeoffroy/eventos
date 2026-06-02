@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
@@ -13,7 +14,7 @@ const fadeUp = {
 
 export default function MenuPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, menuCategories, menuItems, addMenuCategory, addMenuItem, updateMenuItem } = useApp();
+  const { events, menuCategories, menuItems, addMenuCategory, addMenuItem, updateMenuItem, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
 
   const evtCategories = useMemo(() => menuCategories.filter(c => c.eventId === eventId).sort((a, b) => a.order - b.order), [menuCategories, eventId]);
@@ -48,7 +49,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
 
   const totalVotes = evtItems.reduce((sum, i) => sum + (i.votes || 0), 0);
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   return (
     <div className="flex">

@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useEffect, useMemo, useState } from 'react';
@@ -23,7 +24,7 @@ const fadeUp = {
 
 export default function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, guests, venues, updateEvent, removeEvent } = useApp();
+  const { events, guests, venues, updateEvent, removeEvent, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
   const eventVenues = venues.filter(v => v.eventId === eventId);
 
@@ -104,7 +105,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
   };
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   const cfg = eventTypeConfig[event.type];
   const confirmed = eventGuests.filter(g => g.rsvpStatus === 'confirmed').length;

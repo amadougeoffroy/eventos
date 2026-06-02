@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
 import { use, useMemo, useState } from 'react';
@@ -19,12 +20,12 @@ const fadeUp = {
 
 export default function LivePage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, tables, orders, updateOrder } = useApp();
+  const { events, tables, orders, updateOrder, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
   const eventTables = useMemo(() => tables.filter(t => t.eventId === eventId), [tables, eventId]);
   const [view, setView] = useState<'floor' | 'orders' | 'kitchen'>('floor');
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   const getTableStatus = (tableId: string) => {
     const tableOrders = orders.filter(o => o.tableId === tableId);

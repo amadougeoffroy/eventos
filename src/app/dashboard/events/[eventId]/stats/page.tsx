@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
 import { use, useMemo } from 'react';
@@ -12,13 +13,13 @@ const fadeUp = {
 
 export default function StatsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, guests, menuItems, menuCategories } = useApp();
+  const { events, guests, menuItems, menuCategories, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const evtItems = useMemo(() => menuItems.filter(i => i.eventId === eventId), [menuItems, eventId]);
   const evtCategories = useMemo(() => menuCategories.filter(c => c.eventId === eventId), [menuCategories, eventId]);
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   const total = eventGuests.length;
   const confirmed = eventGuests.filter(g => g.rsvpStatus === 'confirmed').length;

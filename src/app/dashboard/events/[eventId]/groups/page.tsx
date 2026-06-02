@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useMemo, useState } from 'react';
@@ -16,7 +17,7 @@ const colorOptions = ['#F7C5CC', '#C084FC', '#60A5FA', '#C8A96E', '#4ADE80', '#F
 
 export default function GroupsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, guests, guestGroups, addGuestGroup, updateGuestGroup, removeGuestGroup } = useApp();
+  const { events, guests, guestGroups, addGuestGroup, updateGuestGroup, removeGuestGroup, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
   const eventGroups = useMemo(() => guestGroups.filter(g => g.eventId === eventId), [guestGroups, eventId]);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
@@ -25,7 +26,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', emoji: '👪', color: '#C8A96E', description: '' });
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   const getGuestsInGroup = (groupName: string) => {
     return eventGuests.filter(g => g.group === groupName);

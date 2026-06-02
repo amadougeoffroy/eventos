@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
@@ -45,7 +46,7 @@ type DisplayRow = {
 
 export default function GuestsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { guests, events, guestGroups, addGuest, updateGuest, removeGuest } = useApp();
+  const { guests, events, guestGroups, addGuest, updateGuest, removeGuest, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const eventGuestGroups = useMemo(() => guestGroups.filter(g => g.eventId === eventId), [guestGroups, eventId]);
@@ -223,7 +224,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   const statCards = [
     { label: 'Total personnes', value: stats.total, sub: `${stats.invites} invités + ${stats.companions} accomp.`, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },

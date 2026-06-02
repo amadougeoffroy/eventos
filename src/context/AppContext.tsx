@@ -20,6 +20,7 @@ interface AppState {
   orders: Order[];
   currentUser: { id: string; name: string; email: string; avatar?: string };
   authLoading: boolean;
+  eventsLoading: boolean;
 }
 
 interface AppActions {
@@ -103,10 +104,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // EVENTS — Supabase powered 🚀
   // ═══════════════════════════════════════════════════════════
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
 
   // Load events + program items from Supabase when user is authenticated
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) { setEventsLoading(false); return; }
 
     const loadEvents = async () => {
       const { data: eventsData, error: eventsErr } = await supabase
@@ -143,6 +145,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         ...dbEventToApp(row),
         program: programByEvent.get(row.id as string) || [],
       })));
+      setEventsLoading(false);
     };
     loadEvents();
   }, [userId]);
@@ -535,7 +538,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   return (
     <AppContext.Provider value={{
       events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders,
-      currentUser, authLoading,
+      currentUser, authLoading, eventsLoading,
       addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
       addGuestGroup, updateGuestGroup, removeGuestGroup,
       addTable, updateTable, removeTable, addMenuItem, updateMenuItem, addMenuCategory,

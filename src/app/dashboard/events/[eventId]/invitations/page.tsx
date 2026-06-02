@@ -1,5 +1,6 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
+import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
 import { use, useEffect, useMemo, useState } from 'react';
@@ -12,13 +13,13 @@ const fadeUp = {
 
 export default function InvitationsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, guests } = useApp();
+  const { events, guests, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedGeneric, setCopiedGeneric] = useState(false);
 
-  if (!event) return <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   const [baseUrl, setBaseUrl] = useState('');
   useEffect(() => { setBaseUrl(window.location.origin); }, []);
