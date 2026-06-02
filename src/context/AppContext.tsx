@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue } from '@/lib/types';
 import {
-  mockGuests, mockTables,
+  mockTables,
   mockMenuCategories, mockMenuItems, mockOrders
 } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
@@ -241,7 +241,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ═══════════════════════════════════════════════════════════
   // OTHER DATA — Still localStorage (will migrate next)
   // ═══════════════════════════════════════════════════════════
-  const [guests, setGuests] = useState<Guest[]>(mockGuests);
+  const [guests, setGuests] = useState<Guest[]>([]);
+
+  // Load guests from Supabase
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadGuests = async () => {
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (!userEvents || userEvents.length === 0) return;
+
+      const eventIds = userEvents.map(e => e.id);
+      const { data, error } = await supabase
+        .from('guests')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        setGuests(data.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          firstName: row.first_name || '',
+          lastName: row.last_name || '',
+          email: row.email || '',
+          phone: row.phone || '',
+          group: row.group || 'Invités',
+          rsvpStatus: row.rsvp_status || 'pending',
+          token: row.token || '',
+          companions: row.companions || 0,
+          tableId: row.table_id || undefined,
+          allergies: row.allergies || '',
+          dietaryRestrictions: row.dietary_restrictions || [],
+          side: row.side || undefined,
+          respondedAt: row.updated_at || undefined,
+        })));
+      }
+    };
+    loadGuests();
+  }, [userId]);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
   const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
   const [orders, setOrders] = useState<Order[]>(mockOrders);

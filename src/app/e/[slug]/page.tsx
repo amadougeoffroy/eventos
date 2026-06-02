@@ -257,38 +257,66 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     return () => clearInterval(interval);
   }, [event]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!rsvpChoice) return;
-    if (!guestName.trim()) return;
+    if (!guestName.trim() || !event) return;
 
-    if (knownGuest) {
-      // Update existing guest
-      updateGuest(knownGuest.id, {
-        rsvpStatus: rsvpChoice,
-        companions,
-        privateMessage: privateMsg,
-        allergies,
-        respondedAt: new Date().toISOString(),
-      });
-    } else {
-      // Add as new guest
-      const id = `g-${Date.now()}`;
-      const [first, ...rest] = guestName.trim().split(' ');
-      addGuest({
-        id,
-        eventId: event!.id,
-        firstName: first,
-        lastName: rest.join(' ') || '',
-        phone: guestPhone,
-        group: guestGroup || 'Invités',
-        rsvpStatus: rsvpChoice,
-        token: `tok-${Date.now()}`,
-        companions,
-        privateMessage: privateMsg,
-        allergies,
-        dietaryRestrictions: [],
-        respondedAt: new Date().toISOString(),
-      });
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
+      if (knownGuest) {
+        // Update existing guest in Supabase
+        await supabase.from('guests').update({
+          rsvp_status: rsvpChoice,
+          companions,
+          allergies,
+          updated_at: new Date().toISOString(),
+        }).eq('id', knownGuest.id);
+
+        // Also update local context
+        updateGuest(knownGuest.id, {
+          rsvpStatus: rsvpChoice,
+          companions,
+          allergies,
+          respondedAt: new Date().toISOString(),
+        });
+      } else {
+        // Insert new guest into Supabase
+        const [first, ...rest] = guestName.trim().split(' ');
+        const token = `tok-${Date.now()}`;
+
+        const { data: inserted } = await supabase.from('guests').insert({
+          event_id: event.id,
+          first_name: first,
+          last_name: rest.join(' ') || '',
+          phone: guestPhone || null,
+          group: guestGroup || 'Invités',
+          rsvp_status: rsvpChoice,
+          token,
+          companions,
+          allergies: allergies || null,
+        }).select().single();
+
+        // Also add to local context
+        addGuest({
+          id: inserted?.id || `g-${Date.now()}`,
+          eventId: event.id,
+          firstName: first,
+          lastName: rest.join(' ') || '',
+          phone: guestPhone,
+          group: guestGroup || 'Invités',
+          rsvpStatus: rsvpChoice,
+          token,
+          companions,
+          privateMessage: privateMsg,
+          allergies,
+          dietaryRestrictions: [],
+          respondedAt: new Date().toISOString(),
+        });
+      }
+    } catch (e) {
+      console.error('RSVP save error:', e);
     }
 
     setSubmitted(true);
