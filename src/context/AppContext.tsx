@@ -108,6 +108,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Load events + program items from Supabase when user is authenticated
   useEffect(() => {
+    if (authLoading) return; // Wait for auth to finish first
     if (!userId) { setEventsLoading(false); return; }
 
     const loadEvents = async () => {
@@ -148,7 +149,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setEventsLoading(false);
     };
     loadEvents();
-  }, [userId]);
+  }, [userId, authLoading]);
 
   const addEvent = useCallback(async (event: Event) => {
     if (!userId) return;
