@@ -18,11 +18,11 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedGeneric, setCopiedGeneric] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
+  useEffect(() => { setBaseUrl(window.location.origin); }, []);
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
-  const [baseUrl, setBaseUrl] = useState('');
-  useEffect(() => { setBaseUrl(window.location.origin); }, []);
   const genericLink = `${baseUrl}/e/${event.slug}`;
 
   const copyPersonalLink = (guest: typeof eventGuests[0]) => {
