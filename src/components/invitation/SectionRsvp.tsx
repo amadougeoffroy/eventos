@@ -11,9 +11,10 @@ interface SectionRsvpProps {
   groups: { id: string; name: string; emoji: string; color: string }[];
   updateGuest: (id: string, updates: Partial<Guest>) => void;
   addGuest: (guest: Guest) => void;
+  onRsvpComplete?: (guest: Guest) => void;
 }
 
-export default function SectionRsvp({ event, knownGuest, groups, updateGuest, addGuest }: SectionRsvpProps) {
+export default function SectionRsvp({ event, knownGuest, groups, updateGuest, addGuest, onRsvpComplete }: SectionRsvpProps) {
   const [rsvpChoice, setRsvpChoice] = useState<'confirmed' | 'declined' | 'maybe' | null>(null);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -62,6 +63,8 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
           allergies,
           respondedAt: new Date().toISOString(),
         });
+
+        onRsvpComplete?.({ ...knownGuest, rsvpStatus: rsvpChoice, companions, allergies });
       } else {
         const [first, ...rest] = guestName.trim().split(' ');
         const token = `tok-${Date.now()}`;
@@ -97,6 +100,21 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
             token,
             companions,
             privateMessage: privateMsg,
+            allergies,
+            dietaryRestrictions: [],
+            respondedAt: new Date().toISOString(),
+          });
+
+          onRsvpComplete?.({
+            id: inserted?.id || `g-${Date.now()}`,
+            eventId: event.id,
+            firstName: first,
+            lastName: rest.join(' ') || '',
+            phone: guestPhone,
+            group: guestGroup || 'Invités',
+            rsvpStatus: rsvpChoice,
+            token,
+            companions,
             allergies,
             dietaryRestrictions: [],
             respondedAt: new Date().toISOString(),

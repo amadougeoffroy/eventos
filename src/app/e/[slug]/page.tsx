@@ -281,6 +281,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         groups={allGroups}
         updateGuest={updateGuest}
         addGuest={addGuest}
+        onRsvpComplete={(guest) => setKnownGuest(guest)}
       />
     ),
     sweetMessage: () => (
