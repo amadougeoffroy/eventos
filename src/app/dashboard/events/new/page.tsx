@@ -14,7 +14,7 @@ import { getDefaultTemplate, getTemplate, getTemplateVariant } from '@/lib/templ
 import type { HeroType } from '@/lib/templates/template-registry';
 import {
   Sparkles, Plus, Trash2, ArrowRight, ArrowLeft, MapPin, Users,
-  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate, Eye, X, Upload, ImageIcon, Film, Clapperboard
+  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate, Eye, X, Upload, ImageIcon, Film, Clapperboard, RotateCcw
 } from 'lucide-react';
 
 /* ── Card wrapper for form sections (outside component to avoid re-renders) ─── */
@@ -62,6 +62,7 @@ export default function NewEventPage() {
   // Hero
   const [heroType, setHeroType] = useState<HeroType>('image');
   const [heroImages, setHeroImages] = useState<string[]>([]);
+  const [hideDefault, setHideDefault] = useState(false);
 
   // Companions
   const [allowCompanions, setAllowCompanions] = useState(false);
@@ -449,7 +450,6 @@ export default function NewEventPage() {
               const currentVariant = getTemplateVariant(selectedTemplateId, eventType);
               const availableHeroTypes = currentTemplate?.heroTypes ?? ['image'];
               const defaultImage = currentVariant?.defaultHeroImages?.[0] ?? '';
-              const displayImages = heroImages.length > 0 ? heroImages : (defaultImage ? [defaultImage] : []);
 
               const HERO_LABELS: Record<string, { icon: React.ReactNode; label: string; desc: string }> = {
                 image: { icon: <ImageIcon size={18} />, label: 'Image fixe', desc: 'Une seule photo en fond' },
@@ -516,56 +516,74 @@ export default function NewEventPage() {
                 </SectionCard>
 
                 {/* Hero images */}
-                <SectionCard title={heroType === 'slideshow' ? `Images du diaporama (${displayImages.length}/${maxImages})` : 'Image du hero'} icon={Image}>
-                  {/* Default image preview */}
-                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
-                    {displayImages.map((img, i) => (
-                      <div key={i} style={{
+                {(() => {
+                  const isUsingDefault = heroImages.length === 0 && !hideDefault;
+                  const hasCustom = heroImages.length > 0;
+                  const showImages = hasCustom ? heroImages : (isUsingDefault && defaultImage ? [defaultImage] : []);
+                  const canAdd = hasCustom
+                    ? heroImages.length < maxImages
+                    : (!isUsingDefault || heroType === 'slideshow');
+
+                  return (
+                <SectionCard title={heroType === 'slideshow' ? `Images du diaporama (${showImages.length}/${maxImages})` : 'Image du hero'} icon={Image}>
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem', alignItems: 'center' }}>
+                    {/* Existing images with delete cross */}
+                    {showImages.map((img, i) => (
+                      <div key={`img-${i}-${img.slice(-20)}`} style={{
                         width: 100, height: 70, borderRadius: 10, overflow: 'hidden',
-                        border: '2px solid var(--border-light)', position: 'relative',
-                        flexShrink: 0,
+                        border: isUsingDefault ? '2px solid var(--gold)' : '2px solid var(--border-light)',
+                        position: 'relative', flexShrink: 0,
                       }}>
                         <img src={img} alt={`Hero ${i + 1}`} style={{
                           width: '100%', height: '100%', objectFit: 'cover',
                         }} />
-                        {heroImages.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setHeroImages(prev => prev.filter((_, j) => j !== i))}
-                            style={{
-                              position: 'absolute', top: 4, right: 4,
-                              width: 20, height: 20, borderRadius: '50%',
-                              background: 'rgba(220,53,69,0.85)', border: 'none',
-                              color: '#fff', cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '0.6rem',
-                            }}
-                          >
-                            <X size={10} />
-                          </button>
-                        )}
-                        {heroImages.length === 0 && (
+                        {/* Delete cross — always visible */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (hasCustom) {
+                              setHeroImages(prev => prev.filter((_, j) => j !== i));
+                            } else {
+                              // Removing default image
+                              setHideDefault(true);
+                            }
+                          }}
+                          style={{
+                            position: 'absolute', top: 4, right: 4,
+                            width: 22, height: 22, borderRadius: '50%',
+                            background: 'rgba(220,53,69,0.9)', border: '2px solid rgba(255,255,255,0.8)',
+                            color: '#fff', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                          }}
+                        >
+                          <X size={11} />
+                        </button>
+                        {/* Label */}
+                        {isUsingDefault && (
                           <div style={{
                             position: 'absolute', bottom: 0, left: 0, right: 0,
                             padding: '2px 0', textAlign: 'center',
-                            background: 'rgba(0,0,0,0.5)', fontSize: '0.45rem', color: '#fff',
+                            background: 'rgba(0,0,0,0.55)', fontSize: '0.5rem', color: '#fff',
+                            fontWeight: 600,
                           }}>Par défaut</div>
                         )}
                       </div>
                     ))}
 
-                    {/* Add button */}
-                    {displayImages.length < maxImages && (
+                    {/* Upload button — shown when can add more */}
+                    {(canAdd || showImages.length === 0) && (
                       <label style={{
                         width: 100, height: 70, borderRadius: 10,
                         border: '2px dashed var(--border-light)',
                         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                        gap: '0.2rem', cursor: 'pointer',
+                        gap: '0.25rem', cursor: 'pointer',
                         color: 'var(--text-muted)', fontSize: '0.6rem',
-                        transition: 'border-color 0.2s',
+                        transition: 'border-color 0.2s, background 0.2s',
+                        background: 'var(--bg-warm)',
                       }}>
                         <Upload size={16} />
-                        <span>Ajouter</span>
+                        <span style={{ fontWeight: 500 }}>{showImages.length === 0 ? 'Choisir' : 'Ajouter'}</span>
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -574,7 +592,12 @@ export default function NewEventPage() {
                             const file = e.target.files?.[0];
                             if (!file) return;
                             const url = URL.createObjectURL(file);
-                            setHeroImages(prev => [...prev, url]);
+                            if (heroType === 'image') {
+                              setHeroImages([url]);
+                            } else {
+                              setHeroImages(prev => [...prev, url]);
+                            }
+                            setHideDefault(true);
                             e.target.value = '';
                           }}
                         />
@@ -582,15 +605,42 @@ export default function NewEventPage() {
                     )}
                   </div>
 
+                  {/* Restore default button */}
+                  {(hideDefault || hasCustom) && defaultImage && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setHeroImages([]);
+                        setHideDefault(false);
+                      }}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                        fontSize: '0.7rem', fontWeight: 600,
+                        padding: '0.4rem 0.75rem', borderRadius: 8,
+                        background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.2)',
+                        color: 'var(--gold)', cursor: 'pointer',
+                        marginBottom: '0.6rem',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <RotateCcw size={12} />
+                      Rétablir l'image par défaut
+                    </button>
+                  )}
+
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-                    {heroImages.length === 0
-                      ? 'L\'image par défaut du template sera utilisée. Vous pouvez la remplacer par votre propre photo.'
-                      : heroType === 'slideshow'
-                        ? `Vous pouvez ajouter jusqu'à ${maxImages} images pour le diaporama.`
-                        : 'Votre image personnalisée sera affichée en hero.'
+                    {showImages.length === 0
+                      ? 'Aucune image sélectionnée. Ajoutez votre photo ou rétablissez l\'image par défaut.'
+                      : isUsingDefault
+                        ? 'L\'image par défaut du template est utilisée. Supprimez-la pour ajouter la vôtre.'
+                        : heroType === 'slideshow'
+                          ? `Vous pouvez ajouter jusqu'à ${maxImages} images pour le diaporama.`
+                          : 'Votre image personnalisée sera affichée en hero.'
                     }
                   </p>
                 </SectionCard>
+                  );
+                })()}
 
                 {/* Colors */}
                 <SectionCard title="Couleurs du thème" icon={Palette}>
