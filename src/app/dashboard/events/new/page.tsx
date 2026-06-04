@@ -45,7 +45,7 @@ export default function NewEventPage() {
   const { addEvent, venues, addVenue } = useApp();
   const [step, setStep] = useState(1);
   const totalSteps = 5;
-  const [selectedTemplateId, setSelectedTemplateId] = useState('classique');
+  const [selectedTemplateId, setSelectedTemplateId] = useState('romance');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   const [eventType, setEventType] = useState<EventType>('wedding');

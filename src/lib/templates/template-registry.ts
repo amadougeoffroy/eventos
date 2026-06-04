@@ -118,9 +118,9 @@ const classique: TemplateDesign = {
   name: 'Classique',
   description:
     'Un design intemporel et élégant, parfait pour toutes les occasions. Inclus dans le plan Essentiel.',
-  plan: 'essentiel',
+  plan: 'pro',
   fonts: { display: 'Playfair Display', body: 'Inter', script: 'Great Vibes' },
-  heroTypes: ['image'],
+  heroTypes: ['image', 'slideshow'],
   layout: 'classic',
   animations: { entrance: 'fadeUp', transition: 'fade', parallax: false },
   specialEffects: {},
@@ -236,9 +236,9 @@ const romance: TemplateDesign = {
   name: 'Romance',
   description:
     'Doux et romantique, avec des teintes rosées et une typographie raffinée. Idéal pour les célébrations intimes.',
-  plan: 'pro',
+  plan: 'essentiel',
   fonts: { display: 'Cormorant Garamond', body: 'Lato', script: 'Dancing Script' },
-  heroTypes: ['image', 'slideshow'],
+  heroTypes: ['image'],
   layout: 'classic',
   animations: { entrance: 'fadeUp', transition: 'fade', parallax: false },
   specialEffects: {},
@@ -831,8 +831,8 @@ const TEMPLATE_REGISTRY: TemplateDesign[] = [
 ];
 
 const PLAN_TEMPLATES: Record<string, string[]> = {
-  essentiel: ['classique'],
-  pro: ['romance', 'moderne'],
+  essentiel: ['romance'],
+  pro: ['classique', 'moderne'],
   premium: ['royal', 'boheme', 'cinematique'],
 };
 
@@ -865,10 +865,10 @@ export function getTemplate(templateId: string): TemplateDesign | undefined {
  * Renvoie le template par défaut (imposé) pour le plan Essentiel.
  */
 export function getDefaultTemplate(eventType: string): TemplateDesign {
-  // Le template « Classique » est toujours le template par défaut.
-  const template = TEMPLATE_REGISTRY.find((t) => t.id === 'classique');
+  // Le template « Romance » est toujours le template par défaut.
+  const template = TEMPLATE_REGISTRY.find((t) => t.id === 'romance');
   if (!template) {
-    throw new Error('Le template par défaut « Classique » est introuvable dans le registre.');
+    throw new Error('Le template par défaut « Romance » est introuvable dans le registre.');
   }
   return template;
 }
