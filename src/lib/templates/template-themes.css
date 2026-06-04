@@ -128,50 +128,44 @@
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
-/* ─── Cinématique (Premium) ─── */
-[data-template="cinematique"] {
-  --t-primary: var(--tp, #1A1A2E);
-  --t-secondary: var(--ts, #E94560);
-  --t-bg: var(--tbg, #0F0F0F);
-  --t-bg-warm: var(--tbgw, #161622);
-  --t-text: var(--tt, #F0F0F0);
-  --t-text-muted: var(--ttm, #808090);
-  --t-accent: var(--ta, #E94560);
-  --t-hero-overlay: linear-gradient(to bottom, rgba(15,15,15,0.1), rgba(15,15,15,0.8));
-  --t-font-display: 'Bebas Neue', sans-serif;
-  --t-font-body: 'Source Sans 3', sans-serif;
-  --t-font-script: 'Great Vibes', cursive;
-  --t-radius: 2px;
-  --t-card-bg: rgba(22,22,34,0.9);
-  --t-card-border: rgba(233,69,96,0.15);
-  --t-card-shadow: 0 2px 24px rgba(0,0,0,0.4);
+/* ─── Opulence (Premium) ─── */
+[data-template="opulence"] {
+  --t-primary: var(--tp, #B8860B);
+  --t-secondary: var(--ts, #F5E6B8);
+  --t-bg: var(--tbg, #FFFDF5);
+  --t-bg-warm: var(--tbgw, #FFF8E7);
+  --t-text: var(--tt, #2C2416);
+  --t-text-muted: var(--ttm, #8B7355);
+  --t-accent: var(--ta, #D4AF37);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(44,36,22,0.2), rgba(44,36,22,0.55));
+  --t-font-display: 'Playfair Display', serif;
+  --t-font-body: 'Cormorant Garamond', serif;
+  --t-font-script: 'Tangerine', cursive;
+  --t-radius: 16px;
+  --t-card-bg: rgba(255,253,245,0.92);
+  --t-card-border: rgba(212,175,55,0.2);
+  --t-card-shadow: 0 4px 28px rgba(184,134,11,0.1);
   --t-section-gap: 5rem;
 }
 
-/* Film grain overlay */
-[data-template="cinematique"]::after {
+[data-template="opulence"] .card,
+[data-template="opulence"] .glass-gold {
+  border: 1px solid rgba(212,175,55,0.25);
+  background: rgba(255,253,245,0.92);
+  backdrop-filter: blur(12px);
+}
+
+/* Subtle golden glow overlay */
+[data-template="opulence"]::before {
   content: '';
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   pointer-events: none;
-  z-index: 9999;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-  mix-blend-mode: overlay;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(212,175,55,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(184,134,11,0.04) 0%, transparent 50%);
 }
-
-/* Cinematic letterbox bars */
-[data-template="cinematique"] .hero-section::before,
-[data-template="cinematique"] .hero-section::after {
-  content: '';
-  position: absolute;
-  left: 0; right: 0;
-  height: 8vh;
-  background: #0F0F0F;
-  z-index: 5;
-}
-[data-template="cinematique"] .hero-section::before { top: 0; }
-[data-template="cinematique"] .hero-section::after { bottom: 0; }
 
 /* ═══════════════════════════════════════════════════════════
    Shared Template Utilities

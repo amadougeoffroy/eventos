@@ -223,7 +223,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   // ── Section rendering based on template config ──
   const sectionRenderers: Record<string, () => React.ReactNode> = {
-    hero: () => <HeroSlideshow key="hero" event={event} heroSlides={heroSlides} cfg={cfg} />,
+    hero: () => <HeroSlideshow key="hero" event={event} heroSlides={heroSlides} heroVideo={event.heroType === 'video' ? (event.heroVideo || '/default_video.mp4') : undefined} cfg={cfg} />,
     welcome: () => <SectionWelcome key="welcome" event={event} />,
     program: () => <SectionProgram key="program" event={event} venues={allVenues.filter(v => v.eventId === event.id)} />,
     dressCode: () => <SectionDressCode key="dressCode" event={event} />,

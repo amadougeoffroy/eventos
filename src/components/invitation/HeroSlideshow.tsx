@@ -8,10 +8,11 @@ import CountdownUnit from './CountdownUnit';
 interface HeroSlideshowProps {
   event: Event;
   heroSlides: string[];
+  heroVideo?: string;
   cfg: { emoji: string; label: string; color: string };
 }
 
-export default function HeroSlideshow({ event, heroSlides, cfg }: HeroSlideshowProps) {
+export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: HeroSlideshowProps) {
   const [slideIndex, setSlideIndex] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
@@ -60,7 +61,17 @@ export default function HeroSlideshow({ event, heroSlides, cfg }: HeroSlideshowP
     <section style={{ position: 'relative' }}>
       {/* Photo area — full viewport height */}
       <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
-        {/* Slideshow photos — Ken Burns effect */}
+        {/* Video or Slideshow photos */}
+        {heroVideo ? (
+          <video
+            autoPlay muted loop playsInline
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover',
+            }}
+            src={heroVideo}
+          />
+        ) : (
         <AnimatePresence mode="wait">
           <motion.div
             key={slideIndex}
@@ -81,6 +92,7 @@ export default function HeroSlideshow({ event, heroSlides, cfg }: HeroSlideshowP
             exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.6, ease: 'easeIn' } }}
           />
         </AnimatePresence>
+        )}
 
         {/* Dark overlay */}
         <div style={{
@@ -155,7 +167,7 @@ export default function HeroSlideshow({ event, heroSlides, cfg }: HeroSlideshowP
         </motion.div>
 
         {/* Slide navigation arrows */}
-        {heroSlides.length > 1 && (
+        {!heroVideo && heroSlides.length > 1 && (
           <>
             <button onClick={prevSlide} aria-label="Photo précédente" style={{
               position: 'absolute', left: '0.75rem', top: '45%', transform: 'translateY(-50%)', zIndex: 10,
@@ -175,7 +187,7 @@ export default function HeroSlideshow({ event, heroSlides, cfg }: HeroSlideshowP
         )}
 
         {/* Slide indicator dots */}
-        {heroSlides.length > 1 && (
+        {!heroVideo && heroSlides.length > 1 && (
           <div style={{
             position: 'absolute', bottom: '11rem', left: '50%', transform: 'translateX(-50%)',
             zIndex: 10, display: 'flex', gap: '0.5rem',

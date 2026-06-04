@@ -64,6 +64,7 @@ export default function NewEventPage() {
   const [heroType, setHeroType] = useState<HeroType>('image');
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [hideDefault, setHideDefault] = useState(false);
+  const [heroVideo, setHeroVideo] = useState<string>('/default_video.mp4');
 
   // Companions
   const [allowCompanions, setAllowCompanions] = useState(false);
@@ -140,6 +141,7 @@ export default function NewEventPage() {
       templateId: selectedTemplateId,
       heroType,
       heroImages: heroImages.length > 0 ? heroImages : undefined,
+      heroVideo: heroType === 'video' ? heroVideo : undefined,
       createdAt: new Date().toISOString(),
     };
     addEvent(newEvent);
@@ -516,8 +518,8 @@ export default function NewEventPage() {
                   )}
                 </SectionCard>
 
-                {/* Hero images */}
-                {(() => {
+                {/* Hero images — shown when heroType is NOT video */}
+                {heroType !== 'video' && (() => {
                   const isUsingDefault = heroImages.length === 0 && !hideDefault;
                   const hasCustom = heroImages.length > 0;
                   const showImages = hasCustom ? heroImages : (isUsingDefault && defaultImage ? [defaultImage] : []);
@@ -665,6 +667,111 @@ export default function NewEventPage() {
                 </SectionCard>
                   );
                 })()}
+
+                {/* Hero video — shown when heroType IS video */}
+                {heroType === 'video' && (
+                  <SectionCard title="Vidéo du hero" icon={Clapperboard}>
+                    <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem', alignItems: 'center' }}>
+                      {heroVideo ? (
+                        <div style={{
+                          width: 150, height: 100, borderRadius: 10, overflow: 'hidden',
+                          border: '2px solid var(--border-light)',
+                          position: 'relative', flexShrink: 0,
+                        }}>
+                          <video
+                            src={heroVideo}
+                            muted
+                            loop
+                            autoPlay
+                            playsInline
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setHeroVideo('')}
+                            style={{
+                              position: 'absolute', top: 4, right: 4,
+                              width: 22, height: 22, borderRadius: '50%',
+                              background: 'rgba(220,53,69,0.9)', border: '2px solid rgba(255,255,255,0.8)',
+                              color: '#fff', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                            }}
+                          >
+                            <X size={11} />
+                          </button>
+                        </div>
+                      ) : (
+                        <label style={{
+                          width: 150, height: 100, borderRadius: 10,
+                          border: '2px dashed var(--border-light)',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          gap: '0.25rem', cursor: 'pointer',
+                          color: 'var(--text-muted)', fontSize: '0.6rem',
+                          transition: 'border-color 0.2s, background 0.2s',
+                          background: 'var(--bg-warm)',
+                        }}>
+                          <Upload size={16} />
+                          <span style={{ fontWeight: 500 }}>Choisir une vidéo</span>
+                          <input
+                            type="file"
+                            accept="video/mp4,video/webm"
+                            style={{ display: 'none' }}
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              const sb = createClient();
+                              const ext = file.name.split('.').pop() || 'mp4';
+                              const path = `hero-video/${crypto.randomUUID()}.${ext}`;
+                              const { error } = await sb.storage
+                                .from('event-media')
+                                .upload(path, file, { cacheControl: '31536000', upsert: false });
+                              if (error) {
+                                console.error('Upload error:', error);
+                                // Fallback to object URL if storage fails
+                                const objectUrl = URL.createObjectURL(file);
+                                setHeroVideo(objectUrl);
+                              } else {
+                                const { data: urlData } = sb.storage
+                                  .from('event-media')
+                                  .getPublicUrl(path);
+                                setHeroVideo(urlData.publicUrl);
+                              }
+                              e.target.value = '';
+                            }}
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Restore default video button */}
+                    {heroVideo !== '/default_video.mp4' && (
+                      <button
+                        type="button"
+                        onClick={() => setHeroVideo('/default_video.mp4')}
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '0.35rem',
+                          fontSize: '0.7rem', fontWeight: 600,
+                          padding: '0.4rem 0.75rem', borderRadius: 8,
+                          background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.2)',
+                          color: 'var(--gold)', cursor: 'pointer',
+                          marginBottom: '0.6rem',
+                          transition: 'all 0.2s ease',
+                        }}
+                      >
+                        <RotateCcw size={12} />
+                        Rétablir la vidéo par défaut
+                      </button>
+                    )}
+
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                      {heroVideo
+                        ? 'Votre vidéo sera affichée en boucle dans le hero.'
+                        : 'Aucune vidéo sélectionnée. Ajoutez votre vidéo ou rétablissez la vidéo par défaut.'
+                      }
+                    </p>
+                  </SectionCard>
+                )}
 
                 {/* Colors */}
                 <SectionCard title="Couleurs du thème" icon={Palette}>
@@ -945,6 +1052,8 @@ export default function NewEventPage() {
               program={program}
               primaryColor={primaryColor}
               heroImages={heroImages}
+              heroType={heroType}
+              heroVideo={heroVideo}
             />
           </div>
         )}
@@ -1014,6 +1123,8 @@ export default function NewEventPage() {
                       program={program}
                       primaryColor={primaryColor}
                       heroImages={heroImages}
+                      heroType={heroType}
+                      heroVideo={heroVideo}
                     />
                   </motion.div>
                 </motion.div>

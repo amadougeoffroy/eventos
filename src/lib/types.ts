@@ -50,6 +50,7 @@ export interface Event {
   plan?: 'essentiel' | 'pro' | 'premium';
   templateId?: string;
   heroType?: 'image' | 'slideshow' | 'video';
+  heroVideo?: string;
   heroMedia?: { url: string; type: 'image' | 'video' }[];
   backgroundMusicUrl?: string;
   sectionsOrder?: string[];

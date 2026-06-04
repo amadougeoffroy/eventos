@@ -3,3 +3,4 @@
 -- ============================================
 
 ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_images TEXT[] DEFAULT NULL;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS hero_video TEXT DEFAULT NULL;

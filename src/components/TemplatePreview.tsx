@@ -40,6 +40,8 @@ interface TemplatePreviewProps {
   program: ProgramItem[];
   primaryColor: string;
   heroImages?: string[];
+  heroType?: 'image' | 'slideshow' | 'video';
+  heroVideo?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,6 +135,8 @@ export default function TemplatePreview({
   program,
   primaryColor,
   heroImages: heroImagesProp,
+  heroType,
+  heroVideo,
 }: TemplatePreviewProps) {
   // ---- Resolve template data ------------------------------------------------
 
@@ -274,9 +278,11 @@ export default function TemplatePreview({
               <div
                 style={{
                   height: 220,
-                  backgroundImage: currentHeroImage
-                    ? `url(${currentHeroImage})`
-                    : `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
+                  backgroundImage: (heroType === 'video' && heroVideo)
+                    ? undefined
+                    : currentHeroImage
+                      ? `url(${currentHeroImage})`
+                      : `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   position: 'relative',
@@ -287,8 +293,27 @@ export default function TemplatePreview({
                   padding: '24px 16px',
                   textAlign: 'center',
                   transition: 'background-image 0.6s ease',
+                  overflow: 'hidden',
                 }}
               >
+                {/* Video background when heroType is video */}
+                {heroType === 'video' && heroVideo && (
+                  <video
+                    src={heroVideo}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      zIndex: 0,
+                    }}
+                  />
+                )}
                 {/* Overlay */}
                 <div
                   style={{
