@@ -88,10 +88,10 @@ const SECTIONS_PREMIUM: string[] = [
 /** Helper — generate N default hero image paths for a given type & template. */
 function heroImages(type: string, template: string, count: number): string[] {
   if (count === 1) {
-    return [`/templates/defaults/${type}/${template}-1.jpg`];
+    return [`/templates/defaults/${type}/${template}-1.png`];
   }
   return Array.from({ length: count }, (_, i) =>
-    `/templates/defaults/${type}/${template}-${i + 1}.jpg`,
+    `/templates/defaults/${type}/${template}-${i + 1}.png`,
   );
 }
 
