@@ -598,13 +598,21 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                         }}
                       />
                       {event.heroVideo ? (
-                        <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-light)', maxWidth: 400 }}>
-                          <video src={event.heroVideo} style={{ width: '100%', borderRadius: 12 }} controls muted />
+                        <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-light)', maxWidth: 200, aspectRatio: '16/9' }}>
+                          <video src={event.heroVideo} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 12 }} muted />
                           <button onClick={() => updateEvent(eventId, { heroVideo: undefined })} style={{
-                            position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%',
+                            position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%',
                             background: 'rgba(220,50,50,0.85)', border: 'none', color: '#fff', cursor: 'pointer',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}><X size={13} /></button>
+                          }}><X size={11} /></button>
+                          <div style={{
+                            position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.3rem 0.5rem',
+                            background: 'linear-gradient(transparent, rgba(0,0,0,0.6))',
+                            display: 'flex', alignItems: 'center', gap: '0.3rem',
+                          }}>
+                            <Film size={12} style={{ color: '#fff' }} />
+                            <span style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600 }}>Vidéo chargée</span>
+                          </div>
                         </div>
                       ) : (
                         <button onClick={() => document.getElementById('hero-video-input')?.click()} style={{
