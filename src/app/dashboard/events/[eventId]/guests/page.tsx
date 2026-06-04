@@ -202,10 +202,10 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   };
 
   const handleEditGuest = () => {
-    if (!editingGuest || !editForm.firstName || !editForm.lastName) return;
+    if (!editingGuest || !editForm.firstName) return;
     updateGuest(editingGuest, {
       firstName: editForm.firstName,
-      lastName: editForm.lastName,
+      lastName: editForm.lastName || '',
       email: editForm.email || undefined,
       phone: editForm.phone || undefined,
       group: editForm.group,
