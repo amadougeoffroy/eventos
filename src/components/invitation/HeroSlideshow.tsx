@@ -15,8 +15,9 @@ export default function HeroSlideshow({ event, heroSlides, cfg }: HeroSlideshowP
   const [slideIndex, setSlideIndex] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // Auto-advance slides every 5 seconds
+  // Auto-advance slides every 5 seconds (only for multiple slides)
   useEffect(() => {
+    if (heroSlides.length <= 1) return;
     const timer = setInterval(() => {
       setSlideIndex(prev => (prev + 1) % heroSlides.length);
     }, 5000);
