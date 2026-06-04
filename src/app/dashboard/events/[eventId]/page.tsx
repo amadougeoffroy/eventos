@@ -8,10 +8,11 @@ import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
 import { ProgramItem } from '@/lib/types';
 import ConfirmModal from '@/components/ConfirmModal';
+import { getTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
 import {
   CalendarDays, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle,
   Send, UtensilsCrossed, LayoutGrid, Radio, ArrowRight, ExternalLink, Copy, TrendingUp,
-  Plus, Edit3, Trash2, X, GripVertical, Image, Upload, MessageCircleHeart
+  Plus, Edit3, Trash2, X, GripVertical, Image, Upload, MessageCircleHeart, LayoutTemplate, Music, Lock
 } from 'lucide-react';
 
 const fadeUp = {
@@ -364,129 +365,243 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
           })}
         </div>
 
-        {/* ── Images du slideshow ───────────────── */}
+        {/* ── Template actif ─────────────────────── */}
+        {(() => {
+          const tpl = getTemplate(event.templateId || 'classique');
+          const variant = getTemplateVariant(event.templateId || 'classique', event.type);
+          if (!tpl) return null;
+          return (
+            <motion.div
+              initial="hidden" animate="visible" variants={fadeUp} custom={7}
+              style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+                borderRadius: '1rem', padding: '1.25rem 1.5rem', marginBottom: '1.5rem',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{
+                  width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+                  background: variant ? `linear-gradient(135deg, ${variant.palette.primary}, ${variant.palette.accent})` : 'var(--glass)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <LayoutTemplate size={22} style={{ color: '#fff' }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className="font-semibold">{tpl.name}</span>
+                    <span style={{
+                      fontSize: '0.55rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: 5,
+                      background: tpl.plan === 'premium' ? 'rgba(168,85,247,0.1)' : tpl.plan === 'pro' ? 'rgba(59,130,246,0.1)' : 'rgba(200,169,110,0.1)',
+                      color: tpl.plan === 'premium' ? '#A855F7' : tpl.plan === 'pro' ? '#3B82F6' : '#C8A96E',
+                      textTransform: 'uppercase', letterSpacing: '0.05em',
+                    }}>{tpl.plan}</span>
+                    <Lock size={12} style={{ color: 'var(--text-muted)' }} />
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>{tpl.description}</div>
+                </div>
+                {variant && (
+                  <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                    {[variant.palette.primary, variant.palette.accent, variant.palette.secondary].map((c, i) => (
+                      <div key={i} style={{ width: 20, height: 20, borderRadius: '50%', background: c, border: '2px solid var(--bg-card)', boxShadow: '0 0 0 1px var(--border-light)' }} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })()}
+
+        {/* ── Média de l'invitation ───────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Image size={18} style={{ color: 'var(--gold)' }} />
-            <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>Photos du slideshow</h2>
+            <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>Média</h2>
           </div>
         </div>
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={8}
           className="card" style={{ marginBottom: '2rem' }}
         >
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-            Chargez des images depuis votre appareil ou collez une URL.
-          </p>
-
-          {/* Upload + URL input */}
-          <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            {/* File upload button */}
-            <input
-              type="file"
-              id="hero-file-input"
-              accept="image/*"
-              multiple
-              style={{ display: 'none' }}
-              onChange={(e) => {
-                const files = e.target.files;
-                if (!files || !event) return;
-                Array.from(files).forEach(file => {
-                  const reader = new FileReader();
-                  reader.onload = (ev) => {
-                    const dataUrl = ev.target?.result as string;
-                    if (dataUrl) {
-                      const current = event.heroImages || [];
-                      updateEvent(eventId, { heroImages: [...current, dataUrl] });
-                    }
-                  };
-                  reader.readAsDataURL(file);
-                });
-                e.target.value = '';
-              }}
-            />
-            <button onClick={() => document.getElementById('hero-file-input')?.click()} style={{
-              display: 'flex', alignItems: 'center', gap: '0.35rem',
-              padding: '0.5rem 0.85rem', borderRadius: 10, border: '1.5px dashed var(--gold)',
-              background: 'rgba(200,169,110,0.06)', cursor: 'pointer',
-              color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem',
-            }}><Upload size={15} /> Charger des photos</button>
-
-            {/* URL input */}
-            <div style={{ display: 'flex', gap: '0.3rem', flex: 1, minWidth: 200 }}>
-              <input
-                className="input"
-                placeholder="ou coller une URL..."
-                id="hero-img-input"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const input = e.currentTarget;
-                    const url = input.value.trim();
-                    if (url && event) {
-                      const current = event.heroImages || [];
-                      updateEvent(eventId, { heroImages: [...current, url] });
-                      input.value = '';
-                    }
-                  }
-                }}
-                style={{ flex: 1 }}
-              />
-              <button onClick={() => {
-                const input = document.getElementById('hero-img-input') as HTMLInputElement;
-                const url = input?.value.trim();
-                if (url && event) {
-                  const current = event.heroImages || [];
-                  updateEvent(eventId, { heroImages: [...current, url] });
-                  input.value = '';
-                }
-              }} style={{
-                padding: '0 0.7rem', borderRadius: 10, border: 'none', cursor: 'pointer',
-                background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
-                color: '#fff', fontWeight: 600, fontSize: '0.8rem',
-              }}><Plus size={16} /></button>
+          {/* Hero Images */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+              <Image size={14} style={{ color: 'var(--gold)' }} />
+              <span className="text-sm font-semibold">Images du hero</span>
+              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                {(event.heroImages || []).length} / {event.plan === 'premium' ? 10 : event.plan === 'pro' ? 5 : 1}
+              </span>
             </div>
+
+            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <input
+                type="file" id="hero-file-input" accept="image/*" multiple
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (!files || !event) return;
+                  const maxImages = event.plan === 'premium' ? 10 : event.plan === 'pro' ? 5 : 1;
+                  const current = event.heroImages || [];
+                  if (current.length >= maxImages) return;
+                  Array.from(files).slice(0, maxImages - current.length).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      if (dataUrl) {
+                        updateEvent(eventId, { heroImages: [...(event.heroImages || []), dataUrl] });
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                  e.target.value = '';
+                }}
+              />
+              <button onClick={() => document.getElementById('hero-file-input')?.click()} style={{
+                display: 'flex', alignItems: 'center', gap: '0.35rem',
+                padding: '0.5rem 0.85rem', borderRadius: 10, border: '1.5px dashed var(--gold)',
+                background: 'rgba(200,169,110,0.06)', cursor: 'pointer',
+                color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem',
+              }}><Upload size={15} /> Charger des photos</button>
+
+              <div style={{ display: 'flex', gap: '0.3rem', flex: 1, minWidth: 200 }}>
+                <input
+                  className="input" placeholder="ou coller une URL..." id="hero-img-input"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      const input = e.currentTarget;
+                      const url = input.value.trim();
+                      if (url && event) {
+                        const current = event.heroImages || [];
+                        updateEvent(eventId, { heroImages: [...current, url] });
+                        input.value = '';
+                      }
+                    }
+                  }}
+                  style={{ flex: 1 }}
+                />
+                <button onClick={() => {
+                  const input = document.getElementById('hero-img-input') as HTMLInputElement;
+                  const url = input?.value.trim();
+                  if (url && event) {
+                    const current = event.heroImages || [];
+                    updateEvent(eventId, { heroImages: [...current, url] });
+                    input.value = '';
+                  }
+                }} style={{
+                  padding: '0 0.7rem', borderRadius: 10, border: 'none', cursor: 'pointer',
+                  background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                  color: '#fff', fontWeight: 600, fontSize: '0.8rem',
+                }}><Plus size={16} /></button>
+              </div>
+            </div>
+
+            {(event?.heroImages && event.heroImages.length > 0) ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.6rem' }}>
+                {event.heroImages.map((url, idx) => (
+                  <div key={idx} style={{
+                    position: 'relative', borderRadius: 10, overflow: 'hidden',
+                    border: '1px solid var(--border-light)', aspectRatio: '16/10',
+                  }}>
+                    <img src={url} alt={`Slide ${idx + 1}`} style={{
+                      width: '100%', height: '100%', objectFit: 'cover',
+                    }} onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }} />
+                    <div style={{
+                      position: 'absolute', top: 4, left: 4,
+                      width: 20, height: 20, borderRadius: '50%',
+                      background: 'rgba(0,0,0,0.6)', color: '#fff',
+                      fontSize: '0.6rem', fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>{idx + 1}</div>
+                    <button onClick={() => {
+                      if (!event) return;
+                      const next = [...(event.heroImages || [])];
+                      next.splice(idx, 1);
+                      updateEvent(eventId, { heroImages: next });
+                    }} style={{
+                      position: 'absolute', top: 4, right: 4,
+                      width: 22, height: 22, borderRadius: '50%',
+                      background: 'rgba(220,50,50,0.85)', border: 'none',
+                      color: '#fff', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><X size={12} /></button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                <Image size={28} style={{ margin: '0 auto 0.4rem', opacity: 0.3 }} />
+                <p style={{ margin: 0 }}>Aucune image ajoutée. Les images par défaut seront utilisées.</p>
+              </div>
+            )}
           </div>
 
-          {/* Image grid */}
-          {(event?.heroImages && event.heroImages.length > 0) ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.6rem' }}>
-              {event.heroImages.map((url, idx) => (
-                <div key={idx} style={{
-                  position: 'relative', borderRadius: 10, overflow: 'hidden',
-                  border: '1px solid var(--border-light)', aspectRatio: '16/10',
+          {/* Background Music — Premium only */}
+          <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+              <Music size={14} style={{ color: 'var(--gold)' }} />
+              <span className="text-sm font-semibold">Musique d&apos;ambiance</span>
+              {event.plan !== 'premium' && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '0.2rem', marginLeft: '0.5rem',
+                  fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: 5,
+                  background: 'rgba(168,85,247,0.08)', color: '#A855F7', fontWeight: 600,
                 }}>
-                  <img src={url} alt={`Slide ${idx + 1}`} style={{
-                    width: '100%', height: '100%', objectFit: 'cover',
-                  }} onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }} />
-                  {/* Order badge */}
-                  <div style={{
-                    position: 'absolute', top: 4, left: 4,
-                    width: 20, height: 20, borderRadius: '50%',
-                    background: 'rgba(0,0,0,0.6)', color: '#fff',
-                    fontSize: '0.6rem', fontWeight: 700,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>{idx + 1}</div>
-                  {/* Delete button */}
-                  <button onClick={() => {
-                    if (!event) return;
-                    const next = [...(event.heroImages || [])];
-                    next.splice(idx, 1);
-                    updateEvent(eventId, { heroImages: next });
-                  }} style={{
-                    position: 'absolute', top: 4, right: 4,
-                    width: 22, height: 22, borderRadius: '50%',
-                    background: 'rgba(220,50,50,0.85)', border: 'none',
-                    color: '#fff', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}><X size={12} /></button>
-                </div>
-              ))}
+                  <Lock size={9} /> Premium
+                </span>
+              )}
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-              <Image size={28} style={{ margin: '0 auto 0.4rem', opacity: 0.3 }} />
-              <p style={{ margin: 0 }}>Aucune image ajoutée. Les images par défaut seront utilisées.</p>
-            </div>
-          )}
+            {event.plan === 'premium' ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input
+                  type="file" id="music-file-input" accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav"
+                  style={{ display: 'none' }}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      const dataUrl = ev.target?.result as string;
+                      if (dataUrl) updateEvent(eventId, { backgroundMusicUrl: dataUrl });
+                    };
+                    reader.readAsDataURL(file);
+                    e.target.value = '';
+                  }}
+                />
+                {event.backgroundMusicUrl ? (
+                  <>
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: '0.4rem', flex: 1,
+                      padding: '0.5rem 0.75rem', borderRadius: 10,
+                      background: 'rgba(200,169,110,0.06)', border: '1px solid var(--border-light)',
+                    }}>
+                      <Music size={14} style={{ color: 'var(--gold)' }} />
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>🎵 Musique chargée</span>
+                    </div>
+                    <button onClick={() => updateEvent(eventId, { backgroundMusicUrl: '' })} style={{
+                      padding: '0.4rem', borderRadius: 8, background: 'rgba(220,53,69,0.08)',
+                      border: '1px solid rgba(220,53,69,0.2)', cursor: 'pointer', color: '#DC3545',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}><Trash2 size={14} /></button>
+                  </>
+                ) : (
+                  <button onClick={() => document.getElementById('music-file-input')?.click()} style={{
+                    display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%',
+                    padding: '0.75rem', borderRadius: 10, border: '1.5px dashed var(--border-light)',
+                    background: 'transparent', cursor: 'pointer',
+                    color: 'var(--text-muted)', fontSize: '0.8rem',
+                  }}>
+                    <Upload size={16} /> Charger un fichier audio (.mp3, .m4a)
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                padding: '0.75rem 1rem', borderRadius: 10,
+                background: 'var(--glass)', border: '1px solid var(--glass-border)',
+                color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center',
+              }}>
+                🔒 La musique d&apos;ambiance est disponible avec la formule Premium
+              </div>
+            )}
+          </div>
         </motion.div>
 
         {/* ── Programme ─────────────────────────── */}
