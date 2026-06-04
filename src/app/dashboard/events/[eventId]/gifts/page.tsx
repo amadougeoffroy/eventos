@@ -4,7 +4,161 @@ import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
-import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, Tag, User } from 'lucide-react';
+import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, Tag, User, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+
+type Offerer = { name: string; gift: string; price: number };
+type SortKey = 'name' | 'gift' | 'price';
+type SortDir = 'asc' | 'desc';
+
+function OfferersTable({ offerers }: { offerers: Offerer[] }) {
+  const [q, setQ] = useState('');
+  const [sortKey, setSortKey] = useState<SortKey>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [page, setPage] = useState(0);
+  const perPage = 10;
+
+  const toggleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortKey(key); setSortDir('asc'); }
+    setPage(0);
+  };
+
+  const filtered = useMemo(() => {
+    let list = offerers;
+    if (q) {
+      const lower = q.toLowerCase();
+      list = list.filter(o => o.name.toLowerCase().includes(lower) || o.gift.toLowerCase().includes(lower));
+    }
+    list = [...list].sort((a, b) => {
+      const aVal = a[sortKey]; const bVal = b[sortKey];
+      if (typeof aVal === 'number' && typeof bVal === 'number') return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortDir === 'asc' ? String(aVal).localeCompare(String(bVal)) : String(bVal).localeCompare(String(aVal));
+    });
+    return list;
+  }, [offerers, q, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(filtered.length / perPage);
+  const paged = filtered.slice(page * perPage, (page + 1) * perPage);
+
+  const thStyle = (key: SortKey, align: 'left' | 'right' = 'left'): React.CSSProperties => ({
+    textAlign: align, padding: '0.65rem 1rem', fontWeight: 700,
+    color: sortKey === key ? 'var(--gold)' : 'var(--text-muted)',
+    fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em',
+    cursor: 'pointer', userSelect: 'none', whiteSpace: 'nowrap',
+  });
+
+  const SortIcon = ({ k }: { k: SortKey }) => {
+    if (sortKey !== k) return <ChevronUp size={10} style={{ opacity: 0.3 }} />;
+    return sortDir === 'asc' ? <ChevronUp size={10} /> : <ChevronDown size={10} />;
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+      style={{ marginTop: '2rem' }}
+    >
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+        <h2 className="font-display" style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+          <User size={16} style={{ color: 'var(--gold)' }} />
+          Qui offre quoi
+          <span style={{
+            padding: '0.15rem 0.5rem', borderRadius: 8,
+            background: 'rgba(34,150,79,0.1)', fontSize: '0.65rem',
+            fontWeight: 700, color: '#22964F',
+          }}>{filtered.length} offrant{filtered.length > 1 ? 's' : ''}</span>
+        </h2>
+        <div style={{ position: 'relative', minWidth: 180 }}>
+          <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <input
+            type="text" placeholder="Rechercher..."
+            value={q} onChange={e => { setQ(e.target.value); setPage(0); }}
+            style={{
+              width: '100%', padding: '0.45rem 0.6rem 0.45rem 1.8rem',
+              borderRadius: 8, border: '1px solid var(--border-light)',
+              background: 'var(--glass)', fontSize: '0.75rem', color: 'var(--text)',
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="card" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+            <thead>
+              <tr style={{ background: 'rgba(200,169,110,0.06)' }}>
+                <th style={thStyle('name')} onClick={() => toggleSort('name')}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>Invité <SortIcon k="name" /></span>
+                </th>
+                <th style={thStyle('gift')} onClick={() => toggleSort('gift')}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>Cadeau <SortIcon k="gift" /></span>
+                </th>
+                <th style={thStyle('price', 'right')} onClick={() => toggleSort('price')}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>Valeur <SortIcon k="price" /></span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.length === 0 ? (
+                <tr><td colSpan={3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Aucun résultat</td></tr>
+              ) : paged.map((o, i) => (
+                <tr key={`${o.name}-${o.gift}-${i}`} style={{ borderTop: '1px solid var(--border-light)', transition: 'background 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,169,110,0.04)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <td style={{ padding: '0.6rem 1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div style={{
+                        width: 26, height: 26, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, rgba(200,169,110,0.2), rgba(200,169,110,0.08))',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold)', flexShrink: 0,
+                      }}>{o.name.charAt(0).toUpperCase()}</div>
+                      <span style={{ fontWeight: 600 }}>{o.name}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '0.6rem 1rem', color: 'var(--text-muted)' }}>🎁 {o.gift}</td>
+                  <td style={{ padding: '0.6rem 1rem', textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
+                    {o.price ? `${o.price.toLocaleString('fr-FR')}€` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            padding: '0.5rem 1rem', borderTop: '1px solid var(--border-light)',
+            fontSize: '0.7rem', color: 'var(--text-muted)',
+          }}>
+            <span>{page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)} sur {filtered.length}</span>
+            <div style={{ display: 'flex', gap: '0.3rem' }}>
+              <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+                style={{
+                  width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border-light)',
+                  background: 'var(--glass)', cursor: page === 0 ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: page === 0 ? 'var(--text-muted)' : 'var(--text)', opacity: page === 0 ? 0.4 : 1,
+                }}><ChevronLeft size={14} /></button>
+              <button onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}
+                style={{
+                  width: 28, height: 28, borderRadius: 6, border: '1px solid var(--border-light)',
+                  background: 'var(--glass)', cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: page >= totalPages - 1 ? 'var(--text-muted)' : 'var(--text)', opacity: page >= totalPages - 1 ? 0.4 : 1,
+                }}><ChevronRight size={14} /></button>
+            </div>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -283,74 +437,22 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
           </div>
         )}
 
-        {/* Offerers summary table */}
+        {/* Offerers DataTable */}
         {(() => {
-          const offerers: { name: string; gift: string; price?: number }[] = [];
+          const offerers: { name: string; gift: string; price: number }[] = [];
           eventGifts.forEach(g => {
             if (g.reserved) {
               if (g.reservedByName) {
                 g.reservedByName.split(', ').filter(Boolean).forEach(name => {
-                  offerers.push({ name, gift: g.name, price: g.price });
+                  offerers.push({ name, gift: g.name, price: g.price || 0 });
                 });
               } else {
-                offerers.push({ name: 'Invité inconnu', gift: g.name, price: g.price });
+                offerers.push({ name: 'Invité inconnu', gift: g.name, price: g.price || 0 });
               }
             }
           });
           if (offerers.length === 0) return null;
-          return (
-            <motion.div
-              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              style={{ marginTop: '2rem' }}
-            >
-              <h2 className="font-display" style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <User size={16} style={{ color: 'var(--gold)' }} />
-                Qui offre quoi
-                <span style={{
-                  padding: '0.15rem 0.5rem', borderRadius: 8,
-                  background: 'rgba(34,150,79,0.1)', fontSize: '0.65rem',
-                  fontWeight: 700, color: '#22964F',
-                }}>{offerers.length} offrant{offerers.length > 1 ? 's' : ''}</span>
-              </h2>
-              <div className="card" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                  <thead>
-                    <tr style={{ background: 'rgba(200,169,110,0.06)' }}>
-                      <th style={{ textAlign: 'left', padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invité</th>
-                      <th style={{ textAlign: 'left', padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cadeau</th>
-                      <th style={{ textAlign: 'right', padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valeur</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {offerers.map((o, i) => (
-                      <tr key={i} style={{ borderTop: '1px solid var(--border-light)' }}>
-                        <td style={{ padding: '0.6rem 1rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            <div style={{
-                              width: 26, height: 26, borderRadius: '50%',
-                              background: 'linear-gradient(135deg, rgba(200,169,110,0.2), rgba(200,169,110,0.08))',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold)',
-                            }}>{o.name.charAt(0).toUpperCase()}</div>
-                            <span style={{ fontWeight: 600 }}>{o.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '0.6rem 1rem', color: 'var(--text-muted)' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            🎁 {o.gift}
-                          </span>
-                        </td>
-                        <td style={{ padding: '0.6rem 1rem', textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
-                          {o.price ? `${o.price.toLocaleString('fr-FR')}€` : '—'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </motion.div>
-          );
+          return <OfferersTable offerers={offerers} />;
         })()}
 
         {/* Modal */}
