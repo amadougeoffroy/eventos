@@ -1,35 +1,57 @@
 'use client';
 import { useRef, useEffect } from 'react';
 
+let globalAudio: HTMLAudioElement | null = null;
+
+/** Call this from a user-gesture handler to start music */
+export function startBackgroundMusic(url: string) {
+  if (globalAudio) {
+    globalAudio.pause();
+    globalAudio = null;
+  }
+  const audio = new Audio(url);
+  audio.loop = true;
+  audio.volume = 0.3;
+  globalAudio = audio;
+  audio.play().catch(() => {});
+}
+
 export default function BackgroundMusic({ url }: { url: string }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+
+    // Try immediate autoplay
     const audio = new Audio(url);
     audio.loop = true;
     audio.volume = 0.3;
-    audioRef.current = audio;
+    globalAudio = audio;
 
-    // Try autoplay immediately
-    audio.play().catch(() => {
-      // Autoplay blocked — play on first user interaction
+    audio.play().then(() => {
+      started.current = true;
+    }).catch(() => {
+      // Autoplay blocked — will be started by the intro screen click
+      // Also listen for any user interaction as fallback
       const handler = () => {
-        audio.play().catch(() => {});
+        if (!started.current && globalAudio) {
+          globalAudio.play().catch(() => {});
+          started.current = true;
+        }
         document.removeEventListener('click', handler);
         document.removeEventListener('touchstart', handler);
-        document.removeEventListener('scroll', handler);
       };
-      document.addEventListener('click', handler, { once: true });
-      document.addEventListener('touchstart', handler, { once: true });
-      document.addEventListener('scroll', handler, { once: true });
+      document.addEventListener('click', handler);
+      document.addEventListener('touchstart', handler);
     });
 
     return () => {
-      audio.pause();
-      audioRef.current = null;
+      if (globalAudio) {
+        globalAudio.pause();
+        globalAudio = null;
+      }
     };
   }, [url]);
 
-  // No visible UI
   return null;
 }
