@@ -48,6 +48,12 @@ export interface Event {
   program: ProgramItem[];
   meta: EventMeta;
   plan?: 'essentiel' | 'pro' | 'premium';
+  templateId?: string;
+  heroType?: 'image' | 'slideshow' | 'video';
+  heroMedia?: { url: string; type: 'image' | 'video' }[];
+  backgroundMusicUrl?: string;
+  sectionsOrder?: string[];
+  customFonts?: { display?: string; body?: string; script?: string };
   createdAt: string;
 }
 

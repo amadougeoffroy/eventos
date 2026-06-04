@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════════════════
+   Template Themes — CSS Variables par design
+   Appliquées via data-template="..." sur le container
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── Classique (Essentiel) ─── */
+[data-template="classique"] {
+  --t-primary: var(--tp, #D4AF37);
+  --t-secondary: var(--ts, #F7C5CC);
+  --t-bg: var(--tbg, #FFFFFF);
+  --t-bg-warm: var(--tbgw, #FDF8F3);
+  --t-text: var(--tt, #2D2A26);
+  --t-text-muted: var(--ttm, #9B9590);
+  --t-accent: var(--ta, #C8A96E);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.6));
+  --t-font-display: 'Playfair Display', serif;
+  --t-font-body: 'Inter', sans-serif;
+  --t-font-script: 'Great Vibes', cursive;
+  --t-radius: 16px;
+  --t-card-bg: rgba(255,255,255,0.85);
+  --t-card-border: rgba(0,0,0,0.06);
+  --t-card-shadow: 0 2px 16px rgba(0,0,0,0.06);
+  --t-section-gap: 5rem;
+}
+
+/* ─── Romance (Pro) ─── */
+[data-template="romance"] {
+  --t-primary: var(--tp, #B76E79);
+  --t-secondary: var(--ts, #F5E6E8);
+  --t-bg: var(--tbg, #FFF9FA);
+  --t-bg-warm: var(--tbgw, #FFF0F2);
+  --t-text: var(--tt, #3D2B2F);
+  --t-text-muted: var(--ttm, #A08890);
+  --t-accent: var(--ta, #B76E79);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(60,20,30,0.25), rgba(60,20,30,0.55));
+  --t-font-display: 'Cormorant Garamond', serif;
+  --t-font-body: 'Lato', sans-serif;
+  --t-font-script: 'Dancing Script', cursive;
+  --t-radius: 20px;
+  --t-card-bg: rgba(255,249,250,0.9);
+  --t-card-border: rgba(183,110,121,0.12);
+  --t-card-shadow: 0 4px 24px rgba(183,110,121,0.08);
+  --t-section-gap: 5rem;
+}
+
+/* ─── Moderne (Pro) ─── */
+[data-template="moderne"] {
+  --t-primary: var(--tp, #1A1A1A);
+  --t-secondary: var(--ts, #F5F5F5);
+  --t-bg: var(--tbg, #FFFFFF);
+  --t-bg-warm: var(--tbgw, #FAFAFA);
+  --t-text: var(--tt, #1A1A1A);
+  --t-text-muted: var(--ttm, #888888);
+  --t-accent: var(--ta, #D4AF37);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.5));
+  --t-font-display: 'Outfit', sans-serif;
+  --t-font-body: 'Inter', sans-serif;
+  --t-font-script: 'Playfair Display', serif;
+  --t-radius: 8px;
+  --t-card-bg: rgba(250,250,250,0.95);
+  --t-card-border: rgba(0,0,0,0.08);
+  --t-card-shadow: 0 1px 8px rgba(0,0,0,0.04);
+  --t-section-gap: 6rem;
+}
+
+/* ─── Royal (Premium) ─── */
+[data-template="royal"] {
+  --t-primary: var(--tp, #8B0000);
+  --t-secondary: var(--ts, #D4AF37);
+  --t-bg: var(--tbg, #0D0D0D);
+  --t-bg-warm: var(--tbgw, #1A1410);
+  --t-text: var(--tt, #F5E6D3);
+  --t-text-muted: var(--ttm, #A09080);
+  --t-accent: var(--ta, #D4AF37);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(13,13,13,0.2), rgba(13,13,13,0.7));
+  --t-font-display: 'Cinzel', serif;
+  --t-font-body: 'EB Garamond', serif;
+  --t-font-script: 'Great Vibes', cursive;
+  --t-radius: 4px;
+  --t-card-bg: rgba(26,20,16,0.85);
+  --t-card-border: rgba(212,175,55,0.2);
+  --t-card-shadow: 0 4px 32px rgba(0,0,0,0.3);
+  --t-section-gap: 6rem;
+}
+
+[data-template="royal"] .card,
+[data-template="royal"] .glass-gold {
+  border: 1px solid rgba(212,175,55,0.25);
+  background: rgba(26,20,16,0.85);
+  backdrop-filter: blur(12px);
+}
+
+[data-template="royal"]::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(212,175,55,0.03) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgba(139,0,0,0.04) 0%, transparent 50%);
+}
+
+/* ─── Bohème (Premium) ─── */
+[data-template="boheme"] {
+  --t-primary: var(--tp, #D2691E);
+  --t-secondary: var(--ts, #9B8B7E);
+  --t-bg: var(--tbg, #FEFCF8);
+  --t-bg-warm: var(--tbgw, #F5EDE0);
+  --t-text: var(--tt, #3B2F22);
+  --t-text-muted: var(--ttm, #8B7E70);
+  --t-accent: var(--ta, #CC7722);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(59,47,34,0.2), rgba(59,47,34,0.5));
+  --t-font-display: 'Amatic SC', cursive;
+  --t-font-body: 'Nunito', sans-serif;
+  --t-font-script: 'Sacramento', cursive;
+  --t-radius: 24px;
+  --t-card-bg: rgba(254,252,248,0.9);
+  --t-card-border: rgba(210,105,30,0.12);
+  --t-card-shadow: 0 4px 20px rgba(139,126,112,0.1);
+  --t-section-gap: 4rem;
+}
+
+/* Polaroid effect for images */
+[data-template="boheme"] .hero-image-container {
+  transform: rotate(-2deg);
+  border: 12px solid #FEFCF8;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+/* ─── Cinématique (Premium) ─── */
+[data-template="cinematique"] {
+  --t-primary: var(--tp, #1A1A2E);
+  --t-secondary: var(--ts, #E94560);
+  --t-bg: var(--tbg, #0F0F0F);
+  --t-bg-warm: var(--tbgw, #161622);
+  --t-text: var(--tt, #F0F0F0);
+  --t-text-muted: var(--ttm, #808090);
+  --t-accent: var(--ta, #E94560);
+  --t-hero-overlay: linear-gradient(to bottom, rgba(15,15,15,0.1), rgba(15,15,15,0.8));
+  --t-font-display: 'Bebas Neue', sans-serif;
+  --t-font-body: 'Source Sans 3', sans-serif;
+  --t-font-script: 'Great Vibes', cursive;
+  --t-radius: 2px;
+  --t-card-bg: rgba(22,22,34,0.9);
+  --t-card-border: rgba(233,69,96,0.15);
+  --t-card-shadow: 0 2px 24px rgba(0,0,0,0.4);
+  --t-section-gap: 5rem;
+}
+
+/* Film grain overlay */
+[data-template="cinematique"]::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+/* Cinematic letterbox bars */
+[data-template="cinematique"] .hero-section::before,
+[data-template="cinematique"] .hero-section::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0;
+  height: 8vh;
+  background: #0F0F0F;
+  z-index: 5;
+}
+[data-template="cinematique"] .hero-section::before { top: 0; }
+[data-template="cinematique"] .hero-section::after { bottom: 0; }
+
+/* ═══════════════════════════════════════════════════════════
+   Shared Template Utilities
+   ═══════════════════════════════════════════════════════════ */
+
+/* Section base using template vars */
+[data-template] .t-section {
+  padding: 4rem 1.5rem;
+  background: var(--t-bg);
+}
+
+[data-template] .t-section-warm {
+  padding: 4rem 1.5rem;
+  background: var(--t-bg-warm);
+}
+
+[data-template] .t-card {
+  background: var(--t-card-bg);
+  border: 1px solid var(--t-card-border);
+  border-radius: var(--t-radius);
+  box-shadow: var(--t-card-shadow);
+  padding: 2rem;
+}
+
+[data-template] .t-heading {
+  font-family: var(--t-font-display);
+  color: var(--t-text);
+}
+
+[data-template] .t-body {
+  font-family: var(--t-font-body);
+  color: var(--t-text);
+}
+
+[data-template] .t-script {
+  font-family: var(--t-font-script);
+  color: var(--t-accent);
+}
+
+[data-template] .t-muted {
+  color: var(--t-text-muted);
+}
+
+[data-template] .t-accent {
+  color: var(--t-accent);
+}
+
+[data-template] .t-accent-bg {
+  background: var(--t-accent);
+  color: var(--t-bg);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  [data-template] .t-section,
+  [data-template] .t-section-warm {
+    padding: 3rem 1rem;
+  }
+  
+  [data-template] .t-card {
+    padding: 1.5rem;
+  }
+}
