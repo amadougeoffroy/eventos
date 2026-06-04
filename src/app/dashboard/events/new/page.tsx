@@ -870,6 +870,7 @@ export default function NewEventPage() {
               welcomeMessage={welcomeMessage}
               program={program}
               primaryColor={primaryColor}
+              heroImages={heroImages}
             />
           </div>
         )}
@@ -938,6 +939,7 @@ export default function NewEventPage() {
                       welcomeMessage={welcomeMessage}
                       program={program}
                       primaryColor={primaryColor}
+                      heroImages={heroImages}
                     />
                   </motion.div>
                 </motion.div>

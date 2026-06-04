@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays,
@@ -39,6 +39,7 @@ interface TemplatePreviewProps {
   welcomeMessage?: string;
   program: ProgramItem[];
   primaryColor: string;
+  heroImages?: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -131,6 +132,7 @@ export default function TemplatePreview({
   welcomeMessage,
   program,
   primaryColor,
+  heroImages: heroImagesProp,
 }: TemplatePreviewProps) {
   // ---- Resolve template data ------------------------------------------------
 
@@ -162,6 +164,24 @@ export default function TemplatePreview({
 
   const isWedding = eventType === 'wedding';
   const formattedDate = formatDateFr(date);
+
+  // Hero images: custom > default
+  const resolvedHeroImages = useMemo(() => {
+    if (heroImagesProp && heroImagesProp.length > 0) return heroImagesProp;
+    return variant?.defaultHeroImages ?? [];
+  }, [heroImagesProp, variant]);
+
+  // Slideshow rotation
+  const [slideIndex, setSlideIndex] = useState(0);
+  useEffect(() => {
+    if (resolvedHeroImages.length <= 1) { setSlideIndex(0); return; }
+    const timer = setInterval(() => {
+      setSlideIndex(i => (i + 1) % resolvedHeroImages.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [resolvedHeroImages.length]);
+
+  const currentHeroImage = resolvedHeroImages[slideIndex] || resolvedHeroImages[0] || '';
 
   // ---- Responsive: hide on mobile ------------------------------------------
   // We return null below 768 px. The parent handles toggling.
@@ -248,12 +268,11 @@ export default function TemplatePreview({
               <div
                 style={{
                   height: 220,
-                  backgroundImage: variant?.defaultHeroImages?.[0]
-                    ? `url(${variant.defaultHeroImages[0]})`
-                    : undefined,
+                  backgroundImage: currentHeroImage
+                    ? `url(${currentHeroImage})`
+                    : `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
-                  backgroundColor: palette.primary,
                   position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
@@ -261,7 +280,7 @@ export default function TemplatePreview({
                   justifyContent: 'center',
                   padding: '24px 16px',
                   textAlign: 'center',
-                  transition: 'all 0.4s ease',
+                  transition: 'background-image 0.6s ease',
                 }}
               >
                 {/* Overlay */}
