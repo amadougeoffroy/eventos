@@ -283,6 +283,72 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
           </div>
         )}
 
+        {/* Offerers summary table */}
+        {(() => {
+          const offerers: { name: string; gift: string; price?: number }[] = [];
+          eventGifts.forEach(g => {
+            if (g.reservedByName) {
+              g.reservedByName.split(', ').filter(Boolean).forEach(name => {
+                offerers.push({ name, gift: g.name, price: g.price });
+              });
+            }
+          });
+          if (offerers.length === 0) return null;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              style={{ marginTop: '2rem' }}
+            >
+              <h2 className="font-display" style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <User size={16} style={{ color: 'var(--gold)' }} />
+                Qui offre quoi
+                <span style={{
+                  padding: '0.15rem 0.5rem', borderRadius: 8,
+                  background: 'rgba(34,150,79,0.1)', fontSize: '0.65rem',
+                  fontWeight: 700, color: '#22964F',
+                }}>{offerers.length} offrant{offerers.length > 1 ? 's' : ''}</span>
+              </h2>
+              <div className="card" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ background: 'rgba(200,169,110,0.06)' }}>
+                      <th style={{ textAlign: 'left', padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Invité</th>
+                      <th style={{ textAlign: 'left', padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cadeau</th>
+                      <th style={{ textAlign: 'right', padding: '0.65rem 1rem', fontWeight: 700, color: 'var(--text-muted)', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Valeur</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {offerers.map((o, i) => (
+                      <tr key={i} style={{ borderTop: '1px solid var(--border-light)' }}>
+                        <td style={{ padding: '0.6rem 1rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <div style={{
+                              width: 26, height: 26, borderRadius: '50%',
+                              background: 'linear-gradient(135deg, rgba(200,169,110,0.2), rgba(200,169,110,0.08))',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '0.65rem', fontWeight: 700, color: 'var(--gold)',
+                            }}>{o.name.charAt(0).toUpperCase()}</div>
+                            <span style={{ fontWeight: 600 }}>{o.name}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '0.6rem 1rem', color: 'var(--text-muted)' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                            🎁 {o.gift}
+                          </span>
+                        </td>
+                        <td style={{ padding: '0.6rem 1rem', textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
+                          {o.price ? `${o.price.toLocaleString('fr-FR')}€` : '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          );
+        })()}
+
         {/* Modal */}
         <AnimatePresence>
           {showModal && (
