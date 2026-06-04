@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS event_tables (
   shape TEXT DEFAULT 'round' CHECK (shape IN ('round', 'rectangular', 'square')),
   position_x INTEGER DEFAULT 0,
   position_y INTEGER DEFAULT 0,
+  guest_ids TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

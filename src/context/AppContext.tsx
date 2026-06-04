@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue, GiftItem } from '@/lib/types';
 import {
-  mockTables,
   mockMenuCategories, mockMenuItems, mockOrders
 } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
@@ -628,35 +627,164 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) console.error('removeGift error:', error);
   }, [supabase]);
 
-  // ─── Tables with localStorage persistence ───
-  const TABLES_KEY = 'eventos-tables';
-  const [tables, setTables] = useState<EventTable[]>(mockTables);
+  // ─── Tables with Supabase persistence ───
+  const [tables, setTables] = useState<EventTable[]>([]);
   const [tablesReady, setTablesReady] = useState(false);
+  const GUEST_IDS_KEY = 'eventos-table-guestids';
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(TABLES_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) setTables(parsed);
-      }
-    } catch {}
-    setTablesReady(true);
-  }, []);
-  const syncTables = (next: EventTable[]) => {
-    try { localStorage.setItem(TABLES_KEY, JSON.stringify(next)); } catch {}
-    return next;
+  // Helper: load/save guestIds from localStorage as fallback
+  const loadGuestIdsFallback = (): Record<string, string[]> => {
+    try { return JSON.parse(localStorage.getItem(GUEST_IDS_KEY) || '{}'); } catch { return {}; }
   };
-  const addTable = (table: EventTable) => setTables(prev => {
-    if (prev.find(t => t.id === table.id)) return prev;
-    return syncTables([...prev, table]);
-  });
-  const updateTable = (id: string, updates: Partial<EventTable>) => setTables(prev =>
-    syncTables(prev.map(t => t.id === id ? { ...t, ...updates } : t))
-  );
-  const removeTable = (id: string) => setTables(prev =>
-    syncTables(prev.filter(t => t.id !== id))
-  );
+  const saveGuestIdsFallback = (map: Record<string, string[]>) => {
+    try { localStorage.setItem(GUEST_IDS_KEY, JSON.stringify(map)); } catch {}
+  };
+
+  // Load tables from Supabase
+  useEffect(() => {
+    if (!userId) return;
+    const loadTables = async () => {
+      const userEvents = events.filter(e => e.id && e.id !== 'evt-001' && e.id !== 'evt-002');
+      if (userEvents.length === 0) { setTablesReady(true); return; }
+      const eventIds = userEvents.map(e => e.id);
+      const { data, error } = await supabase
+        .from('event_tables')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: true });
+
+      if (!error && data) {
+        const fallback = loadGuestIdsFallback();
+        setTables(data.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          name: row.name,
+          capacity: row.capacity || 8,
+          shape: row.shape === 'rectangular' ? 'rectangle' : (row.shape || 'round'),
+          positionX: row.position_x || 0,
+          positionY: row.position_y || 0,
+          guestIds: row.guest_ids || fallback[row.id] || [],
+        })));
+      }
+      setTablesReady(true);
+    };
+    loadTables();
+  }, [userId, events.length]);
+
+  const addTable = useCallback(async (table: EventTable) => {
+    // Prevent duplicates
+    setTables(prev => {
+      if (prev.find(t => t.id === table.id)) return prev;
+      return [...prev, table];
+    });
+
+    // Save guestIds to localStorage fallback
+    if (table.guestIds?.length) {
+      const fb = loadGuestIdsFallback();
+      fb[table.id] = table.guestIds;
+      saveGuestIdsFallback(fb);
+    }
+
+    const insertPayload: Record<string, unknown> = {
+      event_id: table.eventId,
+      name: table.name,
+      capacity: table.capacity,
+      shape: table.shape === 'rectangle' ? 'rectangular' : table.shape,
+      position_x: table.positionX || 0,
+      position_y: table.positionY || 0,
+    };
+
+    // Try with guest_ids first
+    const { data, error } = await supabase
+      .from('event_tables')
+      .insert({ ...insertPayload, guest_ids: table.guestIds || [] })
+      .select()
+      .single();
+
+    if (!error && data) {
+      const real: EventTable = {
+        id: data.id,
+        eventId: data.event_id,
+        name: data.name,
+        capacity: data.capacity || 8,
+        shape: data.shape === 'rectangular' ? 'rectangle' : (data.shape || 'round'),
+        positionX: data.position_x || 0,
+        positionY: data.position_y || 0,
+        guestIds: data.guest_ids || table.guestIds || [],
+      };
+      // Update localStorage fallback with real id
+      const fb = loadGuestIdsFallback();
+      if (fb[table.id]) { fb[real.id] = fb[table.id]; delete fb[table.id]; saveGuestIdsFallback(fb); }
+      setTables(prev => prev.map(t => t.id === table.id ? real : t));
+    } else if (error?.code === 'PGRST204') {
+      // guest_ids column doesn't exist yet, retry without it
+      const { data: data2, error: error2 } = await supabase
+        .from('event_tables')
+        .insert(insertPayload)
+        .select()
+        .single();
+      if (!error2 && data2) {
+        const real: EventTable = {
+          id: data2.id, eventId: data2.event_id, name: data2.name,
+          capacity: data2.capacity || 8,
+          shape: data2.shape === 'rectangular' ? 'rectangle' : (data2.shape || 'round'),
+          positionX: data2.position_x || 0, positionY: data2.position_y || 0,
+          guestIds: table.guestIds || [],
+        };
+        const fb = loadGuestIdsFallback();
+        fb[real.id] = table.guestIds || [];
+        if (table.id !== real.id) delete fb[table.id];
+        saveGuestIdsFallback(fb);
+        setTables(prev => prev.map(t => t.id === table.id ? real : t));
+      } else if (error2) {
+        console.error('addTable error:', JSON.stringify(error2));
+      }
+    } else if (error) {
+      console.error('addTable error:', JSON.stringify(error));
+    }
+  }, [supabase]);
+
+  const updateTable = useCallback(async (id: string, updates: Partial<EventTable>) => {
+    // Optimistic update
+    setTables(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+
+    // Save guestIds to localStorage fallback
+    if (updates.guestIds !== undefined) {
+      const fb = loadGuestIdsFallback();
+      fb[id] = updates.guestIds;
+      saveGuestIdsFallback(fb);
+    }
+
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.capacity !== undefined) payload.capacity = updates.capacity;
+    if (updates.shape !== undefined) payload.shape = updates.shape === 'rectangle' ? 'rectangular' : updates.shape;
+    if (updates.positionX !== undefined) payload.position_x = updates.positionX;
+    if (updates.positionY !== undefined) payload.position_y = updates.positionY;
+    if (updates.guestIds !== undefined) payload.guest_ids = updates.guestIds;
+
+    if (Object.keys(payload).length > 0) {
+      const { error } = await supabase.from('event_tables').update(payload).eq('id', id);
+      if (error?.code === 'PGRST204') {
+        // guest_ids column missing, retry without it
+        delete payload.guest_ids;
+        if (Object.keys(payload).length > 0) {
+          await supabase.from('event_tables').update(payload).eq('id', id);
+        }
+      } else if (error) {
+        console.error('updateTable error:', JSON.stringify(error));
+      }
+    }
+  }, [supabase]);
+
+  const removeTable = useCallback(async (id: string) => {
+    setTables(prev => prev.filter(t => t.id !== id));
+    const fb = loadGuestIdsFallback();
+    delete fb[id];
+    saveGuestIdsFallback(fb);
+    const { error } = await supabase.from('event_tables').delete().eq('id', id);
+    if (error) console.error('removeTable error:', JSON.stringify(error));
+  }, [supabase]);
 
   // ─── Menu CRUD ───
   const addMenuItem = (item: MenuItem) => setMenuItems(prev => [...prev, item]);
