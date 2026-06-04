@@ -153,23 +153,30 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   const urlToken = searchParams.get('token');
   const [knownGuest, setKnownGuest] = useState<Guest | null>(null);
 
-  // Always fetch guest from Supabase when token is present
+  // Always fetch guest from Supabase when token is present, or restore from localStorage
   useEffect(() => {
-    if (!event || !urlToken) return;
+    if (!event) return;
+
+    const storageKey = `eventos_rsvp_${event.id}`;
 
     const fetchGuest = async () => {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
 
-      // Try by token first
-      let { data: row } = await supabase
-        .from('guests')
-        .select('*')
-        .eq('event_id', event.id)
-        .eq('token', urlToken)
-        .single();
+      let row: any = null;
 
-      // Fallback: match by name
+      // 1. Try by URL token
+      if (urlToken) {
+        const { data } = await supabase
+          .from('guests')
+          .select('*')
+          .eq('event_id', event.id)
+          .eq('token', urlToken)
+          .single();
+        row = data;
+      }
+
+      // 2. Fallback: match by URL name
       if (!row && urlGuestParam) {
         const nameParts = decodeURIComponent(urlGuestParam).replace(/-/g, ' ');
         const [first, ...rest] = nameParts.split(' ');
@@ -183,8 +190,26 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         row = nameRow;
       }
 
+      // 3. Fallback: restore from localStorage (guest who filled the form without personalized link)
+      if (!row && !urlToken && !urlGuestParam) {
+        try {
+          const saved = localStorage.getItem(storageKey);
+          if (saved) {
+            const { guestId } = JSON.parse(saved);
+            if (guestId) {
+              const { data } = await supabase
+                .from('guests')
+                .select('*')
+                .eq('id', guestId)
+                .single();
+              row = data;
+            }
+          }
+        } catch {}
+      }
+
       if (row) {
-        setKnownGuest({
+        const guest: Guest = {
           id: row.id,
           eventId: row.event_id,
           firstName: row.first_name || '',
@@ -197,7 +222,10 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           allergies: row.allergies || '',
           dietaryRestrictions: [],
           respondedAt: row.updated_at || undefined,
-        });
+        };
+        setKnownGuest(guest);
+        // Persist to localStorage for future refreshes
+        localStorage.setItem(storageKey, JSON.stringify({ guestId: row.id }));
       }
     };
     fetchGuest();
@@ -281,7 +309,10 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         groups={allGroups}
         updateGuest={updateGuest}
         addGuest={addGuest}
-        onRsvpComplete={(guest) => setKnownGuest(guest)}
+        onRsvpComplete={(guest) => {
+          setKnownGuest(guest);
+          try { localStorage.setItem(`eventos_rsvp_${event.id}`, JSON.stringify({ guestId: guest.id })); } catch {}
+        }}
       />
     ),
     sweetMessage: () => (
