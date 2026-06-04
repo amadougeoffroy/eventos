@@ -10,10 +10,11 @@ import { EventType, Event, ProgramItem, Venue } from '@/lib/types';
 import { VenueFormModal, VenueFormData } from '@/components/VenueFormModal';
 import TemplateSelector from '@/components/TemplateSelector';
 import TemplatePreview from '@/components/TemplatePreview';
-import { getDefaultTemplate } from '@/lib/templates/template-registry';
+import { getDefaultTemplate, getTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
+import type { HeroType } from '@/lib/templates/template-registry';
 import {
   Sparkles, Plus, Trash2, ArrowRight, ArrowLeft, MapPin, Users,
-  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate, Eye, X
+  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate, Eye, X, Upload, ImageIcon, Film, Clapperboard
 } from 'lucide-react';
 
 /* ── Card wrapper for form sections (outside component to avoid re-renders) ─── */
@@ -57,6 +58,10 @@ export default function NewEventPage() {
   const [welcomeMessage, setWelcomeMessage] = useState('');
   const [primaryColor, setPrimaryColor] = useState('#D4AF37');
   const [secondaryColor, setSecondaryColor] = useState('#F7C5CC');
+
+  // Hero
+  const [heroType, setHeroType] = useState<HeroType>('image');
+  const [heroImages, setHeroImages] = useState<string[]>([]);
 
   // Companions
   const [allowCompanions, setAllowCompanions] = useState(false);
@@ -131,7 +136,8 @@ export default function NewEventPage() {
       },
       plan: (selectedPlan as 'essentiel' | 'pro' | 'premium') || undefined,
       templateId: selectedTemplateId,
-      heroType: 'image',
+      heroType,
+      heroImages: heroImages.length > 0 ? heroImages : undefined,
       createdAt: new Date().toISOString(),
     };
     addEvent(newEvent);
@@ -438,8 +444,155 @@ export default function NewEventPage() {
             )}
 
             {/* ── Step 4: Personalization ──────── */}
-            {step === 4 && (
+            {step === 4 && (() => {
+              const currentTemplate = getTemplate(selectedTemplateId);
+              const currentVariant = getTemplateVariant(selectedTemplateId, eventType);
+              const availableHeroTypes = currentTemplate?.heroTypes ?? ['image'];
+              const defaultImage = currentVariant?.defaultHeroImages?.[0] ?? '';
+              const displayImages = heroImages.length > 0 ? heroImages : (defaultImage ? [defaultImage] : []);
+
+              const HERO_LABELS: Record<string, { icon: React.ReactNode; label: string; desc: string }> = {
+                image: { icon: <ImageIcon size={18} />, label: 'Image fixe', desc: 'Une seule photo en fond' },
+                slideshow: { icon: <Film size={18} />, label: 'Diaporama', desc: 'Plusieurs photos en rotation' },
+                video: { icon: <Clapperboard size={18} />, label: 'Vidéo', desc: 'Vidéo de fond en boucle' },
+              };
+
+              const maxImages = heroType === 'slideshow'
+                ? (selectedPlan === 'premium' ? 10 : selectedPlan === 'pro' ? 5 : 1)
+                : 1;
+
+              return (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                {/* Hero type selector */}
+                <SectionCard title="Type de hero" icon={ImageIcon}>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${availableHeroTypes.length}, 1fr)`, gap: '0.75rem' }}>
+                    {availableHeroTypes.map(ht => {
+                      const cfg = HERO_LABELS[ht];
+                      if (!cfg) return null;
+                      const isActive = heroType === ht;
+                      return (
+                        <button
+                          key={ht}
+                          type="button"
+                          onClick={() => setHeroType(ht)}
+                          style={{
+                            padding: '1rem 0.75rem',
+                            borderRadius: 12,
+                            border: isActive ? '2px solid var(--gold)' : '1px solid var(--border-light)',
+                            background: isActive ? 'rgba(200,169,110,0.08)' : 'var(--glass)',
+                            cursor: 'pointer',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                            transition: 'all 0.2s ease',
+                            color: 'var(--text)',
+                          }}
+                        >
+                          <div style={{
+                            width: 40, height: 40, borderRadius: 10,
+                            background: isActive ? 'rgba(200,169,110,0.15)' : 'var(--bg-warm)',
+                            border: `1px solid ${isActive ? 'rgba(200,169,110,0.3)' : 'var(--border-light)'}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: isActive ? 'var(--gold)' : 'var(--text-muted)',
+                            transition: 'all 0.2s ease',
+                          }}>
+                            {cfg.icon}
+                          </div>
+                          <div style={{ fontWeight: 600, fontSize: '0.85rem' }}>{cfg.label}</div>
+                          <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{cfg.desc}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {availableHeroTypes.length === 1 && (
+                    <div style={{
+                      marginTop: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: 8,
+                      background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.12)',
+                      fontSize: '0.7rem', color: 'var(--text-muted)',
+                      display: 'flex', alignItems: 'center', gap: '0.3rem',
+                    }}>
+                      <Crown size={11} style={{ color: 'var(--gold)' }} />
+                      Passez à Pro pour le diaporama ou Premium pour la vidéo
+                    </div>
+                  )}
+                </SectionCard>
+
+                {/* Hero images */}
+                <SectionCard title={heroType === 'slideshow' ? `Images du diaporama (${displayImages.length}/${maxImages})` : 'Image du hero'} icon={Image}>
+                  {/* Default image preview */}
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem' }}>
+                    {displayImages.map((img, i) => (
+                      <div key={i} style={{
+                        width: 100, height: 70, borderRadius: 10, overflow: 'hidden',
+                        border: '2px solid var(--border-light)', position: 'relative',
+                        flexShrink: 0,
+                      }}>
+                        <img src={img} alt={`Hero ${i + 1}`} style={{
+                          width: '100%', height: '100%', objectFit: 'cover',
+                        }} />
+                        {heroImages.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setHeroImages(prev => prev.filter((_, j) => j !== i))}
+                            style={{
+                              position: 'absolute', top: 4, right: 4,
+                              width: 20, height: 20, borderRadius: '50%',
+                              background: 'rgba(220,53,69,0.85)', border: 'none',
+                              color: '#fff', cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '0.6rem',
+                            }}
+                          >
+                            <X size={10} />
+                          </button>
+                        )}
+                        {heroImages.length === 0 && (
+                          <div style={{
+                            position: 'absolute', bottom: 0, left: 0, right: 0,
+                            padding: '2px 0', textAlign: 'center',
+                            background: 'rgba(0,0,0,0.5)', fontSize: '0.45rem', color: '#fff',
+                          }}>Par défaut</div>
+                        )}
+                      </div>
+                    ))}
+
+                    {/* Add button */}
+                    {displayImages.length < maxImages && (
+                      <label style={{
+                        width: 100, height: 70, borderRadius: 10,
+                        border: '2px dashed var(--border-light)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        gap: '0.2rem', cursor: 'pointer',
+                        color: 'var(--text-muted)', fontSize: '0.6rem',
+                        transition: 'border-color 0.2s',
+                      }}>
+                        <Upload size={16} />
+                        <span>Ajouter</span>
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          style={{ display: 'none' }}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const url = URL.createObjectURL(file);
+                            setHeroImages(prev => [...prev, url]);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                    {heroImages.length === 0
+                      ? 'L\'image par défaut du template sera utilisée. Vous pouvez la remplacer par votre propre photo.'
+                      : heroType === 'slideshow'
+                        ? `Vous pouvez ajouter jusqu'à ${maxImages} images pour le diaporama.`
+                        : 'Votre image personnalisée sera affichée en hero.'
+                    }
+                  </p>
+                </SectionCard>
+
+                {/* Colors */}
                 <SectionCard title="Couleurs du thème" icon={Palette}>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -491,7 +644,8 @@ export default function NewEventPage() {
                   </div>
                 </SectionCard>
               </motion.div>
-            )}
+              );
+            })()}
 
             {/* ── Step 5: Programme ───────── */}
             {step === 5 && (
