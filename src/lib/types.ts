@@ -162,3 +162,17 @@ export interface OrderItem {
   quantity: number;
   status: "pending" | "preparing" | "ready" | "served";
 }
+
+export interface GiftItem {
+  id: string;
+  eventId: string;
+  name: string;
+  description?: string;
+  price?: number;
+  url?: string;
+  imageUrl?: string;
+  reservedBy?: string;
+  reserved: boolean;
+  category: string;
+  createdAt?: string;
+}

@@ -1,6 +1,6 @@
 'use client';
 import { useApp } from '@/context/AppContext';
-import { Event, Venue, Guest } from '@/lib/types';
+import { Event, Venue, Guest, GiftItem } from '@/lib/types';
 import { motion } from 'framer-motion';
 import { use, useState, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -26,7 +26,7 @@ import BackgroundMusic from '@/components/invitation/BackgroundMusic';
 export default function GuestLandingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const searchParams = useSearchParams();
-  const { events, guests, guestGroups, venues, updateGuest, addGuest } = useApp();
+  const { events, guests, guestGroups, venues, gifts: allGifts, updateGuest, addGuest, updateGift } = useApp();
   const contextEvent = events.find(e => e.slug === slug);
 
   // For public visitors (not logged in), fetch event directly from Supabase
@@ -102,6 +102,44 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   const allGroups = contextEvent
     ? guestGroups.filter(g => g.eventId === event?.id)
     : publicGroups;
+
+  // ── Load gifts for public view ──
+  const [publicGifts, setPublicGifts] = useState<GiftItem[]>([]);
+  useEffect(() => {
+    if (!event) return;
+    const loadPublicGifts = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('gifts')
+        .select('*')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: true });
+      if (data) {
+        setPublicGifts(data.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          name: row.name || '',
+          description: row.description || '',
+          price: row.price ? Number(row.price) : undefined,
+          url: row.url || '',
+          imageUrl: row.image_url || '',
+          reservedBy: row.reserved_by || undefined,
+          reserved: row.reserved || false,
+          category: row.category || 'Général',
+        })));
+      }
+    };
+    loadPublicGifts();
+  }, [event?.id]);
+
+  const handlePublicReserve = async (giftId: string) => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+    await supabase.from('gifts').update({ reserved: true }).eq('id', giftId);
+    setPublicGifts(prev => prev.map(g => g.id === giftId ? { ...g, reserved: true } : g));
+    if (typeof updateGift === 'function') updateGift(giftId, { reserved: true });
+  };
 
   // ── Personalized link: detect known guest from URL ──
   const urlGuestParam = searchParams.get('guest');
@@ -249,7 +287,11 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     countdown: () => null, // integrated in HeroSlideshow
     ourStory: () => <SectionOurStory key="ourStory" event={event} />,
     gallery: () => <SectionGallery key="gallery" event={event} />,
-    giftList: () => <SectionGiftList key="giftList" event={event} />,
+    giftList: () => {
+      const eventGifts = (allGifts && allGifts.length > 0 ? allGifts : publicGifts).filter(g => g.eventId === event.id);
+      if (eventGifts.length === 0) return null;
+      return <SectionGiftList key="giftList" event={event} gifts={eventGifts} onReserve={handlePublicReserve} />;
+    },
   };
 
   // Use template sections order, or event custom order, or fallback

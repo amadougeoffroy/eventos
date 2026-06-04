@@ -4,7 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { 
   Sparkles, Home, PartyPopper, Users, UsersRound, Send, UtensilsCrossed,
   LayoutGrid, Radio, BarChart3, Settings, LogOut, ChevronDown, Plus, MapPin,
-  Menu, X
+  Menu, X, Gift
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
@@ -50,6 +50,7 @@ export default function Sidebar({ eventId }: SidebarProps) {
     { href: `/dashboard/events/${eventId}/menu`, icon: UtensilsCrossed, label: 'Menu' },
     { href: `/dashboard/events/${eventId}/tables`, icon: LayoutGrid, label: 'Tables' },
     { href: `/dashboard/events/${eventId}/venues`, icon: MapPin, label: 'Lieux' },
+    { href: `/dashboard/events/${eventId}/gifts`, icon: Gift, label: 'Cadeaux' },
     { href: `/dashboard/events/${eventId}/live`, icon: Radio, label: 'Jour J' },
     { href: `/dashboard/events/${eventId}/stats`, icon: BarChart3, label: 'Stats' },
   ] : [];

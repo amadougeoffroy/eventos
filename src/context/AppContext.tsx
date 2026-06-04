@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue } from '@/lib/types';
+import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue, GiftItem } from '@/lib/types';
 import {
   mockTables,
   mockMenuCategories, mockMenuItems, mockOrders
@@ -12,6 +12,7 @@ interface AppState {
   events: Event[];
   guests: Guest[];
   guestGroups: GuestGroup[];
+  gifts: GiftItem[];
   tables: EventTable[];
   tablesReady: boolean;
   menuCategories: MenuCategory[];
@@ -44,6 +45,9 @@ interface AppActions {
   addVenue: (venue: Venue) => void;
   updateVenue: (id: string, updates: Partial<Venue>) => void;
   removeVenue: (id: string) => void;
+  addGift: (gift: GiftItem) => void;
+  updateGift: (id: string, updates: Partial<GiftItem>) => void;
+  removeGift: (id: string) => void;
 }
 
 const AppContext = createContext<(AppState & AppActions) | undefined>(undefined);
@@ -242,6 +246,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // OTHER DATA — Still localStorage (will migrate next)
   // ═══════════════════════════════════════════════════════════
   const [guests, setGuests] = useState<Guest[]>([]);
+  const [gifts, setGifts] = useState<GiftItem[]>([]);
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [venues, setVenues] = useState<Venue[]>([]);
 
   // Load guests from Supabase
   useEffect(() => {
@@ -284,10 +293,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     loadGuests();
   }, [userId]);
-  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
-  const [venues, setVenues] = useState<Venue[]>([]);
+
+  // Load gifts from Supabase
+  useEffect(() => {
+    if (!userId) return;
+    const loadGifts = async () => {
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('user_id', userId);
+      if (!userEvents || userEvents.length === 0) return;
+      const eventIds = userEvents.map(e => e.id);
+      const { data, error } = await supabase
+        .from('gifts')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: true });
+      if (!error && data) {
+        setGifts(data.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          name: row.name || '',
+          description: row.description || '',
+          price: row.price ? Number(row.price) : undefined,
+          url: row.url || '',
+          imageUrl: row.image_url || '',
+          reservedBy: row.reserved_by || undefined,
+          reserved: row.reserved || false,
+          category: row.category || 'Général',
+          createdAt: row.created_at,
+        })));
+      }
+    };
+    loadGifts();
+  }, [userId]);
 
   // ═══════════════════════════════════════════════════════════
   // GUEST GROUPS — Supabase powered 🚀
@@ -538,6 +577,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) console.error('removeGuest error:', error);
   }, [supabase]);
 
+  // ─── Gifts CRUD ───
+  const addGift = useCallback(async (gift: GiftItem) => {
+    setGifts(prev => [...prev, gift]);
+    const { data, error } = await supabase
+      .from('gifts')
+      .insert({
+        event_id: gift.eventId,
+        name: gift.name,
+        description: gift.description || '',
+        price: gift.price || null,
+        url: gift.url || '',
+        image_url: gift.imageUrl || '',
+        reserved: gift.reserved || false,
+        category: gift.category || 'Général',
+      })
+      .select()
+      .single();
+    if (!error && data) {
+      setGifts(prev => prev.map(g => g.id === gift.id ? { ...g, id: data.id } : g));
+    } else if (error) console.error('addGift error:', error);
+  }, [supabase]);
+
+  const updateGift = useCallback(async (id: string, updates: Partial<GiftItem>) => {
+    setGifts(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.price !== undefined) payload.price = updates.price;
+    if (updates.url !== undefined) payload.url = updates.url;
+    if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl;
+    if (updates.reserved !== undefined) payload.reserved = updates.reserved;
+    if (updates.reservedBy !== undefined) payload.reserved_by = updates.reservedBy;
+    if (updates.category !== undefined) payload.category = updates.category;
+    if (Object.keys(payload).length > 0) {
+      const { error } = await supabase.from('gifts').update(payload).eq('id', id);
+      if (error) console.error('updateGift error:', error);
+    }
+  }, [supabase]);
+
+  const removeGift = useCallback(async (id: string) => {
+    setGifts(prev => prev.filter(g => g.id !== id));
+    const { error } = await supabase.from('gifts').delete().eq('id', id);
+    if (error) console.error('removeGift error:', error);
+  }, [supabase]);
+
   // ─── Tables with localStorage persistence ───
   const TABLES_KEY = 'eventos-tables';
   const [tables, setTables] = useState<EventTable[]>(mockTables);
@@ -640,12 +724,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders,
+      events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders, gifts,
       currentUser, authLoading, eventsLoading,
       addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
       addGuestGroup, updateGuestGroup, removeGuestGroup,
       addTable, updateTable, removeTable, addMenuItem, updateMenuItem, addMenuCategory,
       addOrder, updateOrder, addVenue, updateVenue, removeVenue,
+      addGift, updateGift, removeGift,
     }}>
       {children}
     </AppContext.Provider>
