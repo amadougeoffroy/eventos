@@ -29,7 +29,7 @@ export function dbEventToApp(row: Record<string, unknown>): Event {
     templateId: (row.template_id as string) || 'classique',
     heroType: (row.hero_type as Event['heroType']) || 'image',
     heroImages: (row.hero_images as string[]) || undefined,
-    heroVideo: (row.hero_video as string) || undefined,
+    heroVideo: (row.meta as any)?.heroVideo || undefined,
     heroMedia: (row.hero_media as Event['heroMedia']) || [],
     backgroundMusicUrl: (row.background_music_url as string) || '',
     sectionsOrder: (row.sections_order as string[]) || undefined,
@@ -62,7 +62,13 @@ export function appEventToDb(event: Partial<Event> & { userId?: string }) {
   if (event.templateId !== undefined) payload.template_id = event.templateId;
   if (event.heroType !== undefined) payload.hero_type = event.heroType;
   if (event.heroImages !== undefined) payload.hero_images = event.heroImages;
-  if (event.heroVideo !== undefined) payload.hero_video = event.heroVideo;
+  // heroVideo is stored inside meta to avoid needing a DB migration
+  if (event.meta !== undefined || event.heroVideo !== undefined) {
+    const existingMeta = (payload.meta as Record<string, unknown>) || (event.meta as Record<string, unknown>) || {};
+    if (event.heroVideo !== undefined) {
+      payload.meta = { ...existingMeta, heroVideo: event.heroVideo };
+    }
+  }
   if (event.heroMedia !== undefined) payload.hero_media = event.heroMedia;
   if (event.backgroundMusicUrl !== undefined) payload.background_music_url = event.backgroundMusicUrl;
   if (event.sectionsOrder !== undefined) payload.sections_order = event.sectionsOrder;

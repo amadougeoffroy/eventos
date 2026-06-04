@@ -202,7 +202,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       setEvents(prev => prev.map(e => e.id === event.id ? realEvent : e));
     } else {
-      console.error('Error creating event:', error);
+      console.error('Error creating event:', error?.message, error?.code, error?.details, JSON.stringify(error));
       setEvents(prev => prev.filter(e => e.id !== event.id));
     }
   }, [userId, supabase]);
