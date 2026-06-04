@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, Lock, Crown } from 'lucide-react';
 import {
   getTemplatesForPlan,
   getTemplateVariant,
@@ -347,6 +347,104 @@ function TemplateCard({ template, eventType, isSelected, onSelect }: TemplateCar
 }
 
 // ---------------------------------------------------------------------------
+// LockedTemplateCard (greyed-out teaser from higher plan)
+// ---------------------------------------------------------------------------
+
+function LockedTemplateCard({ template, eventType, requiredPlan }: {
+  template: TemplateDesign;
+  eventType: string;
+  requiredPlan: string;
+}) {
+  const variant = getTemplateVariant(template.id, eventType);
+  if (!variant) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      style={{
+        position: 'relative',
+        border: '1px solid var(--border-light, rgba(255,255,255,0.08))',
+        borderRadius: '1rem',
+        overflow: 'hidden',
+        width: '100%',
+        opacity: 0.55,
+        filter: 'grayscale(0.7)',
+        cursor: 'not-allowed',
+        userSelect: 'none',
+      }}
+    >
+      {/* Preview area (blurred) */}
+      <div
+        style={{
+          height: 180,
+          borderRadius: '1rem 1rem 0 0',
+          background: `linear-gradient(135deg, ${variant.palette.primary}, ${variant.palette.accent})`,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <span style={{
+          fontFamily: template.fonts.script,
+          fontSize: '2rem',
+          color: '#fff',
+          textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+          position: 'relative', zIndex: 1,
+        }}>Invitation</span>
+        <PlanBadge plan={template.plan} />
+        <LayoutBadge layout={template.layout} />
+      </div>
+
+      {/* Info area */}
+      <div style={{
+        padding: '1rem',
+        background: 'var(--bg-card, #1a1a2e)',
+        borderRadius: '0 0 1rem 1rem',
+      }}>
+        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary, #f0f0f0)' }}>
+          {template.name}
+        </h4>
+        <p style={{ margin: '0.35rem 0 0', fontSize: '0.8rem', lineHeight: 1.5, color: 'var(--text-muted, #9b9590)' }}>
+          {template.description}
+        </p>
+      </div>
+
+      {/* Lock overlay */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        background: 'rgba(0,0,0,0.35)',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: '0.5rem', zIndex: 5,
+        borderRadius: '1rem',
+      }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'rgba(212,175,55,0.15)',
+          border: '1px solid rgba(212,175,55,0.3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Lock size={20} style={{ color: '#D4AF37' }} />
+        </div>
+        <span style={{
+          fontSize: '0.7rem', fontWeight: 700,
+          color: '#D4AF37', textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          display: 'flex', alignItems: 'center', gap: '0.3rem',
+        }}>
+          <Crown size={12} /> Formule {PLAN_LABELS[requiredPlan] ?? requiredPlan}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
@@ -360,6 +458,13 @@ export default function TemplateSelector({
     () => getTemplatesForPlan(plan, eventType),
     [plan, eventType],
   );
+
+  // Get 1 teaser template from the next plan tier
+  const nextPlan = plan === 'essentiel' ? 'pro' : plan === 'pro' ? 'premium' : null;
+  const teaserTemplates = useMemo(() => {
+    if (!nextPlan) return [];
+    return getTemplatesForPlan(nextPlan as 'essentiel' | 'pro' | 'premium', eventType).slice(0, 1);
+  }, [nextPlan, eventType]);
 
   // Auto-select the single template for "essentiel"
   useEffect(() => {
@@ -426,6 +531,25 @@ export default function TemplateSelector({
             onSelect={() => onSelect(templates[0].id)}
           />
         </div>
+
+        {/* Teaser from next plan */}
+        {teaserTemplates.length > 0 && (
+          <>
+            <div style={{
+              fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center',
+              marginTop: '0.5rem',
+            }}>
+              Envie de plus de choix ?
+            </div>
+            <div style={{ maxWidth: 340, width: '100%' }}>
+              <LockedTemplateCard
+                template={teaserTemplates[0]}
+                eventType={eventType}
+                requiredPlan={nextPlan!}
+              />
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -447,6 +571,15 @@ export default function TemplateSelector({
             eventType={eventType}
             isSelected={selectedTemplateId === t.id}
             onSelect={() => onSelect(t.id)}
+          />
+        ))}
+        {/* Teaser from next plan */}
+        {teaserTemplates.map((t) => (
+          <LockedTemplateCard
+            key={`locked-${t.id}`}
+            template={t}
+            eventType={eventType}
+            requiredPlan={nextPlan!}
           />
         ))}
       </AnimatePresence>

@@ -242,13 +242,18 @@ export default function TemplatePreview({
             overflowX: 'hidden',
           }}
         >
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {/* ── A. Hero Section ─────────────────────────────────── */}
-            <Section motionKey={`hero-${templateId}-${eventType}`}>
+            <Section key={`hero-${templateId}-${eventType}`} motionKey={`hero-${templateId}-${eventType}`}>
               <div
                 style={{
                   height: 220,
-                  background: `linear-gradient(135deg, ${palette.primary}, ${palette.accent})`,
+                  backgroundImage: variant?.defaultHeroImages?.[0]
+                    ? `url(${variant.defaultHeroImages[0]})`
+                    : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: palette.primary,
                   position: 'relative',
                   display: 'flex',
                   flexDirection: 'column',
@@ -256,7 +261,7 @@ export default function TemplatePreview({
                   justifyContent: 'center',
                   padding: '24px 16px',
                   textAlign: 'center',
-                  transition: 'background 0.4s ease',
+                  transition: 'all 0.4s ease',
                 }}
               >
                 {/* Overlay */}
@@ -380,7 +385,7 @@ export default function TemplatePreview({
             </Section>
 
             {/* ── B. Welcome Section ──────────────────────────────── */}
-            <Section motionKey={`welcome-${welcomeMessage?.slice(0, 20)}`}>
+            <Section key={`welcome-${welcomeMessage?.slice(0, 20) || 'empty'}`} motionKey={`welcome-${welcomeMessage?.slice(0, 20) || 'empty'}`}>
               <div
                 style={{
                   padding: '14px 16px 10px',
@@ -409,7 +414,7 @@ export default function TemplatePreview({
             </Section>
 
             {/* ── C. Program Section ──────────────────────────────── */}
-            <Section motionKey={`program-${program.length}`}>
+            <Section key={`program-${program.length}`} motionKey={`program-${program.length}`}>
               <div
                 style={{
                   padding: '10px 16px 10px',
@@ -510,7 +515,7 @@ export default function TemplatePreview({
 
             {/* ── D. Dress Code Badge ─────────────────────────────── */}
             {dressCode && (
-              <Section motionKey={`dress-${dressCode}`}>
+              <Section key={`dress-${dressCode}`} motionKey={`dress-${dressCode}`}>
                 <div
                   style={{
                     padding: '6px 16px 8px',
@@ -543,7 +548,7 @@ export default function TemplatePreview({
             )}
 
             {/* ── E. RSVP Button ──────────────────────────────────── */}
-            <Section motionKey="rsvp-btn">
+            <Section key="rsvp-btn" motionKey="rsvp-btn">
               <div
                 style={{
                   padding: '10px 24px 18px',
