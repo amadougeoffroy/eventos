@@ -41,7 +41,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
     total: eventGifts.length,
     reserved: eventGifts.filter(g => g.reserved).length,
     available: eventGifts.filter(g => !g.reserved).length,
-    totalValue: eventGifts.reduce((sum, g) => sum + (g.price || 0), 0),
+    totalValue: eventGifts.filter(g => g.reserved).reduce((sum, g) => sum + (g.price || 0), 0),
   }), [eventGifts]);
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
