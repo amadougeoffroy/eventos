@@ -287,10 +287,14 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
         {(() => {
           const offerers: { name: string; gift: string; price?: number }[] = [];
           eventGifts.forEach(g => {
-            if (g.reservedByName) {
-              g.reservedByName.split(', ').filter(Boolean).forEach(name => {
-                offerers.push({ name, gift: g.name, price: g.price });
-              });
+            if (g.reserved) {
+              if (g.reservedByName) {
+                g.reservedByName.split(', ').filter(Boolean).forEach(name => {
+                  offerers.push({ name, gift: g.name, price: g.price });
+                });
+              } else {
+                offerers.push({ name: 'Invité inconnu', gift: g.name, price: g.price });
+              }
             }
           });
           if (offerers.length === 0) return null;
