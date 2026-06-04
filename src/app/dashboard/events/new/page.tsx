@@ -2,7 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
@@ -10,6 +10,7 @@ import { EventType, Event, ProgramItem, Venue } from '@/lib/types';
 import { VenueFormModal, VenueFormData } from '@/components/VenueFormModal';
 import TemplateSelector from '@/components/TemplateSelector';
 import TemplatePreview from '@/components/TemplatePreview';
+import { createClient } from '@/lib/supabase/client';
 import { getDefaultTemplate, getTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
 import type { HeroType } from '@/lib/templates/template-registry';
 import {
@@ -588,21 +589,39 @@ export default function NewEventPage() {
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
                           style={{ display: 'none' }}
-                          onChange={(e) => {
+                          onChange={async (e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            // Convert to base64 data URI so it persists in localStorage
-                            const reader = new FileReader();
-                            reader.onload = () => {
-                              const dataUrl = reader.result as string;
+                            // Upload to Supabase Storage
+                            const sb = createClient();
+                            const ext = file.name.split('.').pop() || 'jpg';
+                            const path = `hero/${crypto.randomUUID()}.${ext}`;
+                            const { error } = await sb.storage
+                              .from('event-media')
+                              .upload(path, file, { cacheControl: '31536000', upsert: false });
+                            if (error) {
+                              console.error('Upload error:', error);
+                              // Fallback to base64 if storage fails
+                              const reader = new FileReader();
+                              reader.onload = () => {
+                                const dataUrl = reader.result as string;
+                                if (heroType === 'image') setHeroImages([dataUrl]);
+                                else setHeroImages(prev => [...prev, dataUrl]);
+                                setHideDefault(true);
+                              };
+                              reader.readAsDataURL(file);
+                            } else {
+                              const { data: urlData } = sb.storage
+                                .from('event-media')
+                                .getPublicUrl(path);
+                              const publicUrl = urlData.publicUrl;
                               if (heroType === 'image') {
-                                setHeroImages([dataUrl]);
+                                setHeroImages([publicUrl]);
                               } else {
-                                setHeroImages(prev => [...prev, dataUrl]);
+                                setHeroImages(prev => [...prev, publicUrl]);
                               }
                               setHideDefault(true);
-                            };
-                            reader.readAsDataURL(file);
+                            }
                             e.target.value = '';
                           }}
                         />
