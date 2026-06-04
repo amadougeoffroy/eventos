@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Volume2 } from 'lucide-react';
 
@@ -7,13 +7,42 @@ export default function BackgroundMusic({ url }: { url: string }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [showHint, setShowHint] = useState(true);
+  const triedAutoplay = useRef(false);
+
+  const startPlayback = useCallback(() => {
+    if (!audioRef.current || playing) return;
+    audioRef.current.play().then(() => {
+      setPlaying(true);
+      setShowHint(false);
+    }).catch(() => { /* blocked, will retry on interaction */ });
+  }, [playing]);
 
   useEffect(() => {
     audioRef.current = new Audio(url);
     audioRef.current.loop = true;
     audioRef.current.volume = 0.3;
 
-    const t = setTimeout(() => setShowHint(false), 5000);
+    // Attempt autoplay
+    if (!triedAutoplay.current) {
+      triedAutoplay.current = true;
+      audioRef.current.play().then(() => {
+        setPlaying(true);
+        setShowHint(false);
+      }).catch(() => {
+        // Autoplay blocked — play on first user interaction
+        const handler = () => {
+          startPlayback();
+          document.removeEventListener('click', handler);
+          document.removeEventListener('touchstart', handler);
+          document.removeEventListener('scroll', handler);
+        };
+        document.addEventListener('click', handler, { once: true });
+        document.addEventListener('touchstart', handler, { once: true });
+        document.addEventListener('scroll', handler, { once: true });
+      });
+    }
+
+    const t = setTimeout(() => setShowHint(false), 6000);
 
     return () => {
       clearTimeout(t);
@@ -22,6 +51,7 @@ export default function BackgroundMusic({ url }: { url: string }) {
         audioRef.current = null;
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
   const toggle = () => {
@@ -56,7 +86,7 @@ export default function BackgroundMusic({ url }: { url: string }) {
               boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
             }}
           >
-            🎵 Musique d&apos;ambiance
+            🎵 {playing ? 'Musique en cours' : 'Cliquez pour la musique'}
           </motion.div>
         )}
       </AnimatePresence>

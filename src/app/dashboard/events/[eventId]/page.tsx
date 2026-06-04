@@ -12,7 +12,8 @@ import { getTemplate, getTemplateVariant } from '@/lib/templates/template-regist
 import {
   CalendarDays, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle,
   Send, UtensilsCrossed, LayoutGrid, Radio, ArrowRight, ExternalLink, Copy, TrendingUp,
-  Plus, Edit3, Trash2, X, GripVertical, Image, Upload, MessageCircleHeart, LayoutTemplate, Music, Lock
+  Plus, Edit3, Trash2, X, GripVertical, Image, Upload, MessageCircleHeart, LayoutTemplate, Music, Lock,
+  Film, Images, CheckCircle, Play, Pause
 } from 'lucide-react';
 
 const fadeUp = {
@@ -421,137 +422,224 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={8}
           className="card" style={{ marginBottom: '2rem' }}
         >
-          {/* Hero Images */}
+          {/* ── Hero Type Selector ── */}
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
               <Image size={14} style={{ color: 'var(--gold)' }} />
-              <span className="text-sm font-semibold">Images du hero</span>
-              <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                {(event.heroImages || []).length} / {event.plan === 'premium' ? 10 : event.plan === 'pro' ? 5 : 1}
-              </span>
+              <span className="text-sm font-semibold">Type de Hero</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
-              <input
-                type="file" id="hero-file-input" accept="image/*" multiple
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const files = e.target.files;
-                  if (!files || !event) return;
-                  const maxImages = event.plan === 'premium' ? 10 : event.plan === 'pro' ? 5 : 1;
-                  const current = event.heroImages || [];
-                  if (current.length >= maxImages) return;
-                  Array.from(files).slice(0, maxImages - current.length).forEach(file => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      const dataUrl = ev.target?.result as string;
-                      if (dataUrl) {
-                        updateEvent(eventId, { heroImages: [...(event.heroImages || []), dataUrl] });
-                      }
-                    };
-                    reader.readAsDataURL(file);
-                  });
-                  e.target.value = '';
-                }}
-              />
-              <button onClick={() => document.getElementById('hero-file-input')?.click()} style={{
-                display: 'flex', alignItems: 'center', gap: '0.35rem',
-                padding: '0.5rem 0.85rem', borderRadius: 10, border: '1.5px dashed var(--gold)',
-                background: 'rgba(200,169,110,0.06)', cursor: 'pointer',
-                color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem',
-              }}><Upload size={15} /> Charger des photos</button>
+            {(() => {
+              const plan = event.plan || 'essentiel';
+              const heroType = event.heroType || 'image';
+              const heroOptions: { key: 'image' | 'slideshow' | 'video'; label: string; icon: React.ReactNode; desc: string; minPlan: string }[] = [
+                { key: 'image', label: 'Image fixe', icon: <Image size={18} />, desc: '1 image principale', minPlan: 'essentiel' },
+                { key: 'slideshow', label: 'Diaporama', icon: <Images size={18} />, desc: 'Jusqu\'à ' + (plan === 'premium' ? 10 : 5) + ' images', minPlan: 'pro' },
+                { key: 'video', label: 'Vidéo', icon: <Film size={18} />, desc: 'Vidéo de fond', minPlan: 'premium' },
+              ];
+              const planOrder = { essentiel: 0, pro: 1, premium: 2 };
+              const userPlanLevel = planOrder[plan as keyof typeof planOrder] ?? 0;
 
-              <div style={{ display: 'flex', gap: '0.3rem', flex: 1, minWidth: 200 }}>
-                <input
-                  className="input" placeholder="ou coller une URL..." id="hero-img-input"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const input = e.currentTarget;
-                      const url = input.value.trim();
-                      if (url && event) {
-                        const current = event.heroImages || [];
-                        updateEvent(eventId, { heroImages: [...current, url] });
-                        input.value = '';
-                      }
-                    }
-                  }}
-                  style={{ flex: 1 }}
-                />
-                <button onClick={() => {
-                  const input = document.getElementById('hero-img-input') as HTMLInputElement;
-                  const url = input?.value.trim();
-                  if (url && event) {
-                    const current = event.heroImages || [];
-                    updateEvent(eventId, { heroImages: [...current, url] });
-                    input.value = '';
-                  }
-                }} style={{
-                  padding: '0 0.7rem', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
-                  color: '#fff', fontWeight: 600, fontSize: '0.8rem',
-                }}><Plus size={16} /></button>
-              </div>
-            </div>
-
-            {(event?.heroImages && event.heroImages.length > 0) ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: '0.6rem' }}>
-                {event.heroImages.map((url, idx) => (
-                  <div key={idx} style={{
-                    position: 'relative', borderRadius: 10, overflow: 'hidden',
-                    border: '1px solid var(--border-light)', aspectRatio: '16/10',
-                  }}>
-                    <img src={url} alt={`Slide ${idx + 1}`} style={{
-                      width: '100%', height: '100%', objectFit: 'cover',
-                    }} onError={e => { (e.target as HTMLImageElement).style.opacity = '0.3'; }} />
-                    <div style={{
-                      position: 'absolute', top: 4, left: 4,
-                      width: 20, height: 20, borderRadius: '50%',
-                      background: 'rgba(0,0,0,0.6)', color: '#fff',
-                      fontSize: '0.6rem', fontWeight: 700,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>{idx + 1}</div>
-                    <button onClick={() => {
-                      if (!event) return;
-                      const next = [...(event.heroImages || [])];
-                      next.splice(idx, 1);
-                      updateEvent(eventId, { heroImages: next });
-                    }} style={{
-                      position: 'absolute', top: 4, right: 4,
-                      width: 22, height: 22, borderRadius: '50%',
-                      background: 'rgba(220,50,50,0.85)', border: 'none',
-                      color: '#fff', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}><X size={12} /></button>
+              return (
+                <>
+                  {/* Type cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                    {heroOptions.map(opt => {
+                      const optPlanLevel = planOrder[opt.minPlan as keyof typeof planOrder] ?? 0;
+                      const locked = userPlanLevel < optPlanLevel;
+                      const active = heroType === opt.key;
+                      return (
+                        <button key={opt.key} onClick={() => {
+                          if (locked) return;
+                          updateEvent(eventId, {
+                            heroType: opt.key,
+                            ...(opt.key === 'image' ? { heroImages: (event.heroImages || []).slice(0, 1), heroVideo: undefined } : {}),
+                            ...(opt.key === 'slideshow' ? { heroVideo: undefined } : {}),
+                            ...(opt.key === 'video' ? {} : {}),
+                          });
+                        }} style={{
+                          position: 'relative', padding: '1rem 0.5rem', borderRadius: 14, border: active
+                            ? '2px solid var(--gold)' : '1.5px solid var(--border-light)',
+                          background: active ? 'rgba(200,169,110,0.08)' : 'transparent',
+                          cursor: locked ? 'not-allowed' : 'pointer', textAlign: 'center',
+                          opacity: locked ? 0.45 : 1, transition: 'all 0.2s',
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                        }}>
+                          <div style={{ color: active ? 'var(--gold)' : 'var(--text-muted)' }}>{opt.icon}</div>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: active ? 'var(--text-primary)' : 'var(--text-muted)' }}>{opt.label}</span>
+                          <span style={{ fontSize: '0.62rem', color: 'var(--text-muted)' }}>{opt.desc}</span>
+                          {locked && (
+                            <span style={{
+                              position: 'absolute', top: 6, right: 6,
+                              display: 'inline-flex', alignItems: 'center', gap: '0.15rem',
+                              fontSize: '0.55rem', padding: '0.1rem 0.35rem', borderRadius: 5,
+                              background: 'rgba(168,85,247,0.08)', color: '#A855F7', fontWeight: 600,
+                            }}><Lock size={8} />{opt.minPlan === 'pro' ? 'Pro' : 'Premium'}</span>
+                          )}
+                          {active && (
+                            <div style={{ position: 'absolute', top: 6, left: 6 }}>
+                              <CheckCircle size={14} style={{ color: 'var(--gold)' }} />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
-                <Image size={28} style={{ margin: '0 auto 0.4rem', opacity: 0.3 }} />
-                <p style={{ margin: 0 }}>Aucune image ajoutée. Les images par défaut seront utilisées.</p>
-              </div>
-            )}
+
+                  {/* Upload area based on selected type */}
+                  {heroType === 'image' && (
+                    <div>
+                      <input type="file" id="hero-file-input" accept="image/*" style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file || !event) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const dataUrl = ev.target?.result as string;
+                            if (dataUrl) updateEvent(eventId, { heroImages: [dataUrl] });
+                          };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                      {event.heroImages && event.heroImages.length > 0 ? (
+                        <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-light)', aspectRatio: '16/9', maxWidth: 320 }}>
+                          <img src={event.heroImages[0]} alt="Hero" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <button onClick={() => updateEvent(eventId, { heroImages: [] })} style={{
+                            position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%',
+                            background: 'rgba(220,50,50,0.85)', border: 'none', color: '#fff', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}><X size={13} /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => document.getElementById('hero-file-input')?.click()} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                          width: '100%', padding: '2rem', borderRadius: 12, border: '2px dashed var(--border-light)',
+                          background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.82rem',
+                        }}><Upload size={18} /> Charger une image</button>
+                      )}
+                    </div>
+                  )}
+
+                  {heroType === 'slideshow' && (
+                    <div>
+                      <input type="file" id="hero-file-input" accept="image/*" multiple style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (!files || !event) return;
+                          const maxImg = plan === 'premium' ? 10 : 5;
+                          const current = event.heroImages || [];
+                          if (current.length >= maxImg) return;
+                          Array.from(files).slice(0, maxImg - current.length).forEach(file => {
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const dataUrl = ev.target?.result as string;
+                              if (dataUrl) updateEvent(eventId, { heroImages: [...(event.heroImages || []), dataUrl] });
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                          e.target.value = '';
+                        }}
+                      />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
+                        <button onClick={() => document.getElementById('hero-file-input')?.click()} style={{
+                          display: 'flex', alignItems: 'center', gap: '0.35rem',
+                          padding: '0.5rem 0.85rem', borderRadius: 10, border: '1.5px dashed var(--gold)',
+                          background: 'rgba(200,169,110,0.06)', cursor: 'pointer',
+                          color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem',
+                        }}><Upload size={15} /> Ajouter des photos</button>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                          {(event.heroImages || []).length} / {plan === 'premium' ? 10 : 5}
+                        </span>
+                      </div>
+                      {(event.heroImages && event.heroImages.length > 0) ? (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', gap: '0.5rem' }}>
+                          {event.heroImages.map((url, idx) => (
+                            <div key={idx} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-light)', aspectRatio: '16/10' }}>
+                              <img src={url} alt={`Slide ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <div style={{
+                                position: 'absolute', top: 4, left: 4, width: 18, height: 18, borderRadius: '50%',
+                                background: 'rgba(0,0,0,0.6)', color: '#fff', fontSize: '0.55rem', fontWeight: 700,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}>{idx + 1}</div>
+                              <button onClick={() => {
+                                const next = [...(event.heroImages || [])]; next.splice(idx, 1);
+                                updateEvent(eventId, { heroImages: next });
+                              }} style={{
+                                position: 'absolute', top: 4, right: 4, width: 20, height: 20, borderRadius: '50%',
+                                background: 'rgba(220,50,50,0.85)', border: 'none', color: '#fff', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              }}><X size={11} /></button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                          <Images size={28} style={{ margin: '0 auto 0.4rem', opacity: 0.3 }} />
+                          <p style={{ margin: 0 }}>Ajoutez des images pour le diaporama</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {heroType === 'video' && (
+                    <div>
+                      <input type="file" id="hero-video-input" accept="video/mp4,video/webm,video/ogg" style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            const dataUrl = ev.target?.result as string;
+                            if (dataUrl) updateEvent(eventId, { heroVideo: dataUrl });
+                          };
+                          reader.readAsDataURL(file);
+                          e.target.value = '';
+                        }}
+                      />
+                      {event.heroVideo ? (
+                        <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border-light)', maxWidth: 400 }}>
+                          <video src={event.heroVideo} style={{ width: '100%', borderRadius: 12 }} controls muted />
+                          <button onClick={() => updateEvent(eventId, { heroVideo: undefined })} style={{
+                            position: 'absolute', top: 6, right: 6, width: 24, height: 24, borderRadius: '50%',
+                            background: 'rgba(220,50,50,0.85)', border: 'none', color: '#fff', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}><X size={13} /></button>
+                        </div>
+                      ) : (
+                        <button onClick={() => document.getElementById('hero-video-input')?.click()} style={{
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                          width: '100%', padding: '2rem', borderRadius: 12, border: '2px dashed var(--border-light)',
+                          background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.82rem',
+                        }}><Film size={18} /> Charger une vidéo (MP4, WebM)</button>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
 
-          {/* Background Music — Premium only */}
+          {/* Background Music — Pro + Premium */}
           <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
               <Music size={14} style={{ color: 'var(--gold)' }} />
               <span className="text-sm font-semibold">Musique d&apos;ambiance</span>
-              {event.plan !== 'premium' && (
+              {event.plan === 'essentiel' && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.2rem', marginLeft: '0.5rem',
                   fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: 5,
                   background: 'rgba(168,85,247,0.08)', color: '#A855F7', fontWeight: 600,
                 }}>
-                  <Lock size={9} /> Premium
+                  <Lock size={9} /> Pro
                 </span>
               )}
             </div>
-            {event.plan === 'premium' ? (
+            {(event.plan === 'pro' || event.plan === 'premium') ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <input
-                  type="file" id="music-file-input" accept="audio/mpeg,audio/mp4,audio/ogg,audio/wav"
+                  type="file" id="music-file-input"
+                  accept=".mp3,.m4a,.ogg,.wav,.aac,audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/aac"
                   style={{ display: 'none' }}
                   onChange={(e) => {
                     const file = e.target.files?.[0];
@@ -574,6 +662,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                     }}>
                       <Music size={14} style={{ color: 'var(--gold)' }} />
                       <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>🎵 Musique chargée</span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>Lecture auto sur l&apos;invitation</span>
                     </div>
                     <button onClick={() => updateEvent(eventId, { backgroundMusicUrl: '' })} style={{
                       padding: '0.4rem', borderRadius: 8, background: 'rgba(220,53,69,0.08)',
@@ -588,7 +677,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                     background: 'transparent', cursor: 'pointer',
                     color: 'var(--text-muted)', fontSize: '0.8rem',
                   }}>
-                    <Upload size={16} /> Charger un fichier audio (.mp3, .m4a)
+                    <Upload size={16} /> Charger un fichier audio (.mp3, .m4a, .ogg)
                   </button>
                 )}
               </div>
@@ -598,7 +687,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                 background: 'var(--glass)', border: '1px solid var(--glass-border)',
                 color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center',
               }}>
-                🔒 La musique d&apos;ambiance est disponible avec la formule Premium
+                🔒 La musique d&apos;ambiance est disponible à partir de la formule Pro
               </div>
             )}
           </div>
