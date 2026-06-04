@@ -453,9 +453,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                           if (locked) return;
                           updateEvent(eventId, {
                             heroType: opt.key,
-                            ...(opt.key === 'image' ? { heroImages: (event.heroImages || []).slice(0, 1), heroVideo: undefined } : {}),
-                            ...(opt.key === 'slideshow' ? { heroVideo: undefined } : {}),
-                            ...(opt.key === 'video' ? {} : {}),
+                            ...(opt.key === 'image' ? { heroImages: (event.heroImages || []).slice(0, 1) } : {}),
                           });
                         }} style={{
                           position: 'relative', padding: '1rem 0.5rem', borderRadius: 14, border: active
