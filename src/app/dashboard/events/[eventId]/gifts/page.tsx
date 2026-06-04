@@ -124,7 +124,6 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
           {[
             { label: 'Total', value: stats.total, color: '#5B8DB8', icon: Gift },
             { label: 'Seront offerts', value: stats.reserved, color: '#22964F', icon: Package },
-            { label: 'Disponibles', value: stats.available, color: '#DC8C28', icon: Tag },
             { label: 'Valeur totale', value: `${stats.totalValue.toLocaleString('fr-FR')}€`, color: '#C8A96E', icon: Gift },
           ].map((s, i) => (
             <motion.div key={s.label} custom={i} variants={fadeUp} initial="hidden" animate="visible"
