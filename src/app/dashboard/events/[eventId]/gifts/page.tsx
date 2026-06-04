@@ -195,28 +195,31 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                   position: 'relative', transition: 'all 0.2s',
                 }}>
                 {/* Reserved badge */}
-                {gift.reserved && (
-                  <div style={{
-                    position: 'absolute', top: 10, right: 10,
-                    display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem',
-                  }}>
+                {gift.reserved && (() => {
+                  const names = gift.reservedByName ? gift.reservedByName.split(', ').filter(Boolean) : [];
+                  return (
                     <div style={{
-                      padding: '0.2rem 0.5rem', borderRadius: 6,
-                      background: 'rgba(34,150,79,0.12)', fontSize: '0.6rem',
-                      fontWeight: 700, color: '#22964F',
-                    }}>Sera offert</div>
-                    {gift.reservedByName && (
+                      position: 'absolute', top: 10, right: 10,
+                      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem',
+                    }}>
                       <div style={{
-                        padding: '0.15rem 0.45rem', borderRadius: 6,
-                        background: 'rgba(200,169,110,0.1)', fontSize: '0.6rem',
-                        fontWeight: 600, color: 'var(--gold)',
-                        display: 'flex', alignItems: 'center', gap: '0.2rem',
-                      }}>
-                        <User size={9} /> {gift.reservedByName}
-                      </div>
-                    )}
-                  </div>
-                )}
+                        padding: '0.2rem 0.5rem', borderRadius: 6,
+                        background: 'rgba(34,150,79,0.12)', fontSize: '0.6rem',
+                        fontWeight: 700, color: '#22964F',
+                      }}>Sera offert{names.length > 1 ? ` (${names.length})` : ''}</div>
+                      {names.map((name, ni) => (
+                        <div key={ni} style={{
+                          padding: '0.15rem 0.45rem', borderRadius: 6,
+                          background: 'rgba(200,169,110,0.1)', fontSize: '0.6rem',
+                          fontWeight: 600, color: 'var(--gold)',
+                          display: 'flex', alignItems: 'center', gap: '0.2rem',
+                        }}>
+                          <User size={9} /> {name}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 {/* Gift image or icon */}
                 <div style={{

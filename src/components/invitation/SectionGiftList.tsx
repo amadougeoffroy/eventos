@@ -77,8 +77,10 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {gifts.filter(g => g.category === cat).map((gift, i) => {
-                const isReserved = gift.reserved || reservedLocally.has(gift.id);
-                const reserverName = reservedLocally.has(gift.id) ? guestName : gift.reservedByName;
+                const allNames = gift.reservedByName ? gift.reservedByName.split(', ').filter(Boolean) : [];
+                const iOffered = reservedLocally.has(gift.id) || (guestName ? allNames.includes(guestName) : false);
+                const displayNames = iOffered && guestName && !allNames.includes(guestName)
+                  ? [...allNames, guestName] : allNames;
                 return (
                   <motion.div
                     key={gift.id}
@@ -90,14 +92,13 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                     style={{
                       padding: '1rem 1.25rem',
                       borderRadius: 'var(--t-radius, 14px)',
-                      border: isReserved
+                      border: iOffered
                         ? '1px solid rgba(34,150,79,0.25)'
                         : '1px solid rgba(200,169,110,0.15)',
-                      background: isReserved
+                      background: iOffered
                         ? 'rgba(34,150,79,0.06)'
                         : 'var(--t-bg, var(--glass))',
                       display: 'flex', alignItems: 'center', gap: '1rem',
-                      opacity: isReserved ? 0.7 : 1,
                       transition: 'all 0.3s ease',
                     }}
                   >
@@ -134,6 +135,14 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                           {gift.price.toLocaleString('fr-FR')}€
                         </div>
                       )}
+                      {displayNames.length > 0 && (
+                        <div style={{
+                          fontSize: '0.65rem', color: '#22964F', marginTop: '0.3rem',
+                          fontWeight: 600, opacity: 0.85,
+                        }}>
+                          ♥ {displayNames.join(', ')}
+                        </div>
+                      )}
                     </div>
 
                     {/* Actions */}
@@ -150,7 +159,7 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                           <ExternalLink size={14} />
                         </a>
                       )}
-                      {!isReserved ? (
+                      {!iOffered ? (
                         <button
                           onClick={() => handleReserve(gift.id)}
                           disabled={!hasRsvpd}
@@ -176,14 +185,8 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                           color: '#22964F', fontWeight: 600, fontSize: '0.7rem',
                           display: 'flex', alignItems: 'center', gap: '0.25rem',
                           whiteSpace: 'nowrap',
-                          flexDirection: 'column',
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Check size={12} /> Offert
-                          </div>
-                          {reserverName && (
-                            <div style={{ fontSize: '0.6rem', opacity: 0.8 }}>par {reserverName}</div>
-                          )}
+                          <Check size={12} /> J&apos;offrirai
                         </div>
                       )}
                     </div>

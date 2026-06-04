@@ -137,9 +137,15 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   const handlePublicReserve = async (giftId: string, guestFullName: string) => {
     const { createClient } = await import('@/lib/supabase/client');
     const supabase = createClient();
-    await supabase.from('gifts').update({ reserved: true, reserved_by_name: guestFullName }).eq('id', giftId);
-    setPublicGifts(prev => prev.map(g => g.id === giftId ? { ...g, reserved: true, reservedByName: guestFullName } : g));
-    if (typeof updateGift === 'function') updateGift(giftId, { reserved: true, reservedByName: guestFullName });
+    // Append name to existing names (multiple guests can offer the same gift)
+    const existing = publicGifts.find(g => g.id === giftId);
+    const currentNames = existing?.reservedByName || '';
+    const namesList = currentNames ? currentNames.split(', ').filter(Boolean) : [];
+    if (!namesList.includes(guestFullName)) namesList.push(guestFullName);
+    const newNames = namesList.join(', ');
+    await supabase.from('gifts').update({ reserved: true, reserved_by_name: newNames }).eq('id', giftId);
+    setPublicGifts(prev => prev.map(g => g.id === giftId ? { ...g, reserved: true, reservedByName: newNames } : g));
+    if (typeof updateGift === 'function') updateGift(giftId, { reserved: true, reservedByName: newNames });
   };
 
   // ── Personalized link: detect known guest from URL ──
