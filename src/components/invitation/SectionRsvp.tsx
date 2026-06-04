@@ -218,28 +218,36 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
               {/* RSVP buttons */}
               <div className="mb-6">
                 <label className="label">Votre réponse *</label>
-                <div className="grid grid-cols-3 gap-3">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   {[
-                    { value: 'confirmed' as const, label: 'Je serai là !', icon: Check, color: '#22964F', bg: 'rgba(34,150,80,0.08)' },
-                    { value: 'declined' as const, label: 'Absent(e)', icon: X, color: '#DC3545', bg: 'rgba(220,53,69,0.06)' },
-                    { value: 'maybe' as const, label: 'Peut-être', icon: HelpCircle, color: '#7C58BA', bg: 'rgba(124,88,186,0.06)' },
+                    { value: 'confirmed' as const, label: 'Je serai là !', icon: Check, color: '#22964F', bg: 'rgba(34,150,80,0.08)', full: true },
+                    { value: 'declined' as const, label: 'Absent(e)', icon: X, color: '#DC3545', bg: 'rgba(220,53,69,0.06)', full: false },
+                    { value: 'maybe' as const, label: 'Peut-être', icon: HelpCircle, color: '#7C58BA', bg: 'rgba(124,88,186,0.06)', full: false },
                   ].map(opt => {
                     const Icon = opt.icon;
                     const selected = rsvpChoice === opt.value;
                     return (
                       <button
                         key={opt.value}
-                        className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all"
+                        type="button"
+                        onClick={() => setRsvpChoice(opt.value)}
                         style={{
+                          gridColumn: opt.full ? '1 / -1' : undefined,
+                          display: 'flex', flexDirection: opt.full ? 'row' : 'column',
+                          alignItems: 'center', justifyContent: 'center',
+                          gap: opt.full ? '0.6rem' : '0.5rem',
+                          padding: opt.full ? '1rem' : '0.85rem 0.5rem',
+                          borderRadius: 12,
                           background: selected ? opt.bg : 'var(--glass)',
                           border: `2px solid ${selected ? opt.color : 'var(--border-light)'}`,
                           color: selected ? opt.color : 'var(--text-muted)',
                           cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          fontWeight: selected ? 600 : 400,
                         }}
-                        onClick={() => setRsvpChoice(opt.value)}
                       >
-                        <Icon size={24} />
-                        <span className="text-xs font-medium">{opt.label}</span>
+                        <Icon size={opt.full ? 22 : 20} />
+                        <span style={{ fontSize: opt.full ? '0.9rem' : '0.75rem', fontWeight: 500 }}>{opt.label}</span>
                       </button>
                     );
                   })}
