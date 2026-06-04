@@ -1,7 +1,7 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,10 +9,11 @@ import { eventTypeConfig, planConfig } from '@/lib/mock-data';
 import { EventType, Event, ProgramItem, Venue } from '@/lib/types';
 import { VenueFormModal, VenueFormData } from '@/components/VenueFormModal';
 import TemplateSelector from '@/components/TemplateSelector';
+import TemplatePreview from '@/components/TemplatePreview';
 import { getDefaultTemplate } from '@/lib/templates/template-registry';
 import {
   Sparkles, Plus, Trash2, ArrowRight, ArrowLeft, MapPin, Users,
-  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate
+  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate, Eye, X
 } from 'lucide-react';
 
 /* ── Card wrapper for form sections (outside component to avoid re-renders) ─── */
@@ -77,6 +78,9 @@ export default function NewEventPage() {
   // Inline venue creation
   const [showVenueModal, setShowVenueModal] = useState(false);
 
+  // Mobile preview drawer
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
+
   const handleAddVenue = (data: VenueFormData) => {
     const venue: Venue = {
       id: crypto.randomUUID(),
@@ -140,7 +144,9 @@ export default function NewEventPage() {
     <div className="flex">
       <Sidebar />
       <main className="main-content">
-        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        {/* Form column */}
+        <div style={{ flex: '1 1 0', maxWidth: selectedPlan ? 680 : '100%', minWidth: 0 }}>
           {!selectedPlan ? (
             /* ── Plan Selection ─────────────── */
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -680,6 +686,120 @@ export default function NewEventPage() {
           </motion.div>
           )}
         </div>
+
+        {/* Preview column — desktop only, visible after plan selected and during wizard steps */}
+        {selectedPlan && (
+          <div
+            className="template-preview-sidebar"
+            style={{
+              width: 320,
+              flexShrink: 0,
+              position: 'sticky',
+              top: '2rem',
+              alignSelf: 'flex-start',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+              <Eye size={14} style={{ color: 'var(--gold)' }} />
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Aperçu en direct</span>
+            </div>
+            <TemplatePreview
+              templateId={selectedTemplateId}
+              eventType={eventType}
+              eventName={name}
+              date={date}
+              time={time}
+              venue={venue}
+              brideName={brideName}
+              groomName={groomName}
+              dressCode={dressCode}
+              welcomeMessage={welcomeMessage}
+              program={program}
+              primaryColor={primaryColor}
+            />
+          </div>
+        )}
+        </div>
+
+        {/* Mobile preview FAB + drawer */}
+        {selectedPlan && (
+          <>
+            <button
+              onClick={() => setShowMobilePreview(true)}
+              className="mobile-preview-fab"
+              style={{
+                position: 'fixed', bottom: 100, right: 20, zIndex: 50,
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--gold), #B8860B)',
+                border: 'none', color: '#fff', cursor: 'pointer',
+                boxShadow: '0 4px 20px rgba(200,169,110,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Eye size={20} />
+            </button>
+
+            <AnimatePresence>
+              {showMobilePreview && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowMobilePreview(false)}
+                  style={{
+                    position: 'fixed', inset: 0, zIndex: 100,
+                    background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <motion.div
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ position: 'relative' }}
+                  >
+                    <button
+                      onClick={() => setShowMobilePreview(false)}
+                      style={{
+                        position: 'absolute', top: -16, right: -16, zIndex: 10,
+                        width: 32, height: 32, borderRadius: '50%',
+                        background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', color: 'var(--text)',
+                      }}
+                    >
+                      <X size={14} />
+                    </button>
+                    <TemplatePreview
+                      templateId={selectedTemplateId}
+                      eventType={eventType}
+                      eventName={name}
+                      date={date}
+                      time={time}
+                      venue={venue}
+                      brideName={brideName}
+                      groomName={groomName}
+                      dressCode={dressCode}
+                      welcomeMessage={welcomeMessage}
+                      program={program}
+                      primaryColor={primaryColor}
+                    />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <style>{`
+              @media (min-width: 768px) {
+                .mobile-preview-fab { display: none !important; }
+              }
+              @media (max-width: 767px) {
+                .template-preview-sidebar { display: none !important; }
+              }
+            `}</style>
+          </>
+        )}
       </main>
     </div>
   );
