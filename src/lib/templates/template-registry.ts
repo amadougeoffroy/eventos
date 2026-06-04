@@ -85,14 +85,16 @@ const SECTIONS_PREMIUM: string[] = [
   'sweetMessage',
 ];
 
-/** Helper — generate N default hero image paths for a given type & template. */
-function heroImages(type: string, template: string, count: number): string[] {
-  if (count === 1) {
-    return [`/templates/defaults/${type}/${template}-1.png`];
-  }
-  return Array.from({ length: count }, (_, i) =>
-    `/templates/defaults/${type}/${template}-${i + 1}.png`,
-  );
+/**
+ * Helper — return the single default hero image path for a given type & template.
+ * Only classique, romance and royal have dedicated images per event type.
+ * Other templates fall back to classique.
+ */
+const TEMPLATES_WITH_IMAGES = ['classique', 'romance', 'royal'];
+
+function heroImages(type: string, template: string, _count: number): string[] {
+  const base = TEMPLATES_WITH_IMAGES.includes(template) ? template : 'classique';
+  return [`/templates/defaults/${type}/${base}-1.png`];
 }
 
 // ---------------------------------------------------------------------------

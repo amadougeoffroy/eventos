@@ -165,23 +165,29 @@ export default function TemplatePreview({
   const isWedding = eventType === 'wedding';
   const formattedDate = formatDateFr(date);
 
-  // Hero images: custom > default
-  const resolvedHeroImages = useMemo(() => {
-    if (heroImagesProp && heroImagesProp.length > 0) return heroImagesProp;
-    return variant?.defaultHeroImages ?? [];
-  }, [heroImagesProp, variant]);
+  // Hero images: custom > default (stable reference)
+  const defaultImages = variant?.defaultHeroImages ?? [];
+  const heroSrc = (heroImagesProp && heroImagesProp.length > 0)
+    ? heroImagesProp
+    : defaultImages;
 
-  // Slideshow rotation
+  // Slideshow rotation (only when multiple images)
   const [slideIndex, setSlideIndex] = useState(0);
-  useEffect(() => {
-    if (resolvedHeroImages.length <= 1) { setSlideIndex(0); return; }
-    const timer = setInterval(() => {
-      setSlideIndex(i => (i + 1) % resolvedHeroImages.length);
-    }, 3000);
-    return () => clearInterval(timer);
-  }, [resolvedHeroImages.length]);
+  const imgCount = heroSrc.length;
 
-  const currentHeroImage = resolvedHeroImages[slideIndex] || resolvedHeroImages[0] || '';
+  useEffect(() => {
+    setSlideIndex(0);
+  }, [templateId, eventType]);
+
+  useEffect(() => {
+    if (imgCount <= 1) return;
+    const timer = setInterval(() => {
+      setSlideIndex(prev => (prev + 1) % imgCount);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [imgCount]);
+
+  const currentHeroImage = heroSrc[slideIndex % Math.max(imgCount, 1)] || '';
 
   // ---- Responsive: hide on mobile ------------------------------------------
   // We return null below 768 px. The parent handles toggling.
