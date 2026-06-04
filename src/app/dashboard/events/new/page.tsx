@@ -591,13 +591,18 @@ export default function NewEventPage() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-                            const url = URL.createObjectURL(file);
-                            if (heroType === 'image') {
-                              setHeroImages([url]);
-                            } else {
-                              setHeroImages(prev => [...prev, url]);
-                            }
-                            setHideDefault(true);
+                            // Convert to base64 data URI so it persists in localStorage
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              const dataUrl = reader.result as string;
+                              if (heroType === 'image') {
+                                setHeroImages([dataUrl]);
+                              } else {
+                                setHeroImages(prev => [...prev, dataUrl]);
+                              }
+                              setHideDefault(true);
+                            };
+                            reader.readAsDataURL(file);
                             e.target.value = '';
                           }}
                         />
