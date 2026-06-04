@@ -473,10 +473,70 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   // ─── Guests CRUD ───
-  const addGuest = (guest: Guest) => setGuests(prev => [...prev, guest]);
-  const updateGuest = (id: string, updates: Partial<Guest>) =>
+  const addGuest = useCallback(async (guest: Guest) => {
+    // Optimistic update
+    setGuests(prev => [...prev, guest]);
+
+    // Persist to Supabase
+    const { data, error } = await supabase
+      .from('guests')
+      .insert({
+        event_id: guest.eventId,
+        first_name: guest.firstName,
+        last_name: guest.lastName || '',
+        email: guest.email || null,
+        phone: guest.phone || null,
+        group: guest.group || 'Invités',
+        rsvp_status: guest.rsvpStatus || 'pending',
+        token: guest.token || `tok-${Date.now()}`,
+        companions: guest.companions || 0,
+        allergies: guest.allergies || null,
+        side: guest.side || null,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      // Replace temp ID with real Supabase ID
+      setGuests(prev => prev.map(g =>
+        g.id === guest.id ? { ...g, id: data.id } : g
+      ));
+    } else if (error) {
+      console.error('addGuest error:', error);
+    }
+  }, [supabase]);
+
+  const updateGuest = useCallback(async (id: string, updates: Partial<Guest>) => {
+    // Optimistic update
     setGuests(prev => prev.map(g => g.id === id ? { ...g, ...updates } : g));
-  const removeGuest = (id: string) => setGuests(prev => prev.filter(g => g.id !== id));
+
+    // Persist to Supabase
+    const payload: Record<string, unknown> = {};
+    if (updates.firstName !== undefined) payload.first_name = updates.firstName;
+    if (updates.lastName !== undefined) payload.last_name = updates.lastName;
+    if (updates.email !== undefined) payload.email = updates.email;
+    if (updates.phone !== undefined) payload.phone = updates.phone;
+    if (updates.group !== undefined) payload.group = updates.group;
+    if (updates.rsvpStatus !== undefined) payload.rsvp_status = updates.rsvpStatus;
+    if (updates.companions !== undefined) payload.companions = updates.companions;
+    if (updates.allergies !== undefined) payload.allergies = updates.allergies;
+    if (updates.tableId !== undefined) payload.table_id = updates.tableId;
+    if (updates.side !== undefined) payload.side = updates.side;
+
+    if (Object.keys(payload).length > 0) {
+      const { error } = await supabase
+        .from('guests')
+        .update(payload)
+        .eq('id', id);
+      if (error) console.error('updateGuest error:', error);
+    }
+  }, [supabase]);
+
+  const removeGuest = useCallback(async (id: string) => {
+    setGuests(prev => prev.filter(g => g.id !== id));
+    const { error } = await supabase.from('guests').delete().eq('id', id);
+    if (error) console.error('removeGuest error:', error);
+  }, [supabase]);
 
   // ─── Tables with localStorage persistence ───
   const TABLES_KEY = 'eventos-tables';
