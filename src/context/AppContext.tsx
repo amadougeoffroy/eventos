@@ -517,6 +517,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Optimistic update
     setGuests(prev => [...prev, guest]);
 
+    // Skip persist if already saved (real UUID from direct Supabase insert, e.g. RSVP form)
+    const isRealUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guest.id);
+    if (isRealUuid) return;
+
     // Persist to Supabase
     const { data, error } = await supabase
       .from('guests')
@@ -542,7 +546,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         g.id === guest.id ? { ...g, id: data.id } : g
       ));
     } else if (error) {
-      console.error('addGuest error:', error);
+      console.error('addGuest error:', JSON.stringify(error, null, 2));
     }
   }, [supabase]);
 

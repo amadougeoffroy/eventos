@@ -66,7 +66,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
         const [first, ...rest] = guestName.trim().split(' ');
         const token = `tok-${Date.now()}`;
 
-        const { data: inserted } = await supabase.from('guests').insert({
+        const { data: inserted, error: insertErr } = await supabase.from('guests').insert({
           event_id: event.id,
           first_name: first,
           last_name: rest.join(' ') || '',
@@ -78,21 +78,30 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
           allergies: allergies || null,
         }).select().single();
 
-        addGuest({
-          id: inserted?.id || `g-${Date.now()}`,
-          eventId: event.id,
-          firstName: first,
-          lastName: rest.join(' ') || '',
-          phone: guestPhone,
-          group: guestGroup || 'Invités',
-          rsvpStatus: rsvpChoice,
-          token,
-          companions,
-          privateMessage: privateMsg,
-          allergies,
-          dietaryRestrictions: [],
-          respondedAt: new Date().toISOString(),
-        });
+        if (insertErr) {
+          console.error('RSVP insert error:', JSON.stringify(insertErr));
+          return;
+        }
+
+        // Sync context state without re-inserting (addGuest would cause a duplicate)
+        if (typeof addGuest === 'function') {
+          // We pass the real Supabase ID so AppContext won't create a duplicate
+          addGuest({
+            id: inserted?.id || `g-${Date.now()}`,
+            eventId: event.id,
+            firstName: first,
+            lastName: rest.join(' ') || '',
+            phone: guestPhone,
+            group: guestGroup || 'Invités',
+            rsvpStatus: rsvpChoice,
+            token,
+            companions,
+            privateMessage: privateMsg,
+            allergies,
+            dietaryRestrictions: [],
+            respondedAt: new Date().toISOString(),
+          });
+        }
       }
     } catch (e) {
       console.error('RSVP save error:', e);
