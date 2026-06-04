@@ -17,6 +17,11 @@ import SectionDressCode from '@/components/invitation/SectionDressCode';
 import SectionLocation from '@/components/invitation/SectionLocation';
 import SectionRsvp from '@/components/invitation/SectionRsvp';
 import SectionSweetMessage from '@/components/invitation/SectionSweetMessage';
+// Premium sections
+import SectionOurStory from '@/components/invitation/SectionOurStory';
+import SectionGallery from '@/components/invitation/SectionGallery';
+import SectionGiftList from '@/components/invitation/SectionGiftList';
+import BackgroundMusic from '@/components/invitation/BackgroundMusic';
 
 export default function GuestLandingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -203,11 +208,11 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         guestName={knownGuest ? `${knownGuest.firstName} ${knownGuest.lastName}` : ''}
       />
     ),
-    // Premium sections — will be implemented in Phase 4
-    countdown: () => null,
-    ourStory: () => null,
-    gallery: () => null,
-    giftList: () => null,
+    // Premium sections
+    countdown: () => null, // integrated in HeroSlideshow
+    ourStory: () => <SectionOurStory key="ourStory" event={event} />,
+    gallery: () => <SectionGallery key="gallery" event={event} />,
+    giftList: () => <SectionGiftList key="giftList" event={event} />,
   };
 
   // Use template sections order, or event custom order, or fallback
@@ -244,6 +249,11 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           Propulsé par <span className="gradient-gold font-semibold">EventOS</span>
         </p>
       </footer>
+
+      {/* Background music — Premium only */}
+      {event.backgroundMusicUrl && (
+        <BackgroundMusic url={event.backgroundMusicUrl} />
+      )}
     </div>
   );
 }
