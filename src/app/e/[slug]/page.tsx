@@ -106,20 +106,76 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   // ── Personalized link: detect known guest from URL ──
   const urlGuestParam = searchParams.get('guest');
   const urlToken = searchParams.get('token');
+  const [publicGuest, setPublicGuest] = useState<Guest | null>(null);
+
+  // Fetch guest from Supabase when context guests are empty (public visitor)
+  useEffect(() => {
+    if (!event || !urlToken) return;
+    // If context has guests for this event, skip fetch
+    if (guests.some(g => g.eventId === event.id)) return;
+
+    const fetchGuest = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
+      // Try by token first
+      let { data: row } = await supabase
+        .from('guests')
+        .select('*')
+        .eq('event_id', event.id)
+        .eq('token', urlToken)
+        .single();
+
+      // Fallback: match by name
+      if (!row && urlGuestParam) {
+        const nameParts = decodeURIComponent(urlGuestParam).replace(/-/g, ' ');
+        const [first, ...rest] = nameParts.split(' ');
+        const { data: nameRow } = await supabase
+          .from('guests')
+          .select('*')
+          .eq('event_id', event.id)
+          .ilike('first_name', first)
+          .ilike('last_name', rest.join(' ') || '')
+          .single();
+        row = nameRow;
+      }
+
+      if (row) {
+        setPublicGuest({
+          id: row.id,
+          eventId: row.event_id,
+          firstName: row.first_name || '',
+          lastName: row.last_name || '',
+          phone: row.phone || '',
+          group: row.group_name || row.group || 'Invités',
+          rsvpStatus: row.rsvp_status || 'pending',
+          token: row.token || '',
+          companions: row.companions || 0,
+          allergies: row.allergies || '',
+          dietaryRestrictions: [],
+          respondedAt: row.updated_at || undefined,
+        });
+      }
+    };
+    fetchGuest();
+  }, [event, guests, urlToken, urlGuestParam]);
 
   const knownGuest = useMemo(() => {
     if (!event || !urlToken) return null;
+    // From context guests
     const byToken = guests.find(g => g.eventId === event.id && g.token === urlToken);
     if (byToken) return byToken;
     if (urlGuestParam) {
       const nameParts = decodeURIComponent(urlGuestParam).replace(/-/g, ' ').toLowerCase();
-      return guests.find(g =>
+      const fromContext = guests.find(g =>
         g.eventId === event.id &&
         `${g.firstName} ${g.lastName}`.toLowerCase() === nameParts
-      ) || null;
+      );
+      if (fromContext) return fromContext;
     }
-    return null;
-  }, [event, guests, urlToken, urlGuestParam]);
+    // From public fetch
+    return publicGuest;
+  }, [event, guests, urlToken, urlGuestParam, publicGuest]);
 
   // ── Template configuration ──
   const templateId = event?.templateId || 'classique';
