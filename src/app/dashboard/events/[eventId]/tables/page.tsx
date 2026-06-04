@@ -60,21 +60,24 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     return rows;
   }, [confirmedGuests]);
 
-  // Hydrate positions from localStorage + assignments from tables on mount
+  // Hydrate positions from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem(`table-positions-${eventId}`);
       if (saved) setDragPositions(JSON.parse(saved));
     } catch { /* ignore */ }
-
-    const existing: Record<string, string> = {};
-    tables.forEach(t => {
-      t.guestIds.forEach(gid => { existing[gid] = t.id; });
-    });
-    if (Object.keys(existing).length > 0) setAssignments(existing);
     setHydrated(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keep assignments in sync with tables.guestIds (fires on every tables change)
+  useEffect(() => {
+    const existing: Record<string, string> = {};
+    tables.filter(t => t.eventId === eventId).forEach(t => {
+      t.guestIds.forEach(gid => { existing[gid] = t.id; });
+    });
+    setAssignments(existing);
+  }, [tables, eventId]);
 
   const assignedIds = useMemo(() => new Set(Object.keys(assignments)), [assignments]);
   const filteredGuests = useMemo(() =>
