@@ -106,13 +106,11 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   // ── Personalized link: detect known guest from URL ──
   const urlGuestParam = searchParams.get('guest');
   const urlToken = searchParams.get('token');
-  const [publicGuest, setPublicGuest] = useState<Guest | null>(null);
+  const [knownGuest, setKnownGuest] = useState<Guest | null>(null);
 
-  // Fetch guest from Supabase when context guests are empty (public visitor)
+  // Always fetch guest from Supabase when token is present
   useEffect(() => {
     if (!event || !urlToken) return;
-    // If context has guests for this event, skip fetch
-    if (guests.some(g => g.eventId === event.id)) return;
 
     const fetchGuest = async () => {
       const { createClient } = await import('@/lib/supabase/client');
@@ -141,13 +139,13 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
       }
 
       if (row) {
-        setPublicGuest({
+        setKnownGuest({
           id: row.id,
           eventId: row.event_id,
           firstName: row.first_name || '',
           lastName: row.last_name || '',
           phone: row.phone || '',
-          group: row.group_name || row.group || 'Invités',
+          group: row.group || 'Invités',
           rsvpStatus: row.rsvp_status || 'pending',
           token: row.token || '',
           companions: row.companions || 0,
@@ -158,24 +156,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
       }
     };
     fetchGuest();
-  }, [event, guests, urlToken, urlGuestParam]);
-
-  const knownGuest = useMemo(() => {
-    if (!event || !urlToken) return null;
-    // From context guests
-    const byToken = guests.find(g => g.eventId === event.id && g.token === urlToken);
-    if (byToken) return byToken;
-    if (urlGuestParam) {
-      const nameParts = decodeURIComponent(urlGuestParam).replace(/-/g, ' ').toLowerCase();
-      const fromContext = guests.find(g =>
-        g.eventId === event.id &&
-        `${g.firstName} ${g.lastName}`.toLowerCase() === nameParts
-      );
-      if (fromContext) return fromContext;
-    }
-    // From public fetch
-    return publicGuest;
-  }, [event, guests, urlToken, urlGuestParam, publicGuest]);
+  }, [event?.id, urlToken, urlGuestParam]);
 
   // ── Template configuration ──
   const templateId = event?.templateId || 'classique';
