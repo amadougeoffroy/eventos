@@ -7,7 +7,7 @@ import { use, useState, useMemo } from 'react';
 import { RSVPStatus } from '@/lib/types';
 import {
   Users, Plus, Search, Filter, Send, Download, UserCheck, Clock,
-  UserX, HelpCircle, Trash2, X, Copy, Check, TrendingUp, Edit3, UserPlus,
+  UserX, HelpCircle, Trash2, X, Copy, Check, TrendingUp, Edit3, UserPlus, AlertTriangle,
   ArrowUpDown, ChevronLeft, ChevronRight
 } from 'lucide-react';
 
@@ -58,6 +58,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingGuest, setEditingGuest] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
@@ -398,7 +399,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                 {copiedId === row.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
                               </button>
                               <button className="btn-ghost p-1.5" title="Envoyer invitation"><Send size={14} /></button>
-                              <button className="btn-ghost p-1.5" onClick={() => removeGuest(row.guestId)} title="Supprimer"><Trash2 size={14} style={{ color: '#F87171' }} /></button>
+                              <button className="btn-ghost p-1.5" onClick={() => setDeleteTarget({ id: row.guestId, name: `${row.firstName} ${row.lastName}`.trim() })} title="Supprimer"><Trash2 size={14} style={{ color: '#F87171' }} /></button>
                             </div>
                           ) : (
                             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
@@ -597,6 +598,92 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                 <div className="flex gap-3 mt-6">
                   <button className="btn-secondary flex-1" onClick={() => setShowEditModal(false)}>Annuler</button>
                   <button className="btn-primary flex-1" onClick={handleEditGuest}>Enregistrer</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal */}
+        <AnimatePresence>
+          {deleteTarget && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 1100,
+                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+              }}
+              onClick={() => setDeleteTarget(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ type: 'spring', damping: 22, stiffness: 300 }}
+                onClick={e => e.stopPropagation()}
+                style={{
+                  background: 'var(--bg-card)', borderRadius: 20, padding: '2rem',
+                  maxWidth: 400, width: '100%', textAlign: 'center',
+                  border: '1px solid rgba(220,53,69,0.15)',
+                  boxShadow: '0 25px 60px rgba(0,0,0,0.3), 0 0 40px rgba(220,53,69,0.08)',
+                }}
+              >
+                {/* Animated warning icon */}
+                <motion.div
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
+                  transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
+                  style={{
+                    width: 64, height: 64, borderRadius: '50%', margin: '0 auto 1.25rem',
+                    background: 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))',
+                    border: '2px solid rgba(220,53,69,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <AlertTriangle size={28} style={{ color: '#DC3545' }} />
+                </motion.div>
+
+                <h3 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
+                  Supprimer cet invité ?
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.25rem', lineHeight: 1.5 }}>
+                  Vous êtes sur le point de supprimer
+                </p>
+                <p style={{
+                  fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)',
+                  marginBottom: '1.5rem', padding: '0.5rem 1rem', borderRadius: 10,
+                  background: 'rgba(220,53,69,0.06)', border: '1px solid rgba(220,53,69,0.1)',
+                  display: 'inline-block',
+                }}>
+                  {deleteTarget.name || 'Invité'}
+                </p>
+                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                  Cette action est irréversible.
+                </p>
+
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button
+                    onClick={() => setDeleteTarget(null)}
+                    style={{
+                      flex: 1, padding: '0.7rem', borderRadius: 12,
+                      background: 'var(--glass)', border: '1px solid var(--border-light)',
+                      color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.82rem',
+                      cursor: 'pointer', transition: 'background 0.2s',
+                    }}
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={() => { removeGuest(deleteTarget.id); setDeleteTarget(null); }}
+                    style={{
+                      flex: 1, padding: '0.7rem', borderRadius: 12,
+                      background: 'linear-gradient(135deg, #DC3545, #C82333)',
+                      border: 'none', color: '#fff', fontWeight: 600, fontSize: '0.82rem',
+                      cursor: 'pointer', transition: 'opacity 0.2s',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    }}
+                  >
+                    <Trash2 size={14} />
+                    Supprimer
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
