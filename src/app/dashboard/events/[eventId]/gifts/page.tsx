@@ -4,7 +4,7 @@ import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
-import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, Tag } from 'lucide-react';
+import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, Tag, User } from 'lucide-react';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -123,7 +123,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
         <div className="grid grid-cols-4 gap-4 mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
           {[
             { label: 'Total', value: stats.total, color: '#5B8DB8', icon: Gift },
-            { label: 'Réservés', value: stats.reserved, color: '#22964F', icon: Package },
+            { label: 'Seront offerts', value: stats.reserved, color: '#22964F', icon: Package },
             { label: 'Disponibles', value: stats.available, color: '#DC8C28', icon: Tag },
             { label: 'Valeur totale', value: `${stats.totalValue.toLocaleString('fr-FR')}€`, color: '#C8A96E', icon: Gift },
           ].map((s, i) => (
@@ -198,10 +198,24 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                 {gift.reserved && (
                   <div style={{
                     position: 'absolute', top: 10, right: 10,
-                    padding: '0.2rem 0.5rem', borderRadius: 6,
-                    background: 'rgba(34,150,79,0.12)', fontSize: '0.6rem',
-                    fontWeight: 700, color: '#22964F',
-                  }}>Réservé</div>
+                    display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem',
+                  }}>
+                    <div style={{
+                      padding: '0.2rem 0.5rem', borderRadius: 6,
+                      background: 'rgba(34,150,79,0.12)', fontSize: '0.6rem',
+                      fontWeight: 700, color: '#22964F',
+                    }}>Sera offert</div>
+                    {gift.reservedByName && (
+                      <div style={{
+                        padding: '0.15rem 0.45rem', borderRadius: 6,
+                        background: 'rgba(200,169,110,0.1)', fontSize: '0.6rem',
+                        fontWeight: 600, color: 'var(--gold)',
+                        display: 'flex', alignItems: 'center', gap: '0.2rem',
+                      }}>
+                        <User size={9} /> {gift.reservedByName}
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* Gift image or icon */}

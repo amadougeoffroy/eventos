@@ -319,6 +319,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           url: row.url || '',
           imageUrl: row.image_url || '',
           reservedBy: row.reserved_by || undefined,
+          reservedByName: row.reserved_by_name || undefined,
           reserved: row.reserved || false,
           category: row.category || 'Général',
           createdAt: row.created_at,
@@ -609,6 +610,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.imageUrl !== undefined) payload.image_url = updates.imageUrl;
     if (updates.reserved !== undefined) payload.reserved = updates.reserved;
     if (updates.reservedBy !== undefined) payload.reserved_by = updates.reservedBy;
+    if (updates.reservedByName !== undefined) payload.reserved_by_name = updates.reservedByName;
     if (updates.category !== undefined) payload.category = updates.category;
     if (Object.keys(payload).length > 0) {
       const { error } = await supabase.from('gifts').update(payload).eq('id', id);

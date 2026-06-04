@@ -172,6 +172,7 @@ export interface GiftItem {
   url?: string;
   imageUrl?: string;
   reservedBy?: string;
+  reservedByName?: string;
   reserved: boolean;
   category: string;
   createdAt?: string;

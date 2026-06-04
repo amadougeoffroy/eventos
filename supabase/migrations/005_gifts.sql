@@ -36,3 +36,6 @@ CREATE POLICY "Public can reserve gifts" ON gifts
   FOR UPDATE
   USING (true)
   WITH CHECK (true);
+
+-- Add reserved_by_name column
+ALTER TABLE gifts ADD COLUMN IF NOT EXISTS reserved_by_name TEXT DEFAULT NULL;

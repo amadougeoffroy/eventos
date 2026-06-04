@@ -125,6 +125,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           url: row.url || '',
           imageUrl: row.image_url || '',
           reservedBy: row.reserved_by || undefined,
+          reservedByName: row.reserved_by_name || undefined,
           reserved: row.reserved || false,
           category: row.category || 'Général',
         })));
@@ -133,12 +134,12 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     loadPublicGifts();
   }, [event?.id]);
 
-  const handlePublicReserve = async (giftId: string) => {
+  const handlePublicReserve = async (giftId: string, guestFullName: string) => {
     const { createClient } = await import('@/lib/supabase/client');
     const supabase = createClient();
-    await supabase.from('gifts').update({ reserved: true }).eq('id', giftId);
-    setPublicGifts(prev => prev.map(g => g.id === giftId ? { ...g, reserved: true } : g));
-    if (typeof updateGift === 'function') updateGift(giftId, { reserved: true });
+    await supabase.from('gifts').update({ reserved: true, reserved_by_name: guestFullName }).eq('id', giftId);
+    setPublicGifts(prev => prev.map(g => g.id === giftId ? { ...g, reserved: true, reservedByName: guestFullName } : g));
+    if (typeof updateGift === 'function') updateGift(giftId, { reserved: true, reservedByName: guestFullName });
   };
 
   // ── Personalized link: detect known guest from URL ──
@@ -290,7 +291,9 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     giftList: () => {
       const eventGifts = (allGifts && allGifts.length > 0 ? allGifts : publicGifts).filter(g => g.eventId === event.id);
       if (eventGifts.length === 0) return null;
-      return <SectionGiftList key="giftList" event={event} gifts={eventGifts} onReserve={handlePublicReserve} />;
+      const guestFullName = knownGuest ? `${knownGuest.firstName} ${knownGuest.lastName}`.trim() : '';
+      const hasRsvpd = !!(knownGuest && knownGuest.rsvpStatus && knownGuest.rsvpStatus !== 'pending');
+      return <SectionGiftList key="giftList" event={event} gifts={eventGifts} guestName={guestFullName} hasRsvpd={hasRsvpd} onReserve={handlePublicReserve} />;
     },
   };
 
