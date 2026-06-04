@@ -8,9 +8,11 @@ import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
 import { EventType, Event, ProgramItem, Venue } from '@/lib/types';
 import { VenueFormModal, VenueFormData } from '@/components/VenueFormModal';
+import TemplateSelector from '@/components/TemplateSelector';
+import { getDefaultTemplate } from '@/lib/templates/template-registry';
 import {
   Sparkles, Plus, Trash2, ArrowRight, ArrowLeft, MapPin, Users,
-  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown
+  CalendarDays, Palette, FileText, Clock, Image, ToggleLeft, ToggleRight, CheckCircle2, Crown, LayoutTemplate
 } from 'lucide-react';
 
 /* ── Card wrapper for form sections (outside component to avoid re-renders) ─── */
@@ -40,7 +42,8 @@ export default function NewEventPage() {
   const router = useRouter();
   const { addEvent, venues, addVenue } = useApp();
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5;
+  const [selectedTemplateId, setSelectedTemplateId] = useState('classique');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
 
   const [eventType, setEventType] = useState<EventType>('wedding');
@@ -108,6 +111,7 @@ export default function NewEventPage() {
   const handleCreate = () => {
     const slug = generateSlug();
     const tempId = crypto.randomUUID();
+    const template = getDefaultTemplate(eventType);
     const newEvent: Event = {
       id: tempId, slug, type: eventType,
       name: name || `${eventTypeConfig[eventType].label}`,
@@ -122,13 +126,15 @@ export default function NewEventPage() {
         age: eventType === 'birthday' ? Number(age) : undefined,
       },
       plan: (selectedPlan as 'essentiel' | 'pro' | 'premium') || undefined,
+      templateId: selectedTemplateId,
+      heroType: 'image',
       createdAt: new Date().toISOString(),
     };
     addEvent(newEvent);
     router.push('/dashboard');
   };
 
-  const stepLabels = ['Type & Infos', 'Détails & Options', 'Personnalisation', 'Programme'];
+  const stepLabels = ['Type & Infos', 'Détails & Options', 'Template', 'Personnalisation', 'Programme'];
 
   return (
     <div className="flex">
@@ -411,8 +417,22 @@ export default function NewEventPage() {
               </motion.div>
             )}
 
-            {/* ── Step 3: Personalization ──────── */}
-            {step === 3 && (
+            {/* ── Step 3: Template Selection ──────── */}
+            {step === 3 && selectedPlan && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                <SectionCard title="Choisissez votre template" icon={LayoutTemplate}>
+                  <TemplateSelector
+                    plan={selectedPlan as 'essentiel' | 'pro' | 'premium'}
+                    eventType={eventType}
+                    selectedTemplateId={selectedTemplateId}
+                    onSelect={setSelectedTemplateId}
+                  />
+                </SectionCard>
+              </motion.div>
+            )}
+
+            {/* ── Step 4: Personalization ──────── */}
+            {step === 4 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <SectionCard title="Couleurs du thème" icon={Palette}>
                   <div className="grid grid-cols-2 gap-4">
@@ -467,8 +487,8 @@ export default function NewEventPage() {
               </motion.div>
             )}
 
-            {/* ── Step 4: Programme ───────── */}
-            {step === 4 && (
+            {/* ── Step 5: Programme ───────── */}
+            {step === 5 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <SectionCard title="Programme de la journée" icon={Clock}>
                   {/* No venues hint */}
