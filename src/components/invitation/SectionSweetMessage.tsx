@@ -1,12 +1,30 @@
 'use client';
 import { Event } from '@/lib/types';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircleHeart, Send } from 'lucide-react';
 
 export default function SectionSweetMessage({ event, guestName }: { event: Event; guestName: string }) {
   const [sweetMessage, setSweetMessage] = useState('');
   const [sent, setSent] = useState(false);
+  const [savedMessage, setSavedMessage] = useState('');
+
+  const storageKey = `eventos_sweet_${event.id}`;
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const { message, authorName } = JSON.parse(saved);
+        if (message) {
+          setSavedMessage(message);
+          setSweetMessage(message);
+          setSent(true);
+        }
+      }
+    } catch {}
+  }, [storageKey]);
 
   return (
     <section style={{ background: 'var(--t-bg, var(--bg))', padding: '5rem 1.5rem' }}>
@@ -56,9 +74,15 @@ export default function SectionSweetMessage({ event, guestName }: { event: Event
                         author_name: guestName || 'Anonyme',
                         message: sweetMessage.trim(),
                       });
+                      // Persist to localStorage
+                      localStorage.setItem(storageKey, JSON.stringify({
+                        message: sweetMessage.trim(),
+                        authorName: guestName || 'Anonyme',
+                      }));
                     } catch (e) {
                       console.warn('Sweet message save failed:', e);
                     }
+                    setSavedMessage(sweetMessage.trim());
                     setSent(true);
                   }}
                   disabled={!sweetMessage.trim()}
@@ -82,7 +106,19 @@ export default function SectionSweetMessage({ event, guestName }: { event: Event
                   💌
                 </motion.div>
                 <h3 className="font-display text-xl font-bold mb-2">Merci pour ce beau message !</h3>
-                <p className="text-sm" style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>Votre mot a été transmis aux organisateurs avec amour.</p>
+                <p className="text-sm" style={{ color: 'var(--t-text-muted, var(--text-muted))', marginBottom: '1rem' }}>Votre mot a été transmis aux organisateurs avec amour.</p>
+                {savedMessage && (
+                  <div style={{
+                    padding: '1rem 1.25rem', borderRadius: 12,
+                    background: 'rgba(200,169,110,0.06)',
+                    border: '1px solid rgba(200,169,110,0.15)',
+                    fontStyle: 'italic', fontSize: '0.85rem',
+                    color: 'var(--t-text, var(--text))',
+                    lineHeight: 1.6, textAlign: 'left',
+                  }}>
+                    &ldquo;{savedMessage}&rdquo;
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
