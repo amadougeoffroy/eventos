@@ -94,9 +94,11 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
   const groomName = event?.meta?.groomName || 'Le Marié';
 
   useEffect(() => {
-    if (!tablesReady) return;
-    const exists = tables.find(t => t.id === MARIES_TABLE_ID);
-    if (!exists && event && event.type === 'wedding') {
+    if (!tablesReady || !event) return;
+
+    // 1. Table des Mariés for weddings
+    const mariesExists = tables.find(t => t.id === MARIES_TABLE_ID);
+    if (!mariesExists && event.type === 'wedding') {
       addTable({
         id: MARIES_TABLE_ID,
         eventId,
@@ -107,6 +109,36 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
         positionY: 20,
         guestIds: [],
       });
+    }
+
+    // 2. Auto-create group tables if no user tables exist yet (excluding mariés)
+    const eventGuestGroups = guestGroups.filter(g => g.eventId === eventId);
+    const userTables = tables.filter(t => t.eventId === eventId && !isMarieTable(t.id));
+    if (userTables.length === 0 && eventGuestGroups.length > 0) {
+      const positions: Record<string, { x: number; y: number }> = {};
+      eventGuestGroups.forEach((grp, i) => {
+        const tableId = `t-grp-${grp.id}`;
+        // Count guests in this group
+        const groupGuestCount = eventGuests.filter(g => g.group === grp.name).length;
+        const capacity = Math.max(8, groupGuestCount);
+        const col = i % 4;
+        const row = Math.floor(i / 4);
+        const x = 30 + col * 160;
+        const y = 80 + row * 140;
+        addTable({
+          id: tableId,
+          eventId,
+          name: grp.name,
+          capacity,
+          shape: 'round',
+          positionX: x,
+          positionY: y,
+          guestIds: [],
+        });
+        positions[tableId] = { x, y };
+      });
+      try { localStorage.setItem(`table-positions-${eventId}`, JSON.stringify(positions)); } catch {}
+      setDragPositions(prev => ({ ...prev, ...positions }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [event, tablesReady]);
