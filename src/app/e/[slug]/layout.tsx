@@ -23,15 +23,22 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   }
 
-  // Pick the best image: hero_media first image → hero_images first → cover_photo → fallback
+  // Pick the best image & video from available hero content
   let ogImage: string | undefined;
+  let ogVideo: string | undefined;
 
   const heroMedia = evt.hero_media as { url: string; type: string }[] | null;
   if (heroMedia && heroMedia.length > 0) {
+    // Find first image for og:image
     const firstImage = heroMedia.find(m => m.type === 'image');
     if (firstImage) ogImage = firstImage.url;
+
+    // Find first video for og:video
+    const firstVideo = heroMedia.find(m => m.type === 'video');
+    if (firstVideo) ogVideo = firstVideo.url;
   }
 
+  // Fallback image: hero_images → cover_photo
   if (!ogImage) {
     const heroImages = evt.hero_images as string[] | null;
     if (heroImages && heroImages.length > 0) {
@@ -63,6 +70,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             width: 1200,
             height: 630,
             alt: title,
+          },
+        ],
+      } : {}),
+      ...(ogVideo ? {
+        videos: [
+          {
+            url: ogVideo,
+            width: 1200,
+            height: 630,
+            type: 'video/mp4',
           },
         ],
       } : {}),
