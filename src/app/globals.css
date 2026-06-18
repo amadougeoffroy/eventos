@@ -881,3 +881,73 @@ select.input option {
     justify-content: center;
   }
 }
+
+/* ── Invitations page mobile ──────────────────── */
+@media (max-width: 768px) {
+  .inv-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .inv-stats > div {
+    padding: 0.85rem 0.5rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .inv-link-row {
+    flex-direction: column !important;
+  }
+  .inv-link-row > div:first-child {
+    width: 100% !important;
+    font-size: 0.75rem !important;
+  }
+  .inv-link-row > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .inv-guest-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+  .inv-guest-row > div:nth-child(1) {
+    display: none !important;
+  }
+  .inv-guest-row > div:nth-child(2) {
+    width: 100% !important;
+  }
+  .inv-guest-row > div:last-child {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Menu page mobile ─────────────────────────── */
+@media (max-width: 768px) {
+  .menu-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .menu-header > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .menu-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .menu-stats > div {
+    padding: 0.85rem 0.5rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .menu-tabs {
+    display: flex !important;
+    width: 100%;
+  }
+  .menu-tabs > button {
+    flex: 1;
+    justify-content: center;
+  }
+  .menu-survey-toggle {
+    gap: 0.75rem;
+    padding: 0.65rem 1rem !important;
+  }
+}

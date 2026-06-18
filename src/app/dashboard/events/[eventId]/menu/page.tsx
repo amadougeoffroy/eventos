@@ -80,7 +80,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="menu-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Menu</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
@@ -89,7 +89,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="menu-stats grid grid-cols-3 gap-4 mb-6">
           {[
             { label: 'Catégories', value: evtCategories.length, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))' },
             { label: 'Plats', value: evtItems.length, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))' },
@@ -107,7 +107,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
         </div>
 
         {/* Tabs */}
-        <div style={{
+        <div className="menu-tabs" style={{
           display: 'inline-flex', gap: '0.25rem', padding: '0.25rem',
           background: 'var(--bg-card)', border: '1px solid var(--border-light)',
           borderRadius: 12, marginBottom: '1.5rem',
@@ -139,7 +139,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
         </div>
 
         {/* Survey toggle */}
-        <div style={{
+        <div className="menu-survey-toggle" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '0.75rem 1.25rem', marginBottom: '1.25rem',
           background: 'var(--bg-card)', border: '1px solid var(--border-light)',

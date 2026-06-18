@@ -58,7 +58,7 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="inv-stats grid grid-cols-3 gap-4 mb-6">
           {[
             { label: 'Total invités', value: eventGuests.length, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))', icon: Users },
             { label: 'Ont répondu', value: sent, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: Check },
@@ -100,7 +100,7 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Partagez ce lien avec n&apos;importe qui</p>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <div className="inv-link-row" style={{ display: 'flex', gap: '0.5rem' }}>
             <div style={{
               flex: 1, padding: '0.65rem 0.85rem', borderRadius: 10,
               background: 'var(--glass)', border: '1px solid var(--glass-border)',
@@ -146,7 +146,7 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
 
           <div className="space-y-2" style={{ maxHeight: 500, overflowY: 'auto' }}>
             {eventGuests.map((guest) => (
-              <div key={guest.id} style={{
+              <div key={guest.id} className="inv-guest-row" style={{
                 display: 'flex', alignItems: 'center', gap: '0.75rem',
                 padding: '0.75rem', borderRadius: 12,
                 background: 'var(--glass)', border: '1px solid var(--glass-border)',
