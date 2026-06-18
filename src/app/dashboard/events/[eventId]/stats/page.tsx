@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { use, useMemo } from 'react';
 import {
   BarChart3, Users, UtensilsCrossed, TrendingUp, PieChart,
-  Calendar, Clock, Gift, Heart, Table2, ChevronUp,
+  Calendar, Clock, Gift, Heart, Table2, MessageCircle, Zap,
 } from 'lucide-react';
 
 const fadeUp = {
@@ -96,6 +96,20 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
   const giftRate = totalGifts > 0 ? Math.round((reservedGifts / totalGifts) * 100) : 0;
   const totalGiftValue = evtGifts.reduce((s, g) => s + (g.price || 0), 0);
   const reservedGiftValue = evtGifts.filter(g => g.reserved).reduce((s, g) => s + (g.price || 0), 0);
+
+  // ─── Engagement ───
+  const privateMessages = eventGuests.filter(g => g.privateMessage && g.privateMessage.trim().length > 0).length;
+  const guestsWithAllergies = eventGuests.filter(g => (g.allergies && g.allergies.trim()) || (g.dietaryRestrictions && g.dietaryRestrictions.length > 0)).length;
+  const brideGuests = eventGuests.filter(g => g.side === 'bride').length;
+  const groomGuests = eventGuests.filter(g => g.side === 'groom').length;
+  const bothGuests = eventGuests.filter(g => g.side === 'both').length;
+  const noSideGuests = eventGuests.filter(g => !g.side).length;
+  const avgResponseTime = useMemo(() => {
+    const withResponse = eventGuests.filter(g => g.respondedAt && g.rsvpStatus !== 'pending');
+    if (withResponse.length === 0) return null;
+    // We can't compute actual response time without createdAt, just show total responded
+    return withResponse.length;
+  }, [eventGuests]);
 
   // ─── RSVP Timeline ───
   const timeline = useMemo(() => {
@@ -549,6 +563,111 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
               </div>
             ) : (
               <p className="text-sm" style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Aucun régime renseigné</p>
+            )}
+          </SectionCard>
+
+          {/* ════════ Engagement ════════ */}
+          <SectionCard title="Engagement" icon={Zap} iconColor="#F59E0B" delay={13}>
+            {/* Messages privés */}
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '1rem',
+              padding: '1rem', marginBottom: '1rem', borderRadius: 14,
+              background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02))',
+              border: '1px solid rgba(245,158,11,0.15)',
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 14,
+                background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <MessageCircle size={22} style={{ color: '#F59E0B' }} />
+              </div>
+              <div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#F59E0B', lineHeight: 1 }}>{privateMessages}</div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>message{privateMessages > 1 ? 's' : ''} privé{privateMessages > 1 ? 's' : ''} reçu{privateMessages > 1 ? 's' : ''}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <MiniBadge label="Réponses reçues" value={`${responded}/${total}`} color="#22964F" />
+              <MiniBadge label="Taux de réponse" value={`${total > 0 ? Math.round((responded / total) * 100) : 0}%`} color="#5B8DB8" />
+              <MiniBadge label="Restrictions alimentaires" value={`${guestsWithAllergies} invité${guestsWithAllergies > 1 ? 's' : ''}`} color="#DC8C28" />
+              {totalVotes > 0 && <MiniBadge label="Votes sondage menu" value={totalVotes} color="#FB923C" />}
+            </div>
+
+            {/* Côté marié(e) */}
+            {(brideGuests > 0 || groomGuests > 0) && (
+              <div style={{ marginTop: '1rem' }}>
+                <div className="text-xs font-medium" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Répartition par côté
+                </div>
+                <div style={{
+                  display: 'flex', height: 28, borderRadius: 8, overflow: 'hidden',
+                  border: '1px solid var(--glass-border)',
+                }}>
+                  {brideGuests > 0 && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(brideGuests / total) * 100}%` }}
+                      transition={{ duration: 0.8 }}
+                      style={{
+                        background: 'linear-gradient(135deg, #E879A0, #F9A8C9)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.65rem', fontWeight: 600, color: '#fff',
+                      }}
+                    >
+                      👰 {brideGuests}
+                    </motion.div>
+                  )}
+                  {bothGuests > 0 && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(bothGuests / total) * 100}%` }}
+                      transition={{ duration: 0.8 }}
+                      style={{
+                        background: 'linear-gradient(135deg, #C8A96E, #D4B88A)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.65rem', fontWeight: 600, color: '#fff',
+                      }}
+                    >
+                      💑 {bothGuests}
+                    </motion.div>
+                  )}
+                  {groomGuests > 0 && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(groomGuests / total) * 100}%` }}
+                      transition={{ duration: 0.8 }}
+                      style={{
+                        background: 'linear-gradient(135deg, #5B8DB8, #7DAED4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.65rem', fontWeight: 600, color: '#fff',
+                      }}
+                    >
+                      🤵 {groomGuests}
+                    </motion.div>
+                  )}
+                  {noSideGuests > 0 && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(noSideGuests / total) * 100}%` }}
+                      transition={{ duration: 0.8 }}
+                      style={{
+                        background: 'var(--glass)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.65rem', fontWeight: 600, color: 'var(--text-muted)',
+                      }}
+                    >
+                      {noSideGuests}
+                    </motion.div>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                  {brideGuests > 0 && <span className="text-xs" style={{ color: '#E879A0' }}>👰 Mariée: {brideGuests}</span>}
+                  {groomGuests > 0 && <span className="text-xs" style={{ color: '#5B8DB8' }}>🤵 Marié: {groomGuests}</span>}
+                  {bothGuests > 0 && <span className="text-xs" style={{ color: '#C8A96E' }}>💑 Les deux: {bothGuests}</span>}
+                </div>
+              </div>
             )}
           </SectionCard>
         </div>
