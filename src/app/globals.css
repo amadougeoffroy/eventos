@@ -657,3 +657,69 @@ select.input option {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ── Dashboard mobile ─────────────────────────── */
+@media (max-width: 768px) {
+  .dash-stats-donut {
+    grid-template-columns: 1fr !important;
+  }
+  .dash-next-event-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .dash-next-event-countdown {
+    text-align: center !important;
+    border-top: 1px solid var(--border-light);
+    padding-top: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .dash-next-event-progress {
+    max-width: 100% !important;
+  }
+  .dash-activity-tips {
+    grid-template-columns: 1fr !important;
+  }
+  .dash-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .dash-header .btn-primary {
+    width: 100%;
+    justify-content: center;
+  }
+  .dash-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .dash-stats-grid > div {
+    padding: 0.85rem !important;
+  }
+  .dash-stats-grid .stat-value {
+    font-size: 1.4rem !important;
+  }
+  .dash-event-card-padding {
+    padding: 1rem !important;
+  }
+  .dash-event-card-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+  .dash-event-rsvp-row {
+    gap: 0.35rem !important;
+  }
+  .dash-event-rsvp-row > div {
+    padding: 0.5rem 0.4rem !important;
+  }
+  .dash-event-rsvp-row .rsvp-value {
+    font-size: 0.95rem !important;
+  }
+  .dash-event-rsvp-row .rsvp-label {
+    font-size: 0.6rem !important;
+  }
+  .dash-create-card {
+    padding: 2rem 1rem !important;
+    min-height: 180px !important;
+  }
+}

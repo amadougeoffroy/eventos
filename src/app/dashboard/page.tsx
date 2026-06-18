@@ -103,7 +103,7 @@ export default function DashboardPage() {
       <Sidebar />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
+        <div className="dash-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2rem' }}>
           <div>
             <motion.h1
               className="font-display text-3xl font-bold mb-1"
@@ -121,6 +121,7 @@ export default function DashboardPage() {
         {/* ── Stats + Donut ─────────────────────── */}
         <motion.div
           initial="hidden" animate="visible" variants={fadeUp} custom={0}
+          className="dash-stats-donut"
           style={{
             display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem',
             marginBottom: '1.5rem',
@@ -140,7 +141,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+          <div className="dash-stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
             {stats.map((s, i) => {
               const Icon = s.icon;
               return (
@@ -169,7 +170,7 @@ export default function DashboardPage() {
                   }}>
                     <Icon size={18} color={s.color} />
                   </div>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: '0.15rem' }}>
+                  <div className="stat-value" style={{ fontSize: '1.75rem', fontWeight: 700, color: s.color, lineHeight: 1, marginBottom: '0.15rem' }}>
                     {s.value}
                   </div>
                   <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{s.label}</div>
@@ -211,7 +212,7 @@ export default function DashboardPage() {
                   </span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
+                <div className="dash-next-event-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
                       <div style={{
@@ -237,7 +238,7 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Mini progress bar */}
-                    <div style={{ maxWidth: 300 }}>
+                    <div className="dash-next-event-progress" style={{ maxWidth: 300 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                         <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Confirmations</span>
                         <span className="text-xs font-bold" style={{ color: '#22964F' }}>{nextEventRate}%</span>
@@ -254,7 +255,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Big countdown */}
-                  <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                  <div className="dash-next-event-countdown" style={{ textAlign: 'center', flexShrink: 0 }}>
                     <div style={{
                       fontSize: '2.5rem', fontWeight: 800, lineHeight: 1,
                       color: nextEventCfg.color,
@@ -270,7 +271,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── Activité récente + Tips ───────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: recentActivity.length > 0 ? '1fr 1fr' : '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+        <div className="dash-activity-tips" style={{ display: 'grid', gridTemplateColumns: recentActivity.length > 0 ? '1fr 1fr' : '1fr', gap: '1.5rem', marginBottom: '2rem' }}>
           {/* Activity feed */}
           {recentActivity.length > 0 && (
             <motion.div
@@ -408,9 +409,9 @@ export default function DashboardPage() {
                       background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}66, transparent)`,
                     }} />
 
-                    <div style={{ padding: '1.5rem' }}>
+                    <div className="dash-event-card-padding" style={{ padding: '1.5rem' }}>
                       {/* Event header */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                      <div className="dash-event-card-header" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <div style={{
                             width: 48, height: 48, borderRadius: 14,
@@ -478,7 +479,7 @@ export default function DashboardPage() {
                       </div>
 
                       {/* RSVP mini-stats row */}
-                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                      <div className="dash-event-rsvp-row" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
                         {[
                           { label: 'Confirmés', value: evtConfirmed, color: '#22964F', bg: 'rgba(34,150,79,0.06)' },
                           { label: 'En attente', value: evtPending, color: '#DC8C28', bg: 'rgba(220,140,40,0.06)' },
@@ -488,8 +489,8 @@ export default function DashboardPage() {
                             flex: 1, background: stat.bg, borderRadius: 10,
                             padding: '0.6rem 0.75rem', textAlign: 'center',
                           }}>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 700, color: stat.color }}>{stat.value}</div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{stat.label}</div>
+                            <div className="rsvp-value" style={{ fontSize: '1.1rem', fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                            <div className="rsvp-label" style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{stat.label}</div>
                           </div>
                         ))}
                       </div>
@@ -514,7 +515,7 @@ export default function DashboardPage() {
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={events.length + 8}>
             <Link href="/dashboard/events/new" style={{ textDecoration: 'none', color: 'inherit', display: 'block', height: '100%' }}>
               <div
-                className="card-hover"
+                className="card-hover dash-create-card"
                 style={{
                   background: 'var(--bg-card)',
                   border: '2px dashed var(--border-light)',
