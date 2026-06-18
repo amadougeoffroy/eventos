@@ -154,9 +154,9 @@ export default function NewEventPage() {
     <div className="flex">
       <Sidebar />
       <main className="main-content">
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div className="new-event-layout" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         {/* Form column */}
-        <div style={{ flex: '1 1 0', maxWidth: selectedPlan ? 680 : '100%', minWidth: 0 }}>
+        <div className="new-event-form" style={{ flex: '1 1 0', maxWidth: selectedPlan ? 680 : '100%', minWidth: 0 }}>
           {!selectedPlan ? (
             /* ── Plan Selection ─────────────── */
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -999,7 +999,7 @@ export default function NewEventPage() {
             )}
 
             {/* Navigation buttons */}
-            <div style={{
+            <div className="new-event-nav" style={{
               display: 'flex', gap: '0.75rem', marginTop: '1.5rem',
               paddingBottom: '2rem',
             }}>
@@ -1137,6 +1137,29 @@ export default function NewEventPage() {
               }
               @media (max-width: 767px) {
                 .template-preview-sidebar { display: none !important; }
+                .new-event-layout {
+                  flex-direction: column !important;
+                }
+                .new-event-form {
+                  max-width: 100% !important;
+                  width: 100% !important;
+                }
+                .new-event-nav {
+                  position: sticky;
+                  bottom: 0;
+                  z-index: 30;
+                  background: rgba(255,255,255,0.95);
+                  backdrop-filter: blur(12px);
+                  -webkit-backdrop-filter: blur(12px);
+                  margin: 0 -0.85rem;
+                  padding: 0.75rem 0.85rem !important;
+                  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)) !important;
+                  border-top: 1px solid var(--border-light);
+                  margin-top: 1rem !important;
+                }
+                .mobile-preview-fab {
+                  bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+                }
               }
             `}</style>
           </>
