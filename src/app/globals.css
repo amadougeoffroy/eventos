@@ -1139,4 +1139,8 @@ select.input option {
   .settings-profile-grid {
     grid-template-columns: 1fr !important;
   }
+  .settings-sections .btn-primary {
+    width: 100% !important;
+    align-self: stretch !important;
+  }
 }
