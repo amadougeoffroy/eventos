@@ -75,12 +75,12 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="live-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22964F', boxShadow: '0 0 8px rgba(34,150,79,0.5)', animation: 'pulse 2s infinite' }} />
             <h1 className="font-display text-2xl font-bold">Jour J — Live</h1>
           </div>
-          <div style={{
+          <div className="live-tabs" style={{
             display: 'inline-flex', gap: '0.25rem', padding: '0.25rem',
             background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: 12,
           }}>
@@ -100,7 +100,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 live-stats">
           {statCards.map((s, i) => {
             const Icon = s.icon;
             return (
@@ -137,7 +137,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
                 <Circle size={10} fill="rgba(200,169,110,0.2)" color="rgba(200,169,110,0.3)" />Vide
               </span>
             </div>
-            <div className="relative" style={{ height: 450, minWidth: 600 }}>
+            <div className="relative live-floor" style={{ height: 450, minWidth: 600 }}>
               {eventTables.map((table) => {
                 const status = getTableStatus(table.id);
                 const tableOrders = orders.filter(o => o.tableId === table.id);
@@ -232,7 +232,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
 
         {/* ── Kitchen View ────────────────── */}
         {view === 'kitchen' && (
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid md:grid-cols-3 gap-5 live-kitchen">
             {['pending', 'preparing', 'ready'].map(status => {
               const sLabel = statusLabels[status];
               const filteredOrders = orders.filter(o => o.status === status);

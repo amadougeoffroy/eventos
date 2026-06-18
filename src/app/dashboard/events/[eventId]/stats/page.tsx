@@ -192,7 +192,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
         </div>
 
         {/* ════════ KPI Row ════════ */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="stats-kpi grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
             {
               label: isPast ? 'Terminé' : 'Compte à rebours',
@@ -224,7 +224,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
           })}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="stats-grid grid md:grid-cols-2 gap-5">
           {/* ════════ RSVP Breakdown ════════ */}
           <SectionCard title="Répartition RSVP" icon={BarChart3} iconColor="#C8A96E" delay={5}>
             <div className="space-y-4">

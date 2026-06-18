@@ -289,7 +289,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="tables-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Tables</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
@@ -303,6 +303,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
         {/* ── Stats ──────────────────────────── */}
         <motion.div
           initial="hidden" animate="visible" variants={fadeUp} custom={2}
+          className="tables-stats"
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}
         >
           {[
@@ -335,6 +336,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
         {/* Floor plan with draggable tables */}
         <motion.div
           initial="hidden" animate="visible" variants={fadeUp} custom={5}
+          className="tables-floor"
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1rem', padding: '1.5rem', minHeight: '400px', position: 'relative', overflow: 'auto' }}
         >
           {!hydrated && (
@@ -405,6 +407,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
         {/* ── Table Cards ──────────────────────── */}
         <motion.div
           initial="hidden" animate="visible" variants={fadeUp} custom={6}
+          className="tables-cards"
           style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(260px, 100%), 1fr))', gap: '1.25rem' }}
         >
           {tables.map(t => {
