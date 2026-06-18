@@ -1,6 +1,7 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/ConfirmModal';
@@ -46,6 +47,8 @@ function SectionCard({ title, icon: Icon, children, badge }: {
 
 export default function SettingsPage() {
   const { currentUser, updateProfile } = useApp();
+  const { theme, setTheme, lang, setLang, t } = useThemeLanguage();
+  const tr = t('settings');
 
   // Profile
   const [profileName, setProfileName] = useState(currentUser.name);
@@ -85,12 +88,6 @@ export default function SettingsPage() {
     updateProfile({ [key]: newVal });
   };
 
-  // Appearance
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
-
-  // Language
-  const [lang, setLang] = useState('fr');
-
   // Danger zone
   const [dangerOpen, setDangerOpen] = useState(false);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
@@ -109,15 +106,15 @@ export default function SettingsPage() {
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}
           style={{ marginBottom: '2rem' }}
         >
-          <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.25rem' }}>Paramètres</h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Gérez votre compte et vos préférences</p>
+          <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.25rem' }}>{tr.title}</h1>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{tr.subtitle}</p>
         </motion.div>
 
         <div className="settings-sections" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
           {/* ── Profile ──────────────────── */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-            <SectionCard title="Profil" icon={User}>
+            <SectionCard title={tr.profile} icon={User}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
                   <div style={{
@@ -130,35 +127,35 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <div className="font-semibold">{profileName}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Membre depuis Mai 2026</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.memberSince} Mai 2026</div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="label"><User size={12} style={{ display: 'inline', marginRight: 4 }} />Nom complet</label>
+                  <label className="label"><User size={12} style={{ display: 'inline', marginRight: 4 }} />{tr.fullName}</label>
                   <input className="input" value={profileName} onChange={e => setProfileName(e.target.value)} />
                 </div>
                 <div className="settings-profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
-                    <label className="label"><Mail size={12} style={{ display: 'inline', marginRight: 4 }} />Email</label>
+                    <label className="label"><Mail size={12} style={{ display: 'inline', marginRight: 4 }} />{tr.email}</label>
                     <input className="input" type="email" value={profileEmail} onChange={e => setProfileEmail(e.target.value)} />
                   </div>
                   <div>
-                    <label className="label"><Phone size={12} style={{ display: 'inline', marginRight: 4 }} />Téléphone</label>
+                    <label className="label"><Phone size={12} style={{ display: 'inline', marginRight: 4 }} />{tr.phone}</label>
                     <input className="input" type="tel" value={profilePhone} onChange={e => setProfilePhone(e.target.value)} />
                   </div>
                 </div>
                 <div>
-                  <label className="label"><Shield size={12} style={{ display: 'inline', marginRight: 4 }} />Mot de passe</label>
+                  <label className="label"><Shield size={12} style={{ display: 'inline', marginRight: 4 }} />{tr.password}</label>
                   <input className="input" type="password" value="••••••••" readOnly style={{ cursor: 'not-allowed', opacity: 0.7 }} />
                   <button className="text-xs" style={{
                     color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer',
                     marginTop: '0.35rem', fontWeight: 500,
-                  }}>Modifier le mot de passe</button>
+                  }}>{tr.changePassword}</button>
                 </div>
 
                 <button onClick={handleSaveProfile} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.25rem' }}>
-                  {profileSaved ? <><Check size={16} /> Enregistré !</> : <><Save size={16} /> Enregistrer</>}
+                  {profileSaved ? <><Check size={16} /> {tr.saved}</> : <><Save size={16} /> {tr.save}</>}
                 </button>
               </div>
             </SectionCard>
@@ -166,13 +163,13 @@ export default function SettingsPage() {
 
           {/* ── Notifications ────────────── */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
-            <SectionCard title="Notifications" icon={Bell}>
+            <SectionCard title={tr.notifications} icon={Bell}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
-                  { label: 'Notifications par email', desc: 'Recevoir les mises à jour par email', value: notifEmail, key: 'notifEmail' as const, set: setNotifEmail },
-                  { label: 'Notifications par SMS', desc: 'Recevoir les alertes par SMS', value: notifSms, key: 'notifSms' as const, set: setNotifSms },
-                  { label: 'Alertes RSVP', desc: 'Être notifié à chaque nouvelle réponse', value: notifRsvp, key: 'notifRsvp' as const, set: setNotifRsvp },
-                  { label: 'Rappels événement', desc: 'Rappels 7j, 3j et 1j avant l\'événement', value: notifReminder, key: 'notifReminder' as const, set: setNotifReminder },
+                  { label: tr.notifEmail, desc: tr.notifEmailDesc, value: notifEmail, key: 'notifEmail' as const, set: setNotifEmail },
+                  { label: tr.notifSms, desc: tr.notifSmsDesc, value: notifSms, key: 'notifSms' as const, set: setNotifSms },
+                  { label: tr.notifRsvp, desc: tr.notifRsvpDesc, value: notifRsvp, key: 'notifRsvp' as const, set: setNotifRsvp },
+                  { label: tr.notifReminder, desc: tr.notifReminderDesc, value: notifReminder, key: 'notifReminder' as const, set: setNotifReminder },
                 ].map(n => (
                   <div key={n.label} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -207,20 +204,20 @@ export default function SettingsPage() {
 
           {/* ── Apparence ────────────────── */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
-            <SectionCard title="Apparence" icon={Palette}>
+            <SectionCard title={tr.appearance} icon={Palette}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                 <div>
-                  <label className="label">Thème</label>
+                  <label className="label">{tr.theme}</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
                     {([
-                      { value: 'light' as const, label: 'Clair', icon: Sun },
-                      { value: 'dark' as const, label: 'Sombre', icon: Moon },
-                      { value: 'system' as const, label: 'Système', icon: Smartphone },
-                    ]).map(t => {
-                      const Icon = t.icon;
-                      const selected = theme === t.value;
+                      { value: 'light' as const, label: tr.light, icon: Sun },
+                      { value: 'dark' as const, label: tr.dark, icon: Moon },
+                      { value: 'system' as const, label: tr.system, icon: Smartphone },
+                    ]).map(tOpt => {
+                      const TIcon = tOpt.icon;
+                      const selected = theme === tOpt.value;
                       return (
-                        <button key={t.value} onClick={() => setTheme(t.value)} style={{
+                        <button key={tOpt.value} onClick={() => setTheme(tOpt.value)} style={{
                           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
                           padding: '0.85rem 0.5rem', borderRadius: 12, cursor: 'pointer',
                           background: selected ? 'rgba(200,169,110,0.08)' : 'var(--glass)',
@@ -228,16 +225,16 @@ export default function SettingsPage() {
                           color: selected ? 'var(--gold)' : 'var(--text-muted)',
                           transition: 'all 0.2s ease',
                         }}>
-                          <Icon size={20} />
-                          <span className="text-xs font-medium">{t.label}</span>
+                          <TIcon size={20} />
+                          <span className="text-xs font-medium">{tOpt.label}</span>
                         </button>
                       );
                     })}
                   </div>
                 </div>
                 <div>
-                  <label className="label"><Globe size={12} style={{ display: 'inline', marginRight: 4 }} />Langue</label>
-                  <select className="input" value={lang} onChange={e => setLang(e.target.value)}>
+                  <label className="label"><Globe size={12} style={{ display: 'inline', marginRight: 4 }} />{tr.language}</label>
+                  <select className="input" value={lang} onChange={e => setLang(e.target.value as 'fr' | 'en')}>
                     <option value="fr">🇫🇷 Français</option>
                     <option value="en">🇬🇧 English</option>
                   </select>
@@ -267,7 +264,7 @@ export default function SettingsPage() {
                   }}>
                     <Trash2 size={18} style={{ color: '#DC3545' }} />
                   </div>
-                  <h2 className="font-display text-lg font-bold" style={{ color: '#DC3545' }}>Zone dangereuse</h2>
+                  <h2 className="font-display text-lg font-bold" style={{ color: '#DC3545' }}>{tr.dangerZone}</h2>
                 </div>
                 <ChevronDown size={18} style={{
                   color: '#DC3545', transition: 'transform 0.25s ease',
@@ -277,10 +274,10 @@ export default function SettingsPage() {
               {dangerOpen && (
                 <div style={{ padding: '0 1.75rem 1.5rem' }}>
                   <p className="text-sm" style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                    Cette action est irréversible. Toutes vos données seront définitivement supprimées.
+                    {tr.dangerDesc}
                   </p>
                   <button className="btn-danger" onClick={() => setConfirmDeleteAccount(true)}>
-                    <Trash2 size={16} /> Supprimer mon compte
+                    <Trash2 size={16} /> {tr.deleteAccount}
                   </button>
                 </div>
               )}
@@ -293,14 +290,14 @@ export default function SettingsPage() {
       {/* Delete account confirmation modal */}
       <ConfirmModal
         open={confirmDeleteAccount}
-        title="Supprimer votre compte"
-        message="Êtes-vous absolument sûr ? Toutes vos données, événements, invités et paramètres seront définitivement supprimés. Cette action est irréversible."
-        confirmLabel="Supprimer définitivement"
-        cancelLabel="Annuler"
+        title={tr.deleteAccountTitle}
+        message={tr.deleteAccountMessage}
+        confirmLabel={tr.deleteAccountConfirm}
+        cancelLabel={tr.deleteAccountCancel}
         variant="danger"
         onConfirm={() => {
           setConfirmDeleteAccount(false);
-          alert('Compte supprimé (simulation)');
+          alert(lang === 'en' ? 'Account deleted (simulation)' : 'Compte supprimé (simulation)');
         }}
         onCancel={() => setConfirmDeleteAccount(false)}
       />

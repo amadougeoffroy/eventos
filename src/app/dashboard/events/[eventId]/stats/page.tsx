@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
 import { use, useMemo } from 'react';
 import {
@@ -17,6 +18,9 @@ const fadeUp = {
 export default function StatsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, guests, menuItems, menuCategories, tables, gifts, eventsLoading } = useApp();
+  const { t, lang } = useThemeLanguage();
+  const tr = t('stats');
+  const tc = t('common');
   const event = events.find(e => e.id === eventId);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const evtItems = useMemo(() => menuItems.filter(i => i.eventId === eventId), [menuItems, eventId]);
@@ -129,9 +133,9 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
 
   // ─── RSVP bars data ───
   const rsvpData = [
-    { label: 'Confirmés', value: confirmed, pct: total > 0 ? Math.round((confirmed / total) * 100) : 0, color: '#22964F' },
-    { label: 'En attente', value: pending, pct: total > 0 ? Math.round((pending / total) * 100) : 0, color: '#DC8C28' },
-    { label: 'Déclinés', value: declined, pct: total > 0 ? Math.round((declined / total) * 100) : 0, color: '#DC3545' },
+    { label: tr.confirmed, value: confirmed, pct: total > 0 ? Math.round((confirmed / total) * 100) : 0, color: '#22964F' },
+    { label: tr.pending, value: pending, pct: total > 0 ? Math.round((pending / total) * 100) : 0, color: '#DC8C28' },
+    { label: tr.declined, value: declined, pct: total > 0 ? Math.round((declined / total) * 100) : 0, color: '#DC3545' },
     { label: 'Peut-être', value: maybe, pct: total > 0 ? Math.round((maybe / total) * 100) : 0, color: '#A78BFA' },
   ];
 
@@ -142,7 +146,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
     { label: 'Peut-être', count: eventGuests.filter(g => g.rsvpStatus === 'maybe').reduce((s, g) => s + g.companions, 0), color: '#A78BFA' },
   ].filter(c => c.count > 0), [eventGuests, confirmedCompanions]);
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tc.eventNotFound}</p></main></div>;
 
   /* Section wrapper */
   const SectionCard = ({ children, title, icon: IconComp, iconColor, delay }: { children: React.ReactNode; title: string; icon: React.ElementType; iconColor: string; delay: number }) => (
@@ -187,7 +191,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
       <Sidebar eventId={eventId} />
       <main className="main-content">
         <div style={{ marginBottom: '1.5rem' }}>
-          <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Statistiques</h1>
+          <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
         </div>
 
@@ -195,7 +199,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
         <div className="stats-kpi grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {[
             {
-              label: isPast ? 'Terminé' : 'Compte à rebours',
+              label: isPast ? tr.finished : tr.countdown,
               value: isPast ? 'Passé' : daysLeft === 0 ? "Aujourd'hui !" : `${daysLeft}`,
               sub: isPast ? `depuis ${Math.abs(daysLeft)} jours` : daysLeft === 0 ? '' : daysLeft === 1 ? 'jour restant' : 'jours restants',
               icon: Calendar, color: isPast ? '#DC3545' : daysLeft <= 7 ? '#FB923C' : '#5B8DB8',
@@ -203,8 +207,8 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 : daysLeft <= 7 ? 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))'
                 : 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))',
             },
-            { label: 'Invités', value: total, sub: `${totalWithCompanions} avec accomp.`, icon: Users, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
-            { label: 'Confirmés', value: confirmed, sub: `${confirmedWithCompanions} personnes`, icon: TrendingUp, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
+            { label: tr.totalGuests, value: total, sub: `${totalWithCompanions} avec accomp.`, icon: Users, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
+            { label: tr.confirmed, value: confirmed, sub: `${confirmedWithCompanions} personnes`, icon: TrendingUp, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
             { label: 'Taux RSVP', value: `${total > 0 ? Math.round((responded / total) * 100) : 0}%`, sub: `${responded}/${total} ont répondu`, icon: PieChart, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))' },
             { label: 'Plats menu', value: evtItems.length, sub: `${evtCategories.length} catégories`, icon: UtensilsCrossed, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))' },
           ].map((s, i) => {
@@ -226,7 +230,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
 
         <div className="stats-grid grid md:grid-cols-2 gap-5">
           {/* ════════ RSVP Breakdown ════════ */}
-          <SectionCard title="Répartition RSVP" icon={BarChart3} iconColor="#C8A96E" delay={5}>
+          <SectionCard title={tr.guestsByStatus} icon={BarChart3} iconColor="#C8A96E" delay={5}>
             <div className="space-y-4">
               {rsvpData.map(d => (
                 <div key={d.label}>
@@ -264,7 +268,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
           </SectionCard>
 
           {/* ════════ RSVP Timeline ════════ */}
-          <SectionCard title="Évolution des réponses" icon={Clock} iconColor="#5B8DB8" delay={6}>
+          <SectionCard title={tr.responseTimeline} icon={Clock} iconColor="#5B8DB8" delay={6}>
             {timeline.length > 0 ? (
               <div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -319,7 +323,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
           </SectionCard>
 
           {/* ════════ Groups ════════ */}
-          <SectionCard title="Par groupe" icon={Users} iconColor="#5B8DB8" delay={7}>
+          <SectionCard title={tr.guestsByGroup} icon={Users} iconColor="#5B8DB8" delay={7}>
             <div className="space-y-3">
               {groups.map(([name, data]) => {
                 const pct = total > 0 ? Math.round((data.total / total) * 100) : 0;
@@ -327,7 +331,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 return (
                   <div key={name}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.3rem' }}>
-                      <span>{name || 'Sans groupe'}</span>
+                      <span>{name || tr.noGroup}</span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <span className="text-xs" style={{ color: '#22964F' }}>{confirmedPct}% conf.</span>
                         <span className="font-semibold" style={{ color: 'var(--gold-light)' }}>{data.total}</span>
@@ -500,7 +504,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
           </SectionCard>
 
           {/* ════════ Gifts ════════ */}
-          <SectionCard title="Liste de cadeaux" icon={Gift} iconColor="#E879A0" delay={11}>
+          <SectionCard title={tr.totalGifts} icon={Gift} iconColor="#E879A0" delay={11}>
             {totalGifts > 0 ? (
               <>
                 <div style={{
@@ -529,7 +533,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                   <div>
                     <div className="font-semibold" style={{ fontSize: '0.9rem' }}>{reservedGifts}/{totalGifts} réservés</div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {reservedGiftValue > 0 ? `${reservedGiftValue.toLocaleString('fr-FR')} € sur ${totalGiftValue.toLocaleString('fr-FR')} €` : 'Aucune valeur renseignée'}
+                      {reservedGiftValue > 0 ? `${reservedGiftValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} € sur ${totalGiftValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} €` : tr.noValueSet}
                     </div>
                   </div>
                 </div>
@@ -559,7 +563,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                     <span style={{
                       fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.55rem', borderRadius: 6,
                       background: 'rgba(220,140,40,0.1)', color: '#DC8C28',
-                    }}>{count} invité{count > 1 ? 's' : ''}</span>
+                    }}>{count} {count > 1 ? tr.guests : tr.guest}</span>
                   </div>
                 ))}
               </div>

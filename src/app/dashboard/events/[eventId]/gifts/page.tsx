@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
 import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, Tag, User, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -11,6 +12,9 @@ type SortKey = 'name' | 'gift' | 'price';
 type SortDir = 'asc' | 'desc';
 
 function OfferersTable({ offerers }: { offerers: Offerer[] }) {
+  const { t, lang } = useThemeLanguage();
+  const tr = t('gifts');
+  const tc = t('common');
   const [q, setQ] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -62,17 +66,17 @@ function OfferersTable({ offerers }: { offerers: Offerer[] }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
         <h2 className="font-display" style={{ fontSize: '1rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
           <User size={16} style={{ color: 'var(--gold)' }} />
-          Qui offre quoi
+          {tr.whoOffersWhat}
           <span style={{
             padding: '0.15rem 0.5rem', borderRadius: 8,
             background: 'rgba(34,150,79,0.1)', fontSize: '0.65rem',
             fontWeight: 700, color: '#22964F',
-          }}>{filtered.length} offrant{filtered.length > 1 ? 's' : ''}</span>
+          }}>{filtered.length} {filtered.length > 1 ? tr.offererPlural : tr.offerers}</span>
         </h2>
         <div style={{ position: 'relative', minWidth: 180 }}>
           <Search size={13} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
-            type="text" placeholder="Rechercher..."
+            type="text" placeholder={tr.searchOfferers}
             value={q} onChange={e => { setQ(e.target.value); setPage(0); }}
             style={{
               width: '100%', padding: '0.45rem 0.6rem 0.45rem 1.8rem',
@@ -90,19 +94,19 @@ function OfferersTable({ offerers }: { offerers: Offerer[] }) {
             <thead>
               <tr style={{ background: 'rgba(200,169,110,0.06)' }}>
                 <th style={thStyle('name')} onClick={() => toggleSort('name')}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>Invité <SortIcon k="name" /></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>{tr.offerer} <SortIcon k="name" /></span>
                 </th>
                 <th style={thStyle('gift')} onClick={() => toggleSort('gift')}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>Cadeau <SortIcon k="gift" /></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>{tr.gift} <SortIcon k="gift" /></span>
                 </th>
                 <th style={thStyle('price', 'right')} onClick={() => toggleSort('price')}>
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>Valeur <SortIcon k="price" /></span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', justifyContent: 'flex-end' }}>{tr.totalValue} <SortIcon k="price" /></span>
                 </th>
               </tr>
             </thead>
             <tbody>
               {paged.length === 0 ? (
-                <tr><td colSpan={3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Aucun résultat</td></tr>
+                <tr><td colSpan={3} style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{tc.noResults}</td></tr>
               ) : paged.map((o, i) => (
                 <tr key={`${o.name}-${o.gift}-${i}`} style={{ borderTop: '1px solid var(--border-light)', transition: 'background 0.15s' }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(200,169,110,0.04)')}
@@ -121,7 +125,7 @@ function OfferersTable({ offerers }: { offerers: Offerer[] }) {
                   </td>
                   <td style={{ padding: '0.6rem 1rem', color: 'var(--text-muted)' }}>🎁 {o.gift}</td>
                   <td style={{ padding: '0.6rem 1rem', textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
-                    {o.price ? `${o.price.toLocaleString('fr-FR')}€` : '—'}
+                    {o.price ? `${o.price.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}€` : '—'}
                   </td>
                 </tr>
               ))}
@@ -136,7 +140,7 @@ function OfferersTable({ offerers }: { offerers: Offerer[] }) {
             padding: '0.5rem 1rem', borderTop: '1px solid var(--border-light)',
             fontSize: '0.7rem', color: 'var(--text-muted)',
           }}>
-            <span>{page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)} sur {filtered.length}</span>
+            <span>{page * perPage + 1}–{Math.min((page + 1) * perPage, filtered.length)} {tc.of} {filtered.length}</span>
             <div style={{ display: 'flex', gap: '0.3rem' }}>
               <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
                 style={{
@@ -168,25 +172,28 @@ const fadeUp = {
 export default function GiftsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, gifts, addGift, updateGift, removeGift, eventsLoading } = useApp();
+  const { t, lang } = useThemeLanguage();
+  const tr = t('gifts');
+  const tc = t('common');
   const event = events.find(e => e.id === eventId);
   const eventGifts = useMemo(() => gifts.filter(g => g.eventId === eventId), [gifts, eventId]);
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const [form, setForm] = useState({
-    name: '', description: '', price: '', url: '', imageUrl: '', category: 'Général',
+  const [form, setForm] = useState<{ name: string; description: string; price: string; url: string; imageUrl: string; category: string }>({
+    name: '', description: '', price: '', url: '', imageUrl: '', category: tr.defaultCategory,
   });
 
   const categories = useMemo(() => {
     const cats = new Set(eventGifts.map(g => g.category));
-    return ['Tous', ...Array.from(cats)];
+    return [tr.all, ...Array.from(cats)];
   }, [eventGifts]);
-  const [filterCat, setFilterCat] = useState('Tous');
+  const [filterCat, setFilterCat] = useState<string>(tr.all);
 
   const filtered = useMemo(() => {
     let list = eventGifts;
-    if (filterCat !== 'Tous') list = list.filter(g => g.category === filterCat);
+    if (filterCat !== tr.all) list = list.filter(g => g.category === filterCat);
     if (search) list = list.filter(g => g.name.toLowerCase().includes(search.toLowerCase()));
     return list;
   }, [eventGifts, filterCat, search]);
@@ -201,11 +208,11 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
     }, 0),
   }), [eventGifts]);
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tc.eventNotFound}</p></main></div>;
 
   const openAdd = () => {
     setEditingId(null);
-    setForm({ name: '', description: '', price: '', url: '', imageUrl: '', category: 'Général' });
+    setForm({ name: '', description: '', price: '', url: '', imageUrl: '', category: tr.defaultCategory });
     setShowModal(true);
   };
 
@@ -219,7 +226,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
       price: g.price ? String(g.price) : '',
       url: g.url || '',
       imageUrl: g.imageUrl || '',
-      category: g.category || 'Général',
+      category: g.category || tr.defaultCategory,
     });
     setShowModal(true);
   };
@@ -252,7 +259,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Supprimer ce cadeau ?')) removeGift(id);
+    if (confirm(tr.deleteConfirm)) removeGift(id);
   };
 
   return (
@@ -262,7 +269,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
         {/* Header */}
         <div className="gifts-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Liste de cadeaux</h1>
+            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
           <button onClick={openAdd} className="btn-primary" style={{
@@ -272,16 +279,16 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
             color: '#fff', fontWeight: 600, fontSize: '0.85rem',
             border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(200,169,110,0.3)',
           }}>
-            <Plus size={16} /> Ajouter un cadeau
+            <Plus size={16} /> {tr.addGift}
           </button>
         </div>
 
         {/* Stats */}
         <div className="gifts-stats grid grid-cols-4 gap-4 mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
           {[
-            { label: 'Total', value: stats.total, color: '#5B8DB8', icon: Gift },
-            { label: 'Seront offerts', value: stats.reserved, color: '#22964F', icon: Package },
-            { label: 'Valeur totale', value: `${stats.totalValue.toLocaleString('fr-FR')}€`, color: '#C8A96E', icon: Gift },
+            { label: tr.total, value: stats.total, color: '#5B8DB8', icon: Gift },
+            { label: tr.willBeOffered, value: stats.reserved, color: '#22964F', icon: Package },
+            { label: tr.totalValue, value: `${stats.totalValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}€`, color: '#C8A96E', icon: Gift },
           ].map((s, i) => (
             <motion.div key={s.label} custom={i} variants={fadeUp} initial="hidden" animate="visible"
               className="card" style={{
@@ -303,7 +310,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
           <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
-              type="text" placeholder="Rechercher un cadeau..."
+              type="text" placeholder={tr.search}
               value={search} onChange={e => setSearch(e.target.value)}
               style={{
                 width: '100%', padding: '0.55rem 0.75rem 0.55rem 2rem',
@@ -332,13 +339,13 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
           <motion.div className="card" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
             style={{ textAlign: 'center', padding: '3rem 2rem', borderRadius: 16 }}>
             <Gift size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem', opacity: 0.4 }} />
-            <p style={{ fontWeight: 600, marginBottom: '0.3rem' }}>Aucun cadeau</p>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Ajoutez des cadeaux pour que vos invités puissent vous gâter !</p>
+            <p style={{ fontWeight: 600, marginBottom: '0.3rem' }}>{tr.noGifts}</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{tr.noGiftsDesc}</p>
             <button onClick={openAdd} style={{
               padding: '0.5rem 1rem', borderRadius: 8, border: '1px solid var(--gold)',
               background: 'rgba(200,169,110,0.08)', color: 'var(--gold)',
               fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
-            }}><Plus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Ajouter un cadeau</button>
+            }}><Plus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />{tr.addGift}</button>
           </motion.div>
         ) : (
           <div className="gifts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
@@ -362,7 +369,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                         padding: '0.2rem 0.5rem', borderRadius: 6,
                         background: 'rgba(34,150,79,0.12)', fontSize: '0.6rem',
                         fontWeight: 700, color: '#22964F',
-                      }}>Sera offert{names.length > 1 ? ` (${names.length})` : ''}</div>
+                      }}>{tr.reserved}{names.length > 1 ? ` (${names.length})` : ''}</div>
                       {names.map((name, ni) => (
                         <div key={ni} style={{
                           padding: '0.15rem 0.45rem', borderRadius: 6,
@@ -447,7 +454,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                   offerers.push({ name, gift: g.name, price: g.price || 0 });
                 });
               } else {
-                offerers.push({ name: 'Invité inconnu', gift: g.name, price: g.price || 0 });
+                offerers.push({ name: tr.unknownGuest, gift: g.name, price: g.price || 0 });
               }
             }
           });
@@ -458,23 +465,14 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
         {/* Modal */}
         <AnimatePresence>
           {showModal && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{
-                position: 'fixed', inset: 0, zIndex: 1000,
-                background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
-              }} onClick={() => setShowModal(false)}>
-              <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-                className="card" onClick={e => e.stopPropagation()}
-                style={{
-                  width: '100%', maxWidth: 440, padding: '1.5rem',
-                  borderRadius: 16, background: 'var(--bg)',
-                  border: '1px solid var(--border-light)',
-                  maxHeight: '90vh', overflowY: 'auto',
-                }}>
+            <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowModal(false)}>
+              <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                style={{ maxWidth: 440 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
                   <h2 className="font-display" style={{ fontSize: '1.1rem', fontWeight: 700 }}>
-                    {editingId ? 'Modifier le cadeau' : 'Ajouter un cadeau'}
+                    {editingId ? tr.editGift : tr.addGiftTitle}
                   </h2>
                   <button onClick={() => setShowModal(false)} style={{
                     width: 28, height: 28, borderRadius: 8, border: '1px solid var(--border-light)',
@@ -485,12 +483,12 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {[
-                    { label: 'Nom du cadeau *', key: 'name', placeholder: 'Ex: Robot pâtissier' },
-                    { label: 'Description', key: 'description', placeholder: 'Optionnel' },
-                    { label: 'Prix (€)', key: 'price', placeholder: 'Ex: 149.99', type: 'number' },
-                    { label: 'Lien (URL)', key: 'url', placeholder: 'https://...' },
-                    { label: 'Image (URL)', key: 'imageUrl', placeholder: 'https://...' },
-                    { label: 'Catégorie', key: 'category', placeholder: 'Ex: Cuisine, Déco...' },
+                    { label: tr.giftNameRequired, key: 'name', placeholder: tr.giftNamePlaceholder },
+                    { label: tr.description, key: 'description', placeholder: tr.descPlaceholder },
+                    { label: tr.price, key: 'price', placeholder: tr.pricePlaceholder, type: 'number' },
+                    { label: tr.url, key: 'url', placeholder: 'https://...' },
+                    { label: tr.imageUrl, key: 'imageUrl', placeholder: 'https://...' },
+                    { label: tr.category, key: 'category', placeholder: tr.categoryPlaceholder },
                   ].map(field => (
                     <div key={field.key}>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.3rem', color: 'var(--text-muted)' }}>
@@ -516,7 +514,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                     flex: 1, padding: '0.6rem', borderRadius: 10,
                     border: '1px solid var(--border-light)', background: 'var(--glass)',
                     fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', color: 'var(--text-muted)',
-                  }}>Annuler</button>
+                  }}>{tc.cancel}</button>
                   <button onClick={handleSave} disabled={!form.name.trim()} style={{
                     flex: 1, padding: '0.6rem', borderRadius: 10,
                     background: form.name.trim() ? 'linear-gradient(135deg, #C8A96E, #B8944F)' : 'var(--glass)',
@@ -524,7 +522,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                     fontWeight: 600, fontSize: '0.85rem', cursor: form.name.trim() ? 'pointer' : 'not-allowed',
                     border: form.name.trim() ? 'none' : '1px solid var(--border-light)',
                     boxShadow: form.name.trim() ? '0 2px 8px rgba(200,169,110,0.3)' : 'none',
-                  }}>{editingId ? 'Enregistrer' : 'Ajouter'}</button>
+                  }}>{editingId ? tr.save : tr.add}</button>
                 </div>
               </motion.div>
             </motion.div>

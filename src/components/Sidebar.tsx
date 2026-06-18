@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { planConfig } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
 
@@ -18,6 +19,8 @@ interface SidebarProps {
 export default function Sidebar({ eventId }: SidebarProps) {
   const pathname = usePathname();
   const { events, currentUser } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('sidebar');
   const [eventsOpen, setEventsOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const currentEvent = events.find(e => e.id === eventId);
@@ -38,21 +41,21 @@ export default function Sidebar({ eventId }: SidebarProps) {
   }, [mobileOpen]);
 
   const mainNav = [
-    { href: '/dashboard', icon: Home, label: 'Accueil' },
-    { href: '/dashboard/settings', icon: Settings, label: 'Paramètres' },
+    { href: '/dashboard', icon: Home, label: tr.dashboard },
+    { href: '/dashboard/settings', icon: Settings, label: tr.settings },
   ];
 
   const eventNav = eventId ? [
-    { href: `/dashboard/events/${eventId}`, icon: PartyPopper, label: 'Événement' },
-    { href: `/dashboard/events/${eventId}/groups`, icon: UsersRound, label: 'Groupes' },
-    { href: `/dashboard/events/${eventId}/guests`, icon: Users, label: 'Invités' },
-    { href: `/dashboard/events/${eventId}/invitations`, icon: Send, label: 'Invitations' },
-    { href: `/dashboard/events/${eventId}/menu`, icon: UtensilsCrossed, label: 'Menu' },
-    { href: `/dashboard/events/${eventId}/tables`, icon: LayoutGrid, label: 'Tables' },
-    { href: `/dashboard/events/${eventId}/venues`, icon: MapPin, label: 'Lieux' },
-    { href: `/dashboard/events/${eventId}/gifts`, icon: Gift, label: 'Cadeaux' },
-    { href: `/dashboard/events/${eventId}/live`, icon: Radio, label: 'Jour J' },
-    { href: `/dashboard/events/${eventId}/stats`, icon: BarChart3, label: 'Stats' },
+    { href: `/dashboard/events/${eventId}`, icon: PartyPopper, label: tr.overview },
+    { href: `/dashboard/events/${eventId}/groups`, icon: UsersRound, label: tr.groups },
+    { href: `/dashboard/events/${eventId}/guests`, icon: Users, label: tr.guests },
+    { href: `/dashboard/events/${eventId}/invitations`, icon: Send, label: tr.invitations },
+    { href: `/dashboard/events/${eventId}/menu`, icon: UtensilsCrossed, label: tr.menu },
+    { href: `/dashboard/events/${eventId}/tables`, icon: LayoutGrid, label: tr.tables },
+    { href: `/dashboard/events/${eventId}/venues`, icon: MapPin, label: tr.venues },
+    { href: `/dashboard/events/${eventId}/gifts`, icon: Gift, label: tr.gifts },
+    { href: `/dashboard/events/${eventId}/live`, icon: Radio, label: tr.live },
+    { href: `/dashboard/events/${eventId}/stats`, icon: BarChart3, label: tr.stats },
   ] : [];
 
   const isActive = (href: string) => {
@@ -158,7 +161,7 @@ export default function Sidebar({ eventId }: SidebarProps) {
             letterSpacing: '0.08em', color: 'var(--text-muted)',
             padding: '0.5rem 0.75rem 0.35rem', opacity: 0.6,
           }}>
-            Événements
+            {tr.myEvents}
           </div>
           <button
             onClick={() => setEventsOpen(!eventsOpen)}
@@ -177,7 +180,7 @@ export default function Sidebar({ eventId }: SidebarProps) {
               }}>
                 <PartyPopper size={17} />
               </div>
-              Mes Événements
+              {tr.myEvents}
             </span>
             <ChevronDown size={14} style={{
               transform: eventsOpen ? 'rotate(180deg)' : 'rotate(0deg)',
@@ -219,7 +222,7 @@ export default function Sidebar({ eventId }: SidebarProps) {
                   transition: 'all 0.2s ease',
                 }}
               >
-                <Plus size={14} /> Créer un événement
+                <Plus size={14} /> {tr.newEvent}
               </Link>
             </div>
           )}
@@ -316,7 +319,7 @@ export default function Sidebar({ eventId }: SidebarProps) {
               await supabase.auth.signOut();
               window.location.href = '/login';
             }}
-            title="Déconnexion"
+            title={tr.logout}
             style={{
               width: 32, height: 32, borderRadius: 8,
               display: 'flex', alignItems: 'center', justifyContent: 'center',

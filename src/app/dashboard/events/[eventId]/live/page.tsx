@@ -2,16 +2,12 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
 import { use, useMemo, useState } from 'react';
 import { Radio, Circle, CheckCircle2, Clock, ChefHat, Truck } from 'lucide-react';
 
-const statusLabels: Record<string, { label: string; color: string }> = {
-  pending:   { label: 'En attente', color: '#DC8C28' },
-  preparing: { label: 'En préparation', color: '#FB923C' },
-  ready:     { label: 'Prêt', color: '#5B8DB8' },
-  served:    { label: 'Servi', color: '#22964F' },
-};
+let statusLabels: Record<string, { label: string; color: string }>;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -21,11 +17,20 @@ const fadeUp = {
 export default function LivePage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, tables, orders, updateOrder, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('live');
   const event = events.find(e => e.id === eventId);
+
+  statusLabels = {
+    pending:   { label: tr.waiting, color: '#DC8C28' },
+    preparing: { label: tr.preparing, color: '#FB923C' },
+    ready:     { label: tr.ready, color: '#5B8DB8' },
+    served:    { label: tr.served, color: '#22964F' },
+  };
   const eventTables = useMemo(() => tables.filter(t => t.eventId === eventId), [tables, eventId]);
   const [view, setView] = useState<'floor' | 'orders' | 'kitchen'>('floor');
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   const getTableStatus = (tableId: string) => {
     const tableOrders = orders.filter(o => o.tableId === tableId);
@@ -58,16 +63,16 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
   const ordersServed = orders.filter(o => o.status === 'served').length;
 
   const statCards = [
-    { label: 'En attente', value: ordersPending, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: Clock },
-    { label: 'En préparation', value: ordersPreparing, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))', icon: ChefHat },
-    { label: 'Prêts', value: ordersReady, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))', icon: Truck },
-    { label: 'Servis', value: ordersServed, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: CheckCircle2 },
+    { label: tr.waiting, value: ordersPending, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: Clock },
+    { label: tr.preparing, value: ordersPreparing, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))', icon: ChefHat },
+    { label: tr.readyPlural, value: ordersReady, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))', icon: Truck },
+    { label: tr.served, value: ordersServed, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: CheckCircle2 },
   ];
 
   const viewTabs = [
-    { key: 'floor', label: 'Plan de salle' },
-    { key: 'orders', label: 'Commandes' },
-    { key: 'kitchen', label: 'Cuisine' },
+    { key: 'floor', label: tr.floorPlan },
+    { key: 'orders', label: tr.orders },
+    { key: 'kitchen', label: tr.kitchen },
   ] as const;
 
   return (
@@ -78,7 +83,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
         <div className="live-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22964F', boxShadow: '0 0 8px rgba(34,150,79,0.5)', animation: 'pulse 2s infinite' }} />
-            <h1 className="font-display text-2xl font-bold">Jour J — Live</h1>
+            <h1 className="font-display text-2xl font-bold">{tr.title}</h1>
           </div>
           <div className="live-tabs" style={{
             display: 'inline-flex', gap: '0.25rem', padding: '0.25rem',
@@ -127,14 +132,14 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-              <span className="text-sm font-medium">Légende :</span>
+              <span className="text-sm font-medium">{tr.legend}</span>
               {Object.entries(statusLabels).map(([key, val]) => (
                 <span key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem' }}>
                   <Circle size={10} fill={val.color} color={val.color} />{val.label}
                 </span>
               ))}
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                <Circle size={10} fill="rgba(200,169,110,0.2)" color="rgba(200,169,110,0.3)" />Vide
+                <Circle size={10} fill="rgba(200,169,110,0.2)" color="rgba(200,169,110,0.3)" />{tr.empty}
               </span>
             </div>
             <div className="relative live-floor" style={{ height: 450, minWidth: 600 }}>
@@ -158,7 +163,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
                     whileHover={{ scale: 1.05 }}
                   >
                     <div style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '0.15rem' }}>{table.name}</div>
-                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{table.capacity} places</div>
+                    <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>{table.capacity} {tr.seats}</div>
                     {tableOrders.length > 0 && (
                       <span style={{
                         marginTop: '0.25rem', fontSize: '0.55rem', fontWeight: 600,
@@ -166,7 +171,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
                         background: `${statusLabels[status]?.color || '#C8A96E'}20`,
                         color: statusLabels[status]?.color || '#C8A96E',
                       }}>
-                        {statusLabels[status]?.label || 'Vide'}
+                        {statusLabels[status]?.label || tr.empty}
                       </span>
                     )}
                   </motion.div>
@@ -198,7 +203,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
                       </span>
                       {order.status !== 'served' && (
                         <button className="btn-primary" style={{ padding: '0.35rem 0.75rem', fontSize: '0.75rem' }} onClick={() => advanceOrderStatus(order.id)}>
-                          {order.status === 'pending' ? 'Préparer' : order.status === 'preparing' ? 'Prêt !' : 'Servir'}
+                          {order.status === 'pending' ? tr.prepareAction : order.status === 'preparing' ? tr.readyAction : tr.serveAction}
                         </button>
                       )}
                     </div>
@@ -260,7 +265,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                             <span className="font-semibold text-sm">{table?.name}</span>
                             <button className="btn-primary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.7rem' }} onClick={() => advanceOrderStatus(order.id)}>
-                              {status === 'pending' ? '→ Préparer' : status === 'preparing' ? '→ Prêt' : '→ Servir'}
+                              {status === 'pending' ? tr.arrowPrepare : status === 'preparing' ? tr.arrowReady : tr.arrowServe}
                             </button>
                           </div>
                           {order.items.map(item => (
@@ -274,7 +279,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
                     })}
                     {filteredOrders.length === 0 && (
                       <div style={{ textAlign: 'center', padding: '2rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        Aucune commande
+                        {tr.noOrders}
                       </div>
                     )}
                   </div>

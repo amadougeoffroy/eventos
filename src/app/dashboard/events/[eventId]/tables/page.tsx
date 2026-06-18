@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo, useRef, useEffect, useCallback, createRef } from 'react';
 import {
@@ -21,6 +22,8 @@ type Assignment = { guestId: string; tableId: string; };
 export default function TablesPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, guests, tables, tablesReady, guestGroups, addTable, updateTable, removeTable, updateGuest, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('tables');
   const event = events.find(e => e.id === eventId);
 
   // ---------- State ----------
@@ -45,7 +48,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
       for (let i = 0; i < g.companions; i++) {
         rows.push({
           id: `${g.id}-comp-${i}`,
-          firstName: `Accomp ${i + 1}`,
+          firstName: `${tr.companionAbbr} ${i + 1}`,
           lastName: g.lastName,
           email: '',
           phone: '',
@@ -93,8 +96,8 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
 
   // ---------- Table des Mariés ----------
   const MARIES_TABLE_ID = `maries-${eventId}`;
-  const brideName = event?.meta?.brideName || 'La Mariée';
-  const groomName = event?.meta?.groomName || 'Le Marié';
+  const brideName = event?.meta?.brideName || tr.bride;
+  const groomName = event?.meta?.groomName || tr.groom;
 
   useEffect(() => {
     if (!tablesReady || !event) return;
@@ -105,7 +108,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
       addTable({
         id: MARIES_TABLE_ID,
         eventId,
-        name: 'Table des Mariés',
+        name: tr.coupleTable,
         capacity: 2,
         shape: 'square',
         positionX: 350,
@@ -174,7 +177,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     // Group guests by their group name
     const grouped = {} as Record<string, any[]>;
     allRows.forEach(g => {
-      const grp = g.group || 'Sans groupe';
+      const grp = g.group || tr.noGroup;
       if (!grouped[grp]) grouped[grp] = [];
       grouped[grp].push(g);
     });
@@ -282,7 +285,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     });
   };
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   return (
     <div className="flex">
@@ -291,12 +294,12 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
         {/* Header */}
         <div className="tables-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Tables</h1>
+            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button className="btn-primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> Créer une table</button>
-            <button className="btn-secondary" onClick={() => setShowSmartModal(true)}><RefreshCcw size={16} /> Organisation intelligente</button>
+            <button className="btn-primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> {tr.addTable}</button>
+            <button className="btn-secondary" onClick={() => setShowSmartModal(true)}><RefreshCcw size={16} /> {tr.smartOrg}</button>
           </div>
         </div>
 
@@ -307,10 +310,10 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
           style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: '1rem', marginBottom: '1.5rem' }}
         >
           {[
-            { label: 'Invités confirmés', value: totalConfirmed, icon: Users, color: 'var(--gold)', bg: 'rgba(200,169,110,0.08)', border: 'rgba(200,169,110,0.15)' },
-            { label: 'Affectés', value: totalAssigned, icon: CheckCircle, color: '#22964F', bg: 'rgba(34,150,79,0.08)', border: 'rgba(34,150,79,0.15)' },
-            { label: 'Non affectés', value: totalUnassigned, icon: Clock, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' },
-            { label: 'Tables', value: tables.length, icon: LayoutGrid, color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.15)' },
+            { label: tr.confirmedGuests, value: totalConfirmed, icon: Users, color: 'var(--gold)', bg: 'rgba(200,169,110,0.08)', border: 'rgba(200,169,110,0.15)' },
+            { label: tr.assignedGuests, value: totalAssigned, icon: CheckCircle, color: '#22964F', bg: 'rgba(34,150,79,0.08)', border: 'rgba(34,150,79,0.15)' },
+            { label: tr.unassigned, value: totalUnassigned, icon: Clock, color: '#F59E0B', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.15)' },
+            { label: tr.tables, value: tables.length, icon: LayoutGrid, color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.15)' },
           ].map((s, i) => (
             <div key={i} style={{
               background: 'var(--bg-card)', border: `1px solid ${s.border}`,
@@ -341,13 +344,13 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
         >
           {!hydrated && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Chargement du plan...</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{tr.loadingPlan}</p>
             </div>
           )}
           {hydrated && tables.length === 0 && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
               <LayoutGrid size={32} style={{ color: 'var(--text-muted)', opacity: 0.3 }} />
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Créez des tables pour les positionner ici</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{tr.createTablesHint}</p>
             </div>
           )}
           {hydrated && tables.map(t => {
@@ -442,8 +445,8 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                       👑
                     </div>
                     <div>
-                      <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--gold)', margin: 0 }}>Table des Mariés</h3>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Réservée • Non modifiable</span>
+                      <h3 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--gold)', margin: 0 }}>{tr.coupleTable}</h3>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{tr.coupleTableDesc}</span>
                     </div>
                   </div>
 
@@ -512,7 +515,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                     <div>
                       <h3 style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', margin: 0 }}>{t.name}</h3>
                       <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                        {t.shape === 'round' ? 'Ronde' : t.shape === 'rectangle' ? 'Rectangle' : 'Carrée'}
+                        {t.shape === 'round' ? tr.round : t.shape === 'rectangle' ? tr.rectangle : tr.square}
                       </span>
                     </div>
                   </div>
@@ -528,7 +531,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                     <button
                       onClick={() => { if (t.guestIds.length === 0) removeTable(t.id); }}
                       disabled={t.guestIds.length > 0}
-                      title={t.guestIds.length > 0 ? 'Retirez les invités avant de supprimer' : 'Supprimer la table'}
+                      title={t.guestIds.length > 0 ? tr.removeBeforeDelete : tr.deleteTable}
                       style={{
                         background: 'none', border: 'none', padding: 4, borderRadius: 6,
                         cursor: t.guestIds.length > 0 ? 'not-allowed' : 'pointer',
@@ -557,7 +560,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                   {t.guestIds.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                       <Users size={20} style={{ color: 'var(--text-muted)', margin: '0 auto 0.35rem', opacity: 0.4 }} />
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>Aucun invité affecté</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{tr.noGuestsAssigned}</p>
                     </div>
                   ) : (
                     t.guestIds.map(gid => {
@@ -586,7 +589,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                               {g.firstName} {g.lastName}
                             </span>
                             {g.isCompanion && (
-                              <span style={{ fontSize: '0.55rem', fontWeight: 600, padding: '0.05rem 0.3rem', borderRadius: 4, background: 'rgba(167,139,250,0.1)', color: '#A78BFA' }}>Acc.</span>
+                              <span style={{ fontSize: '0.55rem', fontWeight: 600, padding: '0.05rem 0.3rem', borderRadius: 4, background: 'rgba(167,139,250,0.1)', color: '#A78BFA' }}>{tr.companionAbbr}</span>
                             )}
                           </div>
                           <button
@@ -594,7 +597,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 3, borderRadius: 4, color: 'var(--text-muted)', transition: 'color 0.2s' }}
                             onMouseEnter={e => (e.currentTarget.style.color = '#F87171')}
                             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                            title="Retirer"
+                            title={tr.removeGuest}
                           >
                             <X size={12} />
                           </button>
@@ -617,7 +620,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                     opacity: isFull ? 0.5 : 1, transition: 'opacity 0.2s',
                   }}
                 >
-                  <Plus size={14} /> {isFull ? 'Table complète' : 'Affecter un invité'}
+                  <Plus size={14} /> {isFull ? tr.tableFull : tr.assignGuest}
                 </button>
               </motion.div>
             );
@@ -626,8 +629,8 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
           {tables.length === 0 && (
             <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem' }}>
               <LayoutGrid size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 0.75rem', opacity: 0.4 }} />
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>Aucune table créée</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '0.25rem' }}>Cliquez sur « Créer une table » pour commencer</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{tr.noTables}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.7rem', marginTop: '0.25rem' }}>{tr.noTablesDesc}</p>
             </div>
           )}
         </motion.div>
@@ -645,9 +648,9 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                 {/* Modal header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                   <div>
-                    <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Affecter à {currentTable.name}</h2>
+                    <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>{tr.assignTo.replace('{name}', currentTable.name)}</h2>
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.15rem 0 0' }}>
-                      {currentTable.guestIds.length}/{currentTable.capacity} places occupées
+                      {tr.seatsOccupied.replace('{n}', String(currentTable.guestIds.length)).replace('{total}', String(currentTable.capacity))}
                     </p>
                   </div>
                   <button onClick={() => setShowAssignModal(false)} style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
@@ -660,7 +663,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                   <Search size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                   <input
                     className="input"
-                    placeholder="Rechercher par nom…"
+                    placeholder={tr.searchByName}
                     value={searchGuest}
                     onChange={e => setSearchGuest(e.target.value)}
                     style={{ paddingLeft: '2.25rem' }}
@@ -674,7 +677,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                     <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
                       <Users size={28} style={{ color: 'var(--text-muted)', margin: '0 auto 0.5rem', opacity: 0.4 }} />
                       <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                        {searchGuest ? 'Aucun invité trouvé' : 'Tous les invités sont déjà affectés'}
+                        {searchGuest ? tr.noGuestFound : tr.allAssigned}
                       </p>
                     </div>
                   ) : (
@@ -705,7 +708,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                           <div>
                             <div style={{ fontSize: '0.82rem', fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                               {g.firstName} {g.lastName}
-                              {g.isCompanion && <span style={{ fontSize: '0.55rem', fontWeight: 600, padding: '0.05rem 0.3rem', borderRadius: 4, background: 'rgba(167,139,250,0.1)', color: '#A78BFA' }}>Accompagnant</span>}
+                              {g.isCompanion && <span style={{ fontSize: '0.55rem', fontWeight: 600, padding: '0.05rem 0.3rem', borderRadius: 4, background: 'rgba(167,139,250,0.1)', color: '#A78BFA' }}>{tr.companion}</span>}
                             </div>
                             {g.group && <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{g.group}</div>}
                           </div>
@@ -726,29 +729,29 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
             <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)}>
               <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-xl font-semibold">Créer une table</h2>
+                  <h2 className="font-display text-xl font-semibold">{tr.createTable}</h2>
                   <button className="btn-ghost p:1.5" onClick={() => setShowAddModal(false)}><X size={18} /></button>
                 </div>
                 <div className="space-y-3">
                   <div>
-                    <label className="label">Nom *</label>
+                    <label className="label">{tr.nameRequired}</label>
                     <input className="input" placeholder="Table 1" value={newTable.name} onChange={e => setNewTable(p => ({ ...p, name: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="label">Capacité *</label>
+                    <label className="label">{tr.capacityRequired}</label>
                     <input className="input" type="number" min={1} value={newTable.capacity} onChange={e => setNewTable(p => ({ ...p, capacity: Number(e.target.value) }))} />
                   </div>
                   <div>
-                    <label className="label">Forme</label>
+                    <label className="label">{tr.shape}</label>
                     <select className="input" value={newTable.shape} onChange={e => setNewTable(p => ({ ...p, shape: e.target.value as any }))}>
-                      <option value="round">Ronde</option>
-                      <option value="rectangle">Rectangle</option>
-                      <option value="square">Carrée</option>
+                      <option value="round">{tr.round}</option>
+                      <option value="rectangle">{tr.rectangle}</option>
+                      <option value="square">{tr.square}</option>
                     </select>
                   </div>
                   <div className="flex gap-2 mt-4">
-                    <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>Annuler</button>
-                    <button className="btn-primary flex-1" onClick={handleAddTable}>Créer</button>
+                    <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>{tr.cancel}</button>
+                    <button className="btn-primary flex-1" onClick={handleAddTable}>{tr.save}</button>
                   </div>
                 </div>
               </motion.div>
@@ -778,9 +781,9 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                       <Zap size={18} style={{ color: 'var(--gold)' }} />
                     </div>
                     <div>
-                      <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>Organisation intelligente</h2>
+                      <h2 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, margin: 0 }}>{tr.smartOrgTitle}</h2>
                       <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0.1rem 0 0' }}>
-                        Création automatique des tables par groupe
+                        {tr.smartOrgDesc}
                       </p>
                     </div>
                   </div>
@@ -791,7 +794,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
 
                 {/* Capacity input */}
                 <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.4rem' }}>Personnes par table</label>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.4rem' }}>{tr.persPerTable}</label>
                   <input
                     className="input"
                     type="number" min={2} max={20}
@@ -805,7 +808,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                 {(() => {
                   const grouped = {} as Record<string, number>;
                   allRows.forEach(g => {
-                    const grp = g.group || 'Sans groupe';
+                    const grp = g.group || tr.noGroup;
                     grouped[grp] = (grouped[grp] || 0) + 1;
                   });
                   const totalTables = Object.values(grouped).reduce((acc, n) => acc + Math.ceil(n / smartCapacity), 0);
@@ -814,12 +817,12 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                   return (
                     <div style={{ background: 'var(--glass)', border: '1px solid var(--border-light)', borderRadius: 12, padding: '1rem', marginBottom: '1.25rem' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>Aperçu de la répartition</span>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>{tr.previewTitle}</span>
                         <span style={{
                           fontSize: '0.65rem', fontWeight: 600, padding: '0.15rem 0.5rem', borderRadius: 20,
                           background: 'rgba(200,169,110,0.1)', color: 'var(--gold)', border: '1px solid rgba(200,169,110,0.2)',
                         }}>
-                          {totalTables} table{totalTables > 1 ? 's' : ''} à créer
+                          {tr.tablesToCreate.replace('{n}', String(totalTables))}
                         </span>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -836,8 +839,8 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                                 <span style={{ fontSize: '0.75rem', color: 'var(--text-primary)' }}>{name}</span>
                               </div>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{count} pers.</span>
-                                <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'var(--gold)' }}>→ {numT} table{numT > 1 ? 's' : ''}</span>
+                                <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{count} {tr.pers}</span>
+                                <span style={{ fontSize: '0.6rem', fontWeight: 600, color: 'var(--gold)' }}>{tr.arrowTables.replace('{n}', String(numT))}</span>
                               </div>
                             </div>
                           );
@@ -856,7 +859,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                   }}>
                     <Clock size={14} style={{ color: '#F59E0B', flexShrink: 0 }} />
                     <span style={{ fontSize: '0.7rem', color: '#F59E0B' }}>
-                      Les tables existantes seront supprimées et remplacées.
+                      {tr.smartWarning}
                     </span>
                   </div>
                 )}
@@ -869,7 +872,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                       flex: 1, padding: '0.65rem', borderRadius: 10, border: '1px solid var(--border-light)',
                       background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
                     }}
-                  >Annuler</button>
+                  >{tr.cancel}</button>
                   <button
                     onClick={smartOrganize}
                     disabled={allRows.length === 0}
@@ -881,7 +884,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                     }}
                   >
-                    <Sparkles size={14} /> Appliquer
+                    <Sparkles size={14} /> {tr.apply}
                   </button>
                 </div>
               </motion.div>

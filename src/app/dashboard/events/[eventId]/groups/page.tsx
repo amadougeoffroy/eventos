@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useMemo, useState } from 'react';
 import { UsersRound, Plus, X, Users, Edit3, Trash2 } from 'lucide-react';
@@ -18,6 +19,9 @@ const colorOptions = ['#F7C5CC', '#C084FC', '#60A5FA', '#C8A96E', '#4ADE80', '#F
 export default function GroupsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, guests, guestGroups, addGuestGroup, updateGuestGroup, removeGuestGroup, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('groups');
+  const tc = t('common');
   const event = events.find(e => e.id === eventId);
   const eventGroups = useMemo(() => guestGroups.filter(g => g.eventId === eventId), [guestGroups, eventId]);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
@@ -26,7 +30,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', emoji: '👪', color: '#C8A96E', description: '' });
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tc.eventNotFound}</p></main></div>;
 
   const getGuestsInGroup = (groupName: string) => {
     return eventGuests.filter(g => g.group === groupName);
@@ -76,18 +80,18 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
         {/* Header */}
         <div className="groups-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Groupes d&apos;invités</h1>
+            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
-          <button className="btn-primary" onClick={openAdd}><Plus size={16} /> Nouveau groupe</button>
+          <button className="btn-primary" onClick={openAdd}><Plus size={16} /> {tr.addGroup}</button>
         </div>
 
         {/* Stats */}
         <div className="groups-stats grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: 'Groupes', value: eventGroups.length, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))', icon: UsersRound },
-            { label: 'Invités assignés', value: eventGuests.filter(g => eventGroups.some(gr => gr.name === g.group)).length, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: Users },
-            { label: 'Sans groupe', value: eventGuests.filter(g => !eventGroups.some(gr => gr.name === g.group)).length, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: Users },
+            { label: tr.total, value: eventGroups.length, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))', icon: UsersRound },
+            { label: tr.members, value: eventGuests.filter(g => eventGroups.some(gr => gr.name === g.group)).length, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: Users },
+            { label: tr.noGroups, value: eventGuests.filter(g => !eventGroups.some(gr => gr.name === g.group)).length, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: Users },
           ].map((s, i) => {
             const Icon = s.icon;
             return (
@@ -171,9 +175,9 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
                   {/* Mini stats */}
                   <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
                     {[
-                      { label: 'Invités', value: groupGuests.length, color: group.color },
-                      { label: 'Confirmés', value: confirmed, color: '#22964F' },
-                      { label: 'En attente', value: pending, color: '#DC8C28' },
+                      { label: tr.guests, value: groupGuests.length, color: group.color },
+                      { label: tr.confirmed, value: confirmed, color: '#22964F' },
+                      { label: tr.pending, value: pending, color: '#DC8C28' },
                     ].map(stat => (
                       <div
                         key={stat.label}
@@ -218,7 +222,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
                     </div>
                   ) : (
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0.5rem' }}>
-                      Aucun invité dans ce groupe
+                      {tr.noGuestsInGroup}
                     </div>
                   )}
                 </div>
@@ -250,9 +254,9 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
               }}>
                 <Plus size={24} style={{ color: 'var(--gold)' }} />
               </div>
-              <div className="font-semibold" style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>Créer un groupe</div>
+              <div className="font-semibold" style={{ fontSize: '0.95rem', marginBottom: '0.25rem' }}>{tr.addGroup}</div>
               <div className="text-xs" style={{ color: 'var(--text-muted)', maxWidth: 180 }}>
-                Organisez vos invités par catégorie
+                {tr.noGroupsDesc}
               </div>
             </div>
           </motion.div>
@@ -265,19 +269,19 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
               <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="font-display text-xl font-semibold">
-                    {editingId ? 'Modifier le groupe' : 'Nouveau groupe'}
+                    {editingId ? tr.edit : tr.addGroup}
                   </h2>
                   <button className="btn-ghost p-1.5" onClick={() => setShowAddModal(false)}><X size={18} /></button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="label">Nom du groupe *</label>
-                    <input className="input" placeholder="Ex: Famille de la mariée" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+                    <label className="label">{tr.groupNameRequired}</label>
+                    <input className="input" placeholder={tr.groupNamePlaceholder} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
                   </div>
 
                   <div>
-                    <label className="label">Emoji</label>
+                    <label className="label">{tr.emoji}</label>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                       {emojiOptions.map(e => (
                         <button
@@ -297,7 +301,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
                   </div>
 
                   <div>
-                    <label className="label">Couleur</label>
+                    <label className="label">{tr.color}</label>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                       {colorOptions.map(c => (
                         <button
@@ -316,10 +320,10 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
                   </div>
 
                   <div>
-                    <label className="label">Description (optionnel)</label>
+                    <label className="label">{tr.descriptionOptional}</label>
                     <textarea
                       className="input" rows={2}
-                      placeholder="Ex: Parents, frères, sœurs et famille élargie..."
+                      placeholder={tr.descriptionPlaceholder}
                       value={form.description}
                       onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                     />
@@ -339,15 +343,15 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
                     fontSize: '1.3rem',
                   }}>{form.emoji}</div>
                   <div>
-                    <div className="font-medium text-sm">{form.name || 'Nom du groupe'}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{form.description || 'Description...'}</div>
+                    <div className="font-medium text-sm">{form.name || tr.previewName}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{form.description || tr.previewDesc}</div>
                   </div>
                 </div>
 
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>Annuler</button>
+                  <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>{tc.cancel}</button>
                   <button className="btn-primary flex-1" onClick={handleSave}>
-                    {editingId ? 'Enregistrer' : 'Créer le groupe'}
+                    {editingId ? tc.save : tr.addGroup}
                   </button>
                 </div>
               </motion.div>
@@ -358,10 +362,10 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
         {/* Delete confirmation modal */}
         <ConfirmModal
           open={!!confirmDeleteId}
-          title="Supprimer le groupe"
-          message={`Supprimer le groupe "${eventGroups.find(g => g.id === confirmDeleteId)?.name || ''}" ? Les invités du groupe ne seront pas supprimés.`}
-          confirmLabel="Supprimer"
-          cancelLabel="Annuler"
+          title={tr.delete}
+          message={`${tr.delete} "${eventGroups.find(g => g.id === confirmDeleteId)?.name || ''}" ?`}
+          confirmLabel={tr.delete}
+          cancelLabel={tc.cancel}
           variant="danger"
           onConfirm={() => confirmDeleteId && handleDelete(confirmDeleteId)}
           onCancel={() => setConfirmDeleteId(null)}

@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useEffect, useRef } from 'react';
 import { MapPin, Plus, Edit3, Trash2, X, Navigation, Search, Loader2 } from 'lucide-react';
@@ -31,6 +32,9 @@ function ClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void
 export default function VenuesPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, venues, addVenue, updateVenue, removeVenue, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('venues');
+  const tc = t('common');
   const event = events.find(e => e.id === eventId);
 
   const [showModal, setShowModal] = useState(false);
@@ -77,7 +81,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
     removeVenue(id);
   };
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tc.eventNotFound}</p></main></div>;
 
   return (
     <div className="flex">
@@ -87,9 +91,9 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
         <motion.div className="venues-header" initial="hidden" animate="visible" variants={fadeUp} custom={0}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.25rem' }}>Lieux</h1>
+            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.25rem' }}>{tr.title}</h1>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-              Enregistrez les lieux de votre événement pour le programme et l&apos;itinéraire
+              {tr.noVenuesDesc}
             </p>
           </div>
           <button onClick={openAdd} style={{
@@ -97,7 +101,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
             padding: '0.55rem 1rem', borderRadius: 12, border: 'none', cursor: 'pointer',
             background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
             color: '#fff', fontWeight: 600, fontSize: '0.85rem',
-          }}><Plus size={16} /> Ajouter un lieu</button>
+          }}><Plus size={16} /> {tr.addVenue}</button>
         </motion.div>
 
         {/* Venues Grid */}
@@ -176,9 +180,9 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
               }}
             >
               <MapPin size={36} style={{ color: 'var(--text-muted)', opacity: 0.3, margin: '0 auto 0.75rem' }} />
-              <h3 style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.3rem' }}>Aucun lieu enregistré</h3>
+              <h3 style={{ fontWeight: 600, fontSize: '1rem', marginBottom: '0.3rem' }}>{tr.noVenues}</h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>
-                Ajoutez les lieux de votre événement pour les utiliser dans le programme
+                {tr.noVenuesDesc}
               </p>
             </motion.div>
           )}
@@ -197,7 +201,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                 {/* Header */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                   <h2 className="font-display" style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
-                    {editing ? 'Modifier le lieu' : 'Ajouter un lieu'}
+                    {editing ? tr.edit : tr.addVenue}
                   </h2>
                   <button onClick={() => setShowModal(false)} style={{
                     background: 'var(--glass)', border: '1px solid var(--glass-border)', borderRadius: 8,
@@ -209,17 +213,17 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   {/* Name + Emoji */}
                   <div>
-                    <label className="label">Nom du lieu *</label>
-                    <input className="input" placeholder="Église Saint-Paul" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+                    <label className="label">{tr.name} *</label>
+                    <input className="input" placeholder={tr.namePlaceholder} value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="label">Adresse *</label>
-                    <input className="input" placeholder="Boulevard de la Paix, Abidjan" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+                    <label className="label">{tr.address} *</label>
+                    <input className="input" placeholder={tr.addressPlaceholder} value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
                   </div>
 
                   {/* Emoji picker */}
                   <div>
-                    <label className="label">Icône</label>
+                    <label className="label">{tr.icon}</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem' }}>
                       {emojiOptions.map(em => (
                         <button key={em} type="button" onClick={() => setForm(p => ({ ...p, emoji: em }))} style={{
@@ -236,7 +240,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                   <div>
                     <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                       <MapPin size={13} style={{ color: 'var(--gold)' }} />
-                      Position sur la carte *
+                      {tr.mapPosition}
                     </label>
                     <SearchableMapPicker
                       key={mapKey}
@@ -249,7 +253,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                     />
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                       <Navigation size={10} />
-                      Coordonnées : {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
+                      {tr.coordinates} : {form.lat.toFixed(5)}, {form.lng.toFixed(5)}
                     </div>
                   </div>
 
@@ -258,13 +262,13 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                     <button onClick={() => setShowModal(false)} style={{
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: '1px solid var(--border-light)',
                       background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
-                    }}>Annuler</button>
+                    }}>{tc.cancel}</button>
                     <button onClick={handleSave} disabled={!form.name || !form.address} style={{
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: 'none',
                       background: (!form.name || !form.address) ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
                       color: (!form.name || !form.address) ? 'var(--text-muted)' : '#fff',
                       fontWeight: 600, fontSize: '0.8rem', cursor: (!form.name || !form.address) ? 'not-allowed' : 'pointer',
-                    }}>{editing ? 'Enregistrer' : 'Ajouter'}</button>
+                    }}>{editing ? tr.save : tc.add}</button>
                   </div>
                 </div>
               </motion.div>
@@ -281,6 +285,9 @@ function SearchableMapPicker({ lat, lng, mapReady, onSelect }: {
   lat: number; lng: number; mapReady: boolean;
   onSelect: (lat: number, lng: number, address?: string) => void;
 }) {
+  const { t } = useThemeLanguage();
+  const tr = t('venues');
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<{ display_name: string; lat: string; lon: string }>>([]);
   const [searching, setSearching] = useState(false);
@@ -328,7 +335,7 @@ function SearchableMapPicker({ lat, lng, mapReady, onSelect }: {
           <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
           <input
             className="input"
-            placeholder="Rechercher un lieu (ex: Cathédrale Abidjan)..."
+            placeholder={tr.searchPlaceholder}
             value={query}
             onChange={e => handleInput(e.target.value)}
             onFocus={() => results.length > 0 && setShowResults(true)}
@@ -369,7 +376,7 @@ function SearchableMapPicker({ lat, lng, mapReady, onSelect }: {
         {mapReady ? (
           <MapPickerInner lat={lat} lng={lng} onSelect={(la, ln) => { onSelect(la, ln); setShowResults(false); }} />
         ) : (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Chargement...</div>
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{tr.loading}</div>
         )}
       </div>
     </div>
@@ -378,6 +385,8 @@ function SearchableMapPicker({ lat, lng, mapReady, onSelect }: {
 
 // Leaflet map picker component (client-only)
 function MapPickerInner({ lat, lng, onSelect }: { lat: number; lng: number; onSelect: (lat: number, lng: number) => void }) {
+  const { t } = useThemeLanguage();
+  const tr = t('venues');
   const [position, setPosition] = useState<[number, number]>([lat, lng]);
   const [leafletReady, setLeafletReady] = useState(false);
   const mapRef = useRef<any>(null);
@@ -401,7 +410,7 @@ function MapPickerInner({ lat, lng, onSelect }: { lat: number; lng: number; onSe
     setLeafletReady(true);
   }, []);
 
-  if (!leafletReady) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>Chargement de la carte...</div>;
+  if (!leafletReady) return <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--glass)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{tr.loadingMap}</div>;
 
   const { MapContainer: MC, TileLayer: TL, Marker: MK, useMapEvents: UME } = require('react-leaflet');
 

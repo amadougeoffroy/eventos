@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
@@ -27,6 +28,8 @@ const fadeUp = {
 export default function EventDetailPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, guests, venues, updateEvent, removeEvent, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('eventOverview');
   const event = events.find(e => e.id === eventId);
   const eventVenues = venues.filter(v => v.eventId === eventId);
 
@@ -107,7 +110,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
   };
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   const cfg = eventTypeConfig[event.type];
   const confirmed = eventGuests.filter(g => g.rsvpStatus === 'confirmed').length;
@@ -117,19 +120,19 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
   const daysLeft = Math.ceil((new Date(event.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 
   const quickActions = [
-    { href: `/dashboard/events/${eventId}/guests`, icon: Users, label: 'Invités', desc: `${eventGuests.length} invités`, color: '#5B8DB8' },
-    { href: `/dashboard/events/${eventId}/invitations`, icon: Send, label: 'Invitations', desc: 'Envoyer les liens', color: '#C8A96E' },
-    { href: `/dashboard/events/${eventId}/menu`, icon: UtensilsCrossed, label: 'Menu', desc: 'Gérer le menu', color: '#FB923C' },
-    { href: `/dashboard/events/${eventId}/tables`, icon: LayoutGrid, label: 'Plan de salle', desc: 'Placer les invités', color: '#A78BFA' },
-    { href: `/dashboard/events/${eventId}/live`, icon: Radio, label: 'Jour J', desc: 'Service en direct', color: '#22964F' },
+    { href: `/dashboard/events/${eventId}/guests`, icon: Users, label: tr.qaGuests, desc: tr.qaGuestsDesc.replace('{n}', String(eventGuests.length)), color: '#5B8DB8' },
+    { href: `/dashboard/events/${eventId}/invitations`, icon: Send, label: tr.qaInvitations, desc: tr.qaInvitationsDesc, color: '#C8A96E' },
+    { href: `/dashboard/events/${eventId}/menu`, icon: UtensilsCrossed, label: tr.qaMenu, desc: tr.qaMenuDesc, color: '#FB923C' },
+    { href: `/dashboard/events/${eventId}/tables`, icon: LayoutGrid, label: tr.qaTables, desc: tr.qaTablesDesc, color: '#A78BFA' },
+    { href: `/dashboard/events/${eventId}/live`, icon: Radio, label: tr.qaLive, desc: tr.qaLiveDesc, color: '#22964F' },
   ];
 
   const publicLink = `${origin}/e/${event.slug}`;
 
   const rsvpStats = [
-    { label: 'Confirmés', value: confirmed, icon: CheckCircle2, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
-    { label: 'En attente', value: pending, icon: HelpCircle, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))' },
-    { label: 'Déclinés', value: declined, icon: XCircle, color: '#DC3545', bg: 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))' },
+    { label: tr.confirmed, value: confirmed, icon: CheckCircle2, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
+    { label: tr.pending, value: pending, icon: HelpCircle, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))' },
+    { label: tr.declined, value: declined, icon: XCircle, color: '#DC3545', bg: 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))' },
   ];
 
   return (
@@ -195,12 +198,12 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                         display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                         fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 6,
                         background: 'rgba(200,169,110,0.1)', color: 'var(--gold)', border: 'none', cursor: 'pointer',
-                      }}><Edit3 size={11} /> Modifier</button>
+                      }}><Edit3 size={11} /> {tr.edit}</button>
                       <button onClick={() => setConfirmDelete(true)} style={{
                         display: 'inline-flex', alignItems: 'center', gap: '0.25rem',
                         fontSize: '0.7rem', fontWeight: 600, padding: '0.2rem 0.5rem', borderRadius: 6,
                         background: 'rgba(220,53,69,0.08)', color: '#DC3545', border: 'none', cursor: 'pointer',
-                      }}><Trash2 size={11} /> Supprimer</button>
+                      }}><Trash2 size={11} /> {tr.delete}</button>
                     </div>
                   </div>
                 </div>
@@ -236,10 +239,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
                 }}>
-                  J-{daysLeft > 0 ? daysLeft : 0}
+                  {tr.dDayPrefix}{daysLeft > 0 ? daysLeft : 0}
                 </div>
                 <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.3rem', letterSpacing: '0.05em' }}>
-                  avant le jour J
+                  {tr.beforeEvent}
                 </div>
               </div>
             </div>
@@ -258,10 +261,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                 style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', borderRadius: 8 }}
                 onClick={() => navigator.clipboard.writeText(publicLink)}
               >
-                <Copy size={14} /> Copier
+                <Copy size={14} /> {tr.copy}
               </button>
               <Link href={`/e/${event.slug}`} className="btn-ghost" target="_blank" style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', borderRadius: 8 }}>
-                <ExternalLink size={14} /> Ouvrir
+                <ExternalLink size={14} /> {tr.open}
               </Link>
             </div>
           </div>
@@ -309,7 +312,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
             <span className="text-sm" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              <TrendingUp size={14} /> Taux de confirmation global
+              <TrendingUp size={14} /> {tr.globalRate}
             </span>
             <span className="text-sm font-bold" style={{ color: '#22964F' }}>{confirmRate}%</span>
           </div>
@@ -324,7 +327,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
         </motion.div>
 
         {/* ── Quick Actions ────────────────────────── */}
-        <h2 className="font-display text-lg font-semibold mb-4">Actions rapides</h2>
+        <h2 className="font-display text-lg font-semibold mb-4">{tr.quickActions}</h2>
         <div className="evt-actions-grid grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
           {quickActions.map((a, i) => {
             const Icon = a.icon;
@@ -416,7 +419,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <Image size={18} style={{ color: 'var(--gold)' }} />
-            <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>Média</h2>
+            <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>{tr.media}</h2>
           </div>
         </div>
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={8}
@@ -426,16 +429,16 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
           <div style={{ marginBottom: '1.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
               <Image size={14} style={{ color: 'var(--gold)' }} />
-              <span className="text-sm font-semibold">Type de Hero</span>
+              <span className="text-sm font-semibold">{tr.heroType}</span>
             </div>
 
             {(() => {
               const plan = event.plan || 'essentiel';
               const heroType = event.heroType || 'image';
               const heroOptions: { key: 'image' | 'slideshow' | 'video'; label: string; icon: React.ReactNode; desc: string; minPlan: string }[] = [
-                { key: 'image', label: 'Image fixe', icon: <Image size={18} />, desc: '1 image principale', minPlan: 'essentiel' },
-                { key: 'slideshow', label: 'Diaporama', icon: <Images size={18} />, desc: 'Jusqu\'à ' + (plan === 'premium' ? 10 : 5) + ' images', minPlan: 'pro' },
-                { key: 'video', label: 'Vidéo', icon: <Film size={18} />, desc: 'Vidéo de fond', minPlan: 'premium' },
+                { key: 'image', label: tr.fixedImage, icon: <Image size={18} />, desc: tr.oneImage, minPlan: 'essentiel' },
+                { key: 'slideshow', label: tr.slideshow, icon: <Images size={18} />, desc: tr.slideshowDesc.replace('{count}', (plan === 'premium' ? 10 : 5).toString()), minPlan: 'pro' },
+                { key: 'video', label: tr.video, icon: <Film size={18} />, desc: tr.videoDesc, minPlan: 'premium' },
               ];
               const planOrder = { essentiel: 0, pro: 1, premium: 2 };
               const userPlanLevel = planOrder[plan as keyof typeof planOrder] ?? 0;
@@ -514,7 +517,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                           width: '100%', padding: '2rem', borderRadius: 12, border: '2px dashed var(--border-light)',
                           background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.82rem',
-                        }}><Upload size={18} /> Charger une image</button>
+                        }}><Upload size={18} /> {tr.uploadImage}</button>
                       )}
                     </div>
                   )}
@@ -545,7 +548,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                           padding: '0.5rem 0.85rem', borderRadius: 10, border: '1.5px dashed var(--gold)',
                           background: 'rgba(200,169,110,0.06)', cursor: 'pointer',
                           color: 'var(--gold)', fontWeight: 600, fontSize: '0.78rem',
-                        }}><Upload size={15} /> Ajouter des photos</button>
+                        }}><Upload size={15} /> {tr.addPhotos}</button>
                         <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>
                           {(event.heroImages || []).length} / {plan === 'premium' ? 10 : 5}
                         </span>
@@ -574,7 +577,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                       ) : (
                         <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
                           <Images size={28} style={{ margin: '0 auto 0.4rem', opacity: 0.3 }} />
-                          <p style={{ margin: 0 }}>Ajoutez des images pour le diaporama</p>
+                          <p style={{ margin: 0 }}>{tr.addSlideshowPhotos}</p>
                         </div>
                       )}
                     </div>
@@ -609,7 +612,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                             display: 'flex', alignItems: 'center', gap: '0.3rem',
                           }}>
                             <Film size={12} style={{ color: '#fff' }} />
-                            <span style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600 }}>Vidéo chargée</span>
+                            <span style={{ fontSize: '0.6rem', color: '#fff', fontWeight: 600 }}>{tr.videoLoaded}</span>
                           </div>
                         </div>
                       ) : (
@@ -617,7 +620,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
                           width: '100%', padding: '2rem', borderRadius: 12, border: '2px dashed var(--border-light)',
                           background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.82rem',
-                        }}><Film size={18} /> Charger une vidéo (MP4, WebM)</button>
+                        }}><Film size={18} /> {tr.uploadVideo}</button>
                       )}
                     </div>
                   )}
@@ -630,7 +633,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
           <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
               <Music size={14} style={{ color: 'var(--gold)' }} />
-              <span className="text-sm font-semibold">Musique d&apos;ambiance</span>
+              <span className="text-sm font-semibold">{tr.bgMusic}</span>
               {event.plan === 'essentiel' && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: '0.2rem', marginLeft: '0.5rem',
@@ -667,8 +670,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                       background: 'rgba(200,169,110,0.06)', border: '1px solid var(--border-light)',
                     }}>
                       <Music size={14} style={{ color: 'var(--gold)' }} />
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>🎵 Musique chargée</span>
-                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>Lecture auto sur l&apos;invitation</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text)' }}>🎵 {tr.musicLoaded}</span>
+                      <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginLeft: 'auto' }}>{tr.musicAutoPlay}</span>
                     </div>
                     <button onClick={() => updateEvent(eventId, { backgroundMusicUrl: '' })} style={{
                       padding: '0.4rem', borderRadius: 8, background: 'rgba(220,53,69,0.08)',
@@ -683,7 +686,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                     background: 'transparent', cursor: 'pointer',
                     color: 'var(--text-muted)', fontSize: '0.8rem',
                   }}>
-                    <Upload size={16} /> Charger un fichier audio (.mp3, .m4a, .ogg)
+                    <Upload size={16} /> {tr.uploadAudio}
                   </button>
                 )}
               </div>
@@ -693,7 +696,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                 background: 'var(--glass)', border: '1px solid var(--glass-border)',
                 color: 'var(--text-muted)', fontSize: '0.8rem', textAlign: 'center',
               }}>
-                🔒 La musique d&apos;ambiance est disponible à partir de la formule Pro
+                🔒 {tr.proFeature}
               </div>
             )}
           </div>
@@ -701,13 +704,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
 
         {/* ── Programme ─────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-          <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>Programme</h2>
+          <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>{tr.program}</h2>
           <button onClick={openAddProgram} style={{
             display: 'flex', alignItems: 'center', gap: '0.35rem',
             padding: '0.45rem 0.85rem', borderRadius: 10, border: 'none', cursor: 'pointer',
             background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
             color: '#fff', fontWeight: 600, fontSize: '0.78rem',
-          }}><Plus size={14} /> Ajouter</button>
+          }}><Plus size={14} /> {tr.add}</button>
         </div>
         <motion.div
           initial="hidden" animate="visible" variants={fadeUp} custom={11}
@@ -716,8 +719,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
           {event.program.length === 0 && (
             <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)' }}>
               <Clock size={28} style={{ margin: '0 auto 0.5rem', opacity: 0.3 }} />
-              <p style={{ fontSize: '0.85rem', margin: 0 }}>Aucun élément dans le programme</p>
-              <p style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>Cliquez sur « Ajouter » pour commencer</p>
+              <p style={{ fontSize: '0.85rem', margin: 0 }}>{tr.noProgram}</p>
+              <p style={{ fontSize: '0.7rem', marginTop: '0.25rem' }}>{tr.addStart}</p>
             </div>
           )}
           {event.program.map((p, i) => (
@@ -757,14 +760,14 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                 })()}
               </div>
               <div style={{ display: 'flex', gap: '0.25rem', flexShrink: 0 }}>
-                <button onClick={() => openEditProgram(p)} title="Modifier" style={{
+                <button onClick={() => openEditProgram(p)} title={tr.edit} style={{
                   background: 'none', border: 'none', padding: 5, borderRadius: 6,
                   cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s',
                 }} onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
                   <Edit3 size={14} />
                 </button>
-                <button onClick={() => handleDeleteProgram(p.id)} title="Supprimer" style={{
+                <button onClick={() => handleDeleteProgram(p.id)} title={tr.delete} style={{
                   background: 'none', border: 'none', padding: 5, borderRadius: 6,
                   cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s',
                 }} onMouseEnter={e => e.currentTarget.style.color = '#F87171'}
@@ -783,7 +786,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
               <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
                   <h2 className="font-display" style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0 }}>
-                    {editingProgram ? 'Modifier l\'élément' : 'Ajouter au programme'}
+                    {editingProgram ? tr.editStep : tr.addStep}
                   </h2>
                   <button onClick={() => setShowProgramModal(false)} style={{ background: 'var(--glass)', border: '1px solid var(--glass-border)', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
                     <X size={16} />
@@ -792,20 +795,20 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '0.65rem' }}>
                     <div>
-                      <label className="label">Heure *</label>
+                      <label className="label">{tr.time} *</label>
                       <input className="input" type="time" value={progForm.time} onChange={e => setProgForm(p => ({ ...p, time: e.target.value }))} />
                     </div>
                     <div>
-                      <label className="label">Titre *</label>
-                      <input className="input" placeholder="Cérémonie religieuse" value={progForm.title} onChange={e => setProgForm(p => ({ ...p, title: e.target.value }))} />
+                      <label className="label">{tr.title} *</label>
+                      <input className="input" placeholder={tr.ceremonyPlaceholder} value={progForm.title} onChange={e => setProgForm(p => ({ ...p, title: e.target.value }))} />
                     </div>
                   </div>
                   <div>
-                    <label className="label">Description</label>
-                    <input className="input" placeholder="Optionnel" value={progForm.description} onChange={e => setProgForm(p => ({ ...p, description: e.target.value }))} />
+                    <label className="label">{tr.description}</label>
+                    <input className="input" placeholder={tr.optional} value={progForm.description} onChange={e => setProgForm(p => ({ ...p, description: e.target.value }))} />
                   </div>
                   <div>
-                    <label className="label">Icône</label>
+                    <label className="label">{tr.icon}</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
                       {emojiOptions.map(em => (
                         <button key={em} type="button" onClick={() => setProgForm(p => ({ ...p, icon: em }))} style={{
@@ -821,7 +824,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                     <div>
                       <label className="label" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                         <MapPin size={13} style={{ color: 'var(--gold)' }} />
-                        Lieu
+                        {tr.venue}
                       </label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                         <button type="button" onClick={() => setProgForm(p => ({ ...p, venueId: '' }))} style={{
@@ -830,7 +833,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                           background: !progForm.venueId ? 'rgba(200,169,110,0.1)' : 'var(--glass)',
                           color: !progForm.venueId ? 'var(--gold)' : 'var(--text-muted)',
                           cursor: 'pointer', fontWeight: !progForm.venueId ? 600 : 400,
-                        }}>Aucun</button>
+                        }}>{tr.none}</button>
                         {eventVenues.map(v => {
                           const sel = progForm.venueId === v.id;
                           return (
@@ -850,13 +853,13 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                     </div>
                   )}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    <button onClick={() => setShowProgramModal(false)} style={{ flex: 1, padding: '0.6rem', borderRadius: 10, border: '1px solid var(--border-light)', background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>Annuler</button>
+                    <button onClick={() => setShowProgramModal(false)} style={{ flex: 1, padding: '0.6rem', borderRadius: 10, border: '1px solid var(--border-light)', background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>{tr.cancel}</button>
                     <button onClick={handleSaveProgram} disabled={!progForm.time || !progForm.title} style={{
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: 'none',
                       background: (!progForm.time || !progForm.title) ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
                       color: (!progForm.time || !progForm.title) ? 'var(--text-muted)' : '#fff',
                       fontWeight: 600, fontSize: '0.8rem', cursor: (!progForm.time || !progForm.title) ? 'not-allowed' : 'pointer',
-                    }}>{editingProgram ? 'Enregistrer' : 'Ajouter'}</button>
+                    }}>{editingProgram ? tr.save : tr.addStep}</button>
                   </div>
                 </div>
               </motion.div>
@@ -867,7 +870,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
         {/* ── Petits mots doux ─────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
           <MessageCircleHeart size={18} style={{ color: 'var(--gold)' }} />
-          <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>Petits mots doux</h2>
+          <h2 className="font-display text-lg font-semibold" style={{ margin: 0 }}>{tr.sweetMessages}</h2>
           {sweetMessages.length > 0 && (
             <span style={{
               fontSize: '0.65rem', fontWeight: 700, padding: '0.15rem 0.5rem',
@@ -881,8 +884,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
           {sweetMessages.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
               <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💌</div>
-              <p className="font-medium" style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>Aucun message pour le moment</p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Les invités pourront laisser un petit mot depuis le lien d&apos;invitation</p>
+              <p className="font-medium" style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>{tr.noMessagesYet}</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.noMessagesYetDesc}</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -927,23 +930,23 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                 onClick={e => e.stopPropagation()}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-                  <h2 className="font-display text-lg font-bold">Modifier l&apos;événement</h2>
+                  <h2 className="font-display text-lg font-bold">{tr.editEvent}</h2>
                   <button onClick={() => setShowEditEvent(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={20} /></button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                  <div><label className="label">Nom</label><input className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} /></div>
+                  <div><label className="label">{tr.nameLabel}</label><input className="input" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} /></div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                    <div><label className="label">Date</label><input className="input" type="date" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} /></div>
-                    <div><label className="label">Heure</label><input className="input" type="time" value={editForm.time} onChange={e => setEditForm({...editForm, time: e.target.value})} /></div>
+                    <div><label className="label">{tr.dateLabel}</label><input className="input" type="date" value={editForm.date} onChange={e => setEditForm({...editForm, date: e.target.value})} /></div>
+                    <div><label className="label">{tr.timeLabel}</label><input className="input" type="time" value={editForm.time} onChange={e => setEditForm({...editForm, time: e.target.value})} /></div>
                   </div>
-                  <div><label className="label">Lieu principal</label><input className="input" value={editForm.venue} onChange={e => setEditForm({...editForm, venue: e.target.value})} /></div>
-                  <div><label className="label">Adresse</label><input className="input" value={editForm.venueAddress} onChange={e => setEditForm({...editForm, venueAddress: e.target.value})} /></div>
-                  <div><label className="label">Dress code</label><input className="input" placeholder="ex: Tenue traditionnelle" value={editForm.dressCode} onChange={e => setEditForm({...editForm, dressCode: e.target.value})} /></div>
-                  <div><label className="label">Message de bienvenue</label><textarea className="input" rows={3} value={editForm.welcomeMessage} onChange={e => setEditForm({...editForm, welcomeMessage: e.target.value})} style={{ resize: 'vertical' }} /></div>
+                  <div><label className="label">{tr.mainVenue}</label><input className="input" value={editForm.venue} onChange={e => setEditForm({...editForm, venue: e.target.value})} /></div>
+                  <div><label className="label">{tr.addressLabel}</label><input className="input" value={editForm.venueAddress} onChange={e => setEditForm({...editForm, venueAddress: e.target.value})} /></div>
+                  <div><label className="label">{tr.dressCodeLabel}</label><input className="input" placeholder={tr.dressCodePlaceholder} value={editForm.dressCode} onChange={e => setEditForm({...editForm, dressCode: e.target.value})} /></div>
+                  <div><label className="label">{tr.welcomeMsg}</label><textarea className="input" rows={3} value={editForm.welcomeMessage} onChange={e => setEditForm({...editForm, welcomeMessage: e.target.value})} style={{ resize: 'vertical' }} /></div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.25rem', justifyContent: 'flex-end' }}>
-                  <button onClick={() => setShowEditEvent(false)} style={{ padding: '0.55rem 1rem', borderRadius: 10, border: '1px solid var(--border-light)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)' }}>Annuler</button>
-                  <button onClick={saveEditEvent} disabled={!editForm.name} style={{ padding: '0.55rem 1rem', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: '#fff', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>Enregistrer</button>
+                  <button onClick={() => setShowEditEvent(false)} style={{ padding: '0.55rem 1rem', borderRadius: 10, border: '1px solid var(--border-light)', background: 'transparent', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-muted)' }}>{tr.cancel}</button>
+                  <button onClick={saveEditEvent} disabled={!editForm.name} style={{ padding: '0.55rem 1rem', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: '#fff', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>{tr.save}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -954,10 +957,10 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
       {/* Delete confirmation modal */}
       <ConfirmModal
         open={confirmDelete}
-        title="Supprimer l'événement"
-        message={`Êtes-vous sûr de vouloir supprimer "${event?.name}" ? Cette action est irréversible et toutes les données associées seront perdues.`}
-        confirmLabel="Supprimer"
-        cancelLabel="Annuler"
+        title={tr.deleteEvent}
+        message={tr.deleteEventMsg.replace('{name}', event?.name || '')}
+        confirmLabel={tr.deleteLabel}
+        cancelLabel={tr.cancelLabel}
         variant="danger"
         onConfirm={handleDeleteEvent}
         onCancel={() => setConfirmDelete(false)}

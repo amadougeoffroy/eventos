@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
 import { use, useEffect, useMemo, useState } from 'react';
 import { Send, Copy, Check, ExternalLink, Mail, MessageSquare, Link2, Users, AlertCircle } from 'lucide-react';
@@ -20,6 +21,8 @@ const fadeUp = {
 export default function InvitationsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, guests, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('invitations');
   const event = events.find(e => e.id === eventId);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -27,7 +30,7 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
   const [baseUrl, setBaseUrl] = useState('');
   useEffect(() => { setBaseUrl(window.location.origin); }, []);
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   const genericLink = `${baseUrl}/e/${event.slug}`;
 
@@ -53,16 +56,16 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
       <main className="main-content">
         {/* Header */}
         <div style={{ marginBottom: '1.5rem' }}>
-          <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Invitations</h1>
+          <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
         </div>
 
         {/* Stats row */}
         <div className="inv-stats grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: 'Total invités', value: eventGuests.length, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))', icon: Users },
-            { label: 'Ont répondu', value: sent, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: Check },
-            { label: 'Sans réponse', value: pending.length, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: AlertCircle },
+            { label: tr.total, value: eventGuests.length, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))', icon: Users },
+            { label: tr.sent, value: sent, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: Check },
+            { label: tr.notSent, value: pending.length, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: AlertCircle },
           ].map((s, i) => {
             const Icon = s.icon;
             return (
@@ -96,8 +99,8 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
               <Link2 size={18} color="#C8A96E" />
             </div>
             <div>
-              <h3 className="font-semibold" style={{ fontSize: '0.95rem' }}>Lien générique</h3>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Partagez ce lien avec n&apos;importe qui</p>
+              <h3 className="font-semibold" style={{ fontSize: '0.95rem' }}>{tr.genericLink}</h3>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.genericLinkDesc}</p>
             </div>
           </div>
           <div className="inv-link-row" style={{ display: 'flex', gap: '0.5rem' }}>
@@ -109,7 +112,7 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
               {genericLink}
             </div>
             <button className="btn-primary" onClick={copyGenericLink}>
-              {copiedGeneric ? <><Check size={16} /> Copié !</> : <><Copy size={16} /> Copier</>}
+              {copiedGeneric ? <><Check size={16} /> {tr.linkCopied}</> : <><Copy size={16} /> {tr.copyLink}</>}
             </button>
           </div>
         </motion.div>
@@ -132,15 +135,15 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
                 <Send size={18} color="#5B8DB8" />
               </div>
               <div>
-                <h3 className="font-semibold" style={{ fontSize: '0.95rem' }}>Liens personnalisés</h3>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Chaque invité a un lien unique avec son nom pré-rempli</p>
+                <h3 className="font-semibold" style={{ fontSize: '0.95rem' }}>{tr.personalLinks}</h3>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.personalLinksDesc}</p>
               </div>
             </div>
             <span style={{
               fontSize: '0.75rem', fontWeight: 600, padding: '0.3rem 0.7rem',
               borderRadius: 8, background: 'var(--glass)', color: 'var(--text-muted)',
             }}>
-              {eventGuests.length} invités
+              {tr.nGuests.replace('{n}', String(eventGuests.length))}
             </span>
           </div>
 
@@ -165,23 +168,23 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
                   <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{guest.group}</div>
                 </div>
                 <span className={`badge ${guest.rsvpStatus === 'confirmed' ? 'badge-confirmed' : guest.rsvpStatus === 'declined' ? 'badge-declined' : guest.rsvpStatus === 'maybe' ? 'badge-maybe' : 'badge-pending'}`} style={{ fontSize: 10 }}>
-                  {guest.rsvpStatus === 'confirmed' ? 'Confirmé' : guest.rsvpStatus === 'declined' ? 'Décliné' : guest.rsvpStatus === 'maybe' ? 'Peut-être' : 'En attente'}
+                  {guest.rsvpStatus === 'confirmed' ? tr.confirmed : guest.rsvpStatus === 'declined' ? tr.declined : guest.rsvpStatus === 'maybe' ? tr.maybe : tr.pending}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
                   {guest.source === 'rsvp' ? (
                     <span style={{ fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#60A5FA', fontWeight: 500 }}>
-                      📨 Auto-inscrit
+                      {tr.autoRegistered}
                     </span>
                   ) : (
                     <>
-                      <button className="btn-ghost p-1.5" title="Copier le lien" onClick={() => copyPersonalLink(guest)}>
+                      <button className="btn-ghost p-1.5" title={tr.copyLink} onClick={() => copyPersonalLink(guest)}>
                         {copiedId === guest.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
                       </button>
                       {(event.plan === 'pro' || event.plan === 'premium') && guest.phone && (
-                        <button className="btn-ghost p-1.5" title="Envoyer par SMS"><MessageSquare size={14} /></button>
+                        <button className="btn-ghost p-1.5" title={tr.sendSms}><MessageSquare size={14} /></button>
                       )}
                       {event.plan === 'premium' && guest.phone && (
-                        <button className="btn-ghost p-1.5" title="Envoyer par WhatsApp"><WhatsAppIcon size={14} /></button>
+                        <button className="btn-ghost p-1.5" title={tr.sendWhatsapp}><WhatsAppIcon size={14} /></button>
                       )}
                     </>
                   )}
@@ -210,12 +213,12 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
                 <AlertCircle size={18} color="#DC8C28" />
               </div>
               <div>
-                <h3 className="font-semibold" style={{ fontSize: '0.95rem' }}>Relancer les invités</h3>
-                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{pending.length} invité(s) n&apos;ont pas encore répondu</p>
+                <h3 className="font-semibold" style={{ fontSize: '0.95rem' }}>{tr.followUp}</h3>
+                <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.followUpDesc.replace('{n}', String(pending.length))}</p>
               </div>
             </div>
             <button className="btn-primary">
-              <Send size={16} /> Relancer {pending.length} invité(s)
+              <Send size={16} /> {tr.followUpBtn.replace('{n}', String(pending.length))}
             </button>
           </motion.div>
         )}

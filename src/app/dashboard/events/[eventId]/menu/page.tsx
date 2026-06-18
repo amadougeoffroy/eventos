@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo, useCallback } from 'react';
 import { Plus, X, UtensilsCrossed, BarChart3, ChevronDown, Edit3, Trash2 } from 'lucide-react';
@@ -15,6 +16,8 @@ const fadeUp = {
 export default function MenuPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { events, menuCategories, menuItems, addMenuCategory, updateMenuCategory, removeMenuCategory, addMenuItem, updateMenuItem, removeMenuItem, updateEvent, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('menu');
   const event = events.find(e => e.id === eventId);
 
   const evtCategories = useMemo(() => menuCategories.filter(c => c.eventId === eventId).sort((a, b) => a.order - b.order), [menuCategories, eventId]);
@@ -73,7 +76,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
 
   const totalVotes = evtItems.reduce((sum, i) => sum + (i.votes || 0), 0);
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   return (
     <div className="flex">
@@ -82,18 +85,18 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
         {/* Header */}
         <div className="menu-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Menu</h1>
+            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
-          <button className="btn-primary" onClick={() => setShowAddCat(true)}><Plus size={16} /> Catégorie</button>
+          <button className="btn-primary" onClick={() => setShowAddCat(true)}><Plus size={16} /> {tr.addCategory}</button>
         </div>
 
         {/* Stats row */}
         <div className="menu-stats grid grid-cols-3 gap-4 mb-6">
           {[
-            { label: 'Catégories', value: evtCategories.length, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))' },
-            { label: 'Plats', value: evtItems.length, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))' },
-            { label: 'Votes', value: totalVotes, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
+            { label: tr.categories, value: evtCategories.length, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))' },
+            { label: tr.dishes, value: evtItems.length, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))' },
+            { label: tr.votes, value: totalVotes, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
           ].map((s, i) => (
             <motion.div
               key={s.label} initial="hidden" animate="visible" variants={fadeUp} custom={i}
@@ -122,7 +125,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
               transition: 'all 0.2s ease',
             }}
           >
-            <UtensilsCrossed size={14} /> Menu
+            <UtensilsCrossed size={14} /> {tr.menuTab}
           </button>
           <button
             onClick={() => setActiveTab('survey')}
@@ -134,7 +137,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
               transition: 'all 0.2s ease',
             }}
           >
-            <BarChart3 size={14} /> Sondage
+            <BarChart3 size={14} /> {tr.surveyTab}
           </button>
         </div>
 
@@ -146,11 +149,11 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
           borderRadius: 14,
         }}>
           <div>
-            <div className="font-medium" style={{ fontSize: '0.9rem' }}>Sondage menu</div>
+            <div className="font-medium" style={{ fontSize: '0.9rem' }}>{tr.menuSurvey}</div>
             <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
               {event.meta?.menuSurveyEnabled
-                ? 'Les invités peuvent voter après confirmation'
-                : 'Désactivé — les invités ne verront pas le sondage'}
+                ? tr.surveyEnabled
+                : tr.surveyDisabled}
             </div>
           </div>
           <button
@@ -270,7 +273,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                               }}
                             >
-                              <Plus size={16} /> Ajouter un plat
+                              <Plus size={16} /> {tr.addItem}
                             </button>
                           </div>
                         </div>
@@ -287,9 +290,9 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                 borderRadius: '1.25rem', textAlign: 'center', padding: '4rem 2rem',
               }}>
                 <UtensilsCrossed size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
-                <p className="font-medium" style={{ marginBottom: '0.25rem' }}>Aucune catégorie de menu</p>
-                <p className="text-sm" style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Commencez par créer des catégories</p>
-                <button className="btn-primary" onClick={() => setShowAddCat(true)}><Plus size={16} /> Créer une catégorie</button>
+                <p className="font-medium" style={{ marginBottom: '0.25rem' }}>{tr.noItems}</p>
+                <p className="text-sm" style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>{tr.noItemsDesc}</p>
+                <button className="btn-primary" onClick={() => setShowAddCat(true)}><Plus size={16} /> {tr.createCategory}</button>
               </div>
             )}
           </div>
@@ -303,8 +306,8 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-              <h3 className="font-semibold" style={{ fontSize: '1.05rem' }}>Résultats du sondage</h3>
-              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{totalVotes} votes au total</span>
+              <h3 className="font-semibold" style={{ fontSize: '1.05rem' }}>{tr.surveyResults}</h3>
+              <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{tr.totalVotes.replace('{n}', String(totalVotes))}</span>
             </div>
             {evtCategories.map(cat => {
               const items = evtItems.filter(i => i.categoryId === cat.id && (i.votes || 0) > 0);
@@ -344,16 +347,16 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
             <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddCat(false)}>
               <motion.div className="modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-display text-xl font-semibold">Nouvelle catégorie</h2>
+                  <h2 className="font-display text-xl font-semibold">{tr.newCategory}</h2>
                   <button className="btn-ghost p-1.5" onClick={() => setShowAddCat(false)}><X size={18} /></button>
                 </div>
                 <div className="space-y-4">
-                  <div><label className="label">Nom *</label><input className="input" placeholder="Ex: Entrées, Plats, Desserts..." value={newCat.name} onChange={e => setNewCat(p => ({ ...p, name: e.target.value }))} /></div>
-                  <div><label className="label">Emoji</label><input className="input" placeholder="🍽️" value={newCat.icon} onChange={e => setNewCat(p => ({ ...p, icon: e.target.value }))} style={{ width: 80 }} /></div>
+                  <div><label className="label">{tr.nameRequired}</label><input className="input" placeholder={tr.categoryPlaceholder} value={newCat.name} onChange={e => setNewCat(p => ({ ...p, name: e.target.value }))} /></div>
+                  <div><label className="label">{tr.emoji}</label><input className="input" placeholder="🍽️" value={newCat.icon} onChange={e => setNewCat(p => ({ ...p, icon: e.target.value }))} style={{ width: 80 }} /></div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setShowAddCat(false)}>Annuler</button>
-                  <button className="btn-primary flex-1" onClick={handleAddCategory}>Créer</button>
+                  <button className="btn-secondary flex-1" onClick={() => setShowAddCat(false)}>{tr.cancel}</button>
+                  <button className="btn-primary flex-1" onClick={handleAddCategory}>{tr.save}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -366,17 +369,17 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
             <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddItem(false)}>
               <motion.div className="modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-display text-xl font-semibold">Ajouter un plat</h2>
+                  <h2 className="font-display text-xl font-semibold">{tr.addDish}</h2>
                   <button className="btn-ghost p-1.5" onClick={() => setShowAddItem(false)}><X size={18} /></button>
                 </div>
                 <div className="space-y-4">
-                  <div><label className="label">Nom du plat *</label><input className="input" placeholder="Ex: Poulet yassa" value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} /></div>
-                  <div><label className="label">Description</label><textarea className="input" rows={3} placeholder="Décrivez le plat..." value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} /></div>
-                  <div><label className="label">Tags (séparés par des virgules)</label><input className="input" placeholder="vegetarian, halal, seafood..." value={newItem.tags} onChange={e => setNewItem(p => ({ ...p, tags: e.target.value }))} /></div>
+                  <div><label className="label">{tr.nameRequired}</label><input className="input" placeholder={tr.dishPlaceholder} value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} /></div>
+                  <div><label className="label">{tr.description}</label><textarea className="input" rows={3} placeholder={tr.descPlaceholder} value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} /></div>
+                  <div><label className="label">{tr.tagsLabel}</label><input className="input" placeholder="vegetarian, halal, seafood..." value={newItem.tags} onChange={e => setNewItem(p => ({ ...p, tags: e.target.value }))} /></div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setShowAddItem(false)}>Annuler</button>
-                  <button className="btn-primary flex-1" onClick={handleAddItem}>Ajouter</button>
+                  <button className="btn-secondary flex-1" onClick={() => setShowAddItem(false)}>{tr.cancel}</button>
+                  <button className="btn-primary flex-1" onClick={handleAddItem}>{tr.save}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -389,17 +392,17 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
             <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditingItem(null)}>
               <motion.div className="modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-display text-xl font-semibold">Modifier le plat</h2>
+                  <h2 className="font-display text-xl font-semibold">{tr.editDish}</h2>
                   <button className="btn-ghost p-1.5" onClick={() => setEditingItem(null)}><X size={18} /></button>
                 </div>
                 <div className="space-y-4">
-                  <div><label className="label">Nom du plat *</label><input className="input" value={editItem.name} onChange={e => setEditItem(p => ({ ...p, name: e.target.value }))} /></div>
-                  <div><label className="label">Description</label><textarea className="input" rows={3} value={editItem.description} onChange={e => setEditItem(p => ({ ...p, description: e.target.value }))} /></div>
-                  <div><label className="label">Tags (séparés par des virgules)</label><input className="input" value={editItem.tags} onChange={e => setEditItem(p => ({ ...p, tags: e.target.value }))} /></div>
+                  <div><label className="label">{tr.name} *</label><input className="input" value={editItem.name} onChange={e => setEditItem(p => ({ ...p, name: e.target.value }))} /></div>
+                  <div><label className="label">{tr.description}</label><textarea className="input" rows={3} value={editItem.description} onChange={e => setEditItem(p => ({ ...p, description: e.target.value }))} /></div>
+                  <div><label className="label">{tr.tagsLabel}</label><input className="input" value={editItem.tags} onChange={e => setEditItem(p => ({ ...p, tags: e.target.value }))} /></div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setEditingItem(null)}>Annuler</button>
-                  <button className="btn-primary flex-1" onClick={handleEditItem}>Enregistrer</button>
+                  <button className="btn-secondary flex-1" onClick={() => setEditingItem(null)}>{tr.cancel}</button>
+                  <button className="btn-primary flex-1" onClick={handleEditItem}>{tr.save}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -415,12 +418,12 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                   <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(220,53,69,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                     <Trash2 size={24} style={{ color: '#DC3545' }} />
                   </div>
-                  <h3 className="font-semibold" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Supprimer cette catégorie ?</h3>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Tous les plats de cette catégorie seront aussi supprimés. Cette action est irréversible.</p>
+                  <h3 className="font-semibold" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{tr.deleteCategoryConfirm}</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{tr.deleteCategoryMsg}</p>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setConfirmDeleteCat(null)}>Annuler</button>
-                  <button className="flex-1" onClick={() => handleDeleteCategory(confirmDeleteCat)} style={{ padding: '0.65rem 1.25rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', background: 'linear-gradient(135deg, #DC3545, #C82333)', color: '#fff' }}>Supprimer</button>
+                  <button className="btn-secondary flex-1" onClick={() => setConfirmDeleteCat(null)}>{tr.cancel}</button>
+                  <button className="flex-1" onClick={() => handleDeleteCategory(confirmDeleteCat)} style={{ padding: '0.65rem 1.25rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', background: 'linear-gradient(135deg, #DC3545, #C82333)', color: '#fff' }}>{tr.delete}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -436,12 +439,12 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                   <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(220,53,69,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
                     <Trash2 size={24} style={{ color: '#DC3545' }} />
                   </div>
-                  <h3 className="font-semibold" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Supprimer ce plat ?</h3>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Cette action est irréversible.</p>
+                  <h3 className="font-semibold" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{tr.deleteDishConfirm}</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{tr.deleteDishMsg}</p>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setConfirmDeleteItem(null)}>Annuler</button>
-                  <button className="flex-1" onClick={() => handleDeleteItem(confirmDeleteItem)} style={{ padding: '0.65rem 1.25rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', background: 'linear-gradient(135deg, #DC3545, #C82333)', color: '#fff' }}>Supprimer</button>
+                  <button className="btn-secondary flex-1" onClick={() => setConfirmDeleteItem(null)}>{tr.cancel}</button>
+                  <button className="flex-1" onClick={() => handleDeleteItem(confirmDeleteItem)} style={{ padding: '0.65rem 1.25rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', background: 'linear-gradient(135deg, #DC3545, #C82333)', color: '#fff' }}>{tr.delete}</button>
                 </div>
               </motion.div>
             </motion.div>

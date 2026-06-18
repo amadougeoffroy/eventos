@@ -2,6 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
 import { RSVPStatus } from '@/lib/types';
@@ -17,11 +18,11 @@ const WhatsAppIcon = ({ size = 14 }: { size?: number }) => (
   </svg>
 );
 
-const statusConfig: Record<string, { label: string; badge: string; icon: React.ElementType; color: string }> = {
-  confirmed: { label: 'Confirmé', badge: 'badge-confirmed', icon: UserCheck, color: '#22964F' },
-  pending:   { label: 'En attente', badge: 'badge-pending', icon: Clock, color: '#DC8C28' },
-  declined:  { label: 'Décliné', badge: 'badge-declined', icon: UserX, color: '#DC3545' },
-  maybe:     { label: 'Peut-être', badge: 'badge-maybe', icon: HelpCircle, color: '#A78BFA' },
+const statusConfigBase: Record<string, { badge: string; icon: React.ElementType; color: string }> = {
+  confirmed: { badge: 'badge-confirmed', icon: UserCheck, color: '#22964F' },
+  pending:   { badge: 'badge-pending', icon: Clock, color: '#DC8C28' },
+  declined:  { badge: 'badge-declined', icon: UserX, color: '#DC3545' },
+  maybe:     { badge: 'badge-maybe', icon: HelpCircle, color: '#A78BFA' },
 };
 
 const fadeUp = {
@@ -54,6 +55,14 @@ type DisplayRow = {
 export default function GuestsPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
   const { guests, events, guestGroups, addGuest, updateGuest, removeGuest, eventsLoading } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('guests');
+  const statusConfig: Record<string, { label: string; badge: string; icon: React.ElementType; color: string }> = {
+    confirmed: { ...statusConfigBase.confirmed, label: tr.confirmed },
+    pending:   { ...statusConfigBase.pending, label: tr.pending },
+    declined:  { ...statusConfigBase.declined, label: tr.declined },
+    maybe:     { ...statusConfigBase.maybe, label: tr.maybe },
+  };
   const event = events.find(e => e.id === eventId);
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
   const eventGuestGroups = useMemo(() => guestGroups.filter(g => g.eventId === eventId), [guestGroups, eventId]);
@@ -101,8 +110,8 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         rows.push({
           id: `${g.id}-comp-${i}`,
           guestId: g.id,
-          firstName: `Accompagnant ${i + 1}`,
-          lastName: `de ${g.firstName}`,
+          firstName: tr.companionN.replace('{n}', String(i + 1)),
+          lastName: tr.ofGuest.replace('{name}', g.firstName),
           email: '',
           phone: '',
           group: g.group,
@@ -233,14 +242,14 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   const statCards = [
-    { label: 'Total personnes', value: stats.total, sub: `${stats.invites} invités + ${stats.companions} accomp.`, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
-    { label: 'Confirmés', value: stats.confirmed, sub: `${confirmRate}%`, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
-    { label: 'En attente', value: stats.pending, sub: '', color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))' },
-    { label: 'Déclinés', value: stats.declined, sub: '', color: '#DC3545', bg: 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))' },
-    { label: 'Peut-être', value: stats.maybe, sub: '', color: '#A78BFA', bg: 'linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04))' },
+    { label: tr.total, value: stats.total, sub: `${stats.invites} ${tr.title} + ${tr.companionsAbbr.replace('{n}', String(stats.companions))}`, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
+    { label: tr.confirmed, value: stats.confirmed, sub: `${confirmRate}%`, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
+    { label: tr.pending, value: stats.pending, sub: '', color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))' },
+    { label: tr.declined, value: stats.declined, sub: '', color: '#DC3545', bg: 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))' },
+    { label: tr.maybe, value: stats.maybe, sub: '', color: '#A78BFA', bg: 'linear-gradient(135deg, rgba(167,139,250,0.12), rgba(167,139,250,0.04))' },
   ];
 
   return (
@@ -250,12 +259,12 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         {/* Header */}
         <div className="guests-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
-            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Invités</h1>
+            <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>{tr.title}</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button className="btn-secondary"><Download size={16} /> Exporter</button>
-            <button className="btn-primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> Ajouter</button>
+            <button className="btn-secondary"><Download size={16} /> {tr.export}</button>
+            <button className="btn-primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> {tr.addGuest}</button>
           </div>
         </div>
 
@@ -280,7 +289,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1rem', padding: '1rem 1.5rem', marginBottom: '1.25rem' }}
         >
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-            <span className="text-sm" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><TrendingUp size={14} /> Taux de confirmation</span>
+            <span className="text-sm" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}><TrendingUp size={14} /> {tr.confirmationRate}</span>
             <span className="text-sm font-bold" style={{ color: '#22964F' }}>{confirmRate}%</span>
           </div>
           <div className="progress-bar" style={{ height: 8 }}>
@@ -296,19 +305,19 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           <div className="guests-filters flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[200px]">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
-              <input className="input pl-10" placeholder="Rechercher un invité..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
+              <input className="input pl-10" placeholder={tr.search} value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
             </div>
             <div className="flex items-center gap-2">
               <Filter size={14} style={{ color: 'var(--text-muted)' }} />
               <select className="input" style={{ width: 'auto' }} value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1); }}>
-                <option value="all">Tous les statuts</option>
-                <option value="confirmed">Confirmés</option>
-                <option value="pending">En attente</option>
-                <option value="declined">Déclinés</option>
-                <option value="maybe">Peut-être</option>
+                <option value="all">{tr.all}</option>
+                <option value="confirmed">{tr.confirmed}</option>
+                <option value="pending">{tr.pending}</option>
+                <option value="declined">{tr.declined}</option>
+                <option value="maybe">{tr.maybe}</option>
               </select>
               <select className="input" style={{ width: 'auto' }} value={filterGroup} onChange={e => { setFilterGroup(e.target.value); setPage(1); }}>
-                <option value="all">Tous les groupes</option>
+                <option value="all">{tr.allGroups}</option>
                 {groups.map(g => <option key={g} value={g}>{g}</option>)}
               </select>
             </div>
@@ -324,12 +333,12 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
             <table className="data-table">
               <thead>
                 <tr>
-                  <SortHeader label="Nom" sortKeyName="name" />
-                  <SortHeader label="Groupe" sortKeyName="group" />
-                  <SortHeader label="Statut RSVP" sortKeyName="status" />
-                  <SortHeader label="Contact" sortKeyName="contact" />
-                  <th>Régime</th>
-                  <th>Actions</th>
+                  <SortHeader label={tr.name} sortKeyName="name" />
+                  <SortHeader label={tr.group} sortKeyName="group" />
+                  <SortHeader label={tr.status} sortKeyName="status" />
+                  <SortHeader label={tr.contact} sortKeyName="contact" />
+                  <th>{tr.diet}</th>
+                  <th>{tr.actions}</th>
                 </tr>
               </thead>
               <tbody>
@@ -364,7 +373,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                     fontSize: '0.6rem', fontWeight: 600, padding: '0.1rem 0.4rem',
                                     borderRadius: 4, background: 'rgba(167,139,250,0.1)', color: '#A78BFA',
                                   }}>
-                                    Accompagnant
+                                    {tr.companion}
                                   </span>
                                 )}
                               </div>
@@ -374,12 +383,12 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                   background: row.source === 'rsvp' ? 'rgba(59,130,246,0.1)' : 'rgba(200,169,110,0.1)',
                                   color: row.source === 'rsvp' ? '#60A5FA' : '#C8A96E',
                                 }}>
-                                  {row.source === 'rsvp' ? '📨 Via lien' : '✏️ Ajouté manuellement'}
+                                  {row.source === 'rsvp' ? tr.viaLink : tr.addedManually}
                                 </span>
                               )}
                               {row.side && !row.isCompanion && (
                                 <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                                  {row.side === 'bride' ? 'Côté mariée' : row.side === 'groom' ? 'Côté marié' : ''}
+                                  {row.side === 'bride' ? tr.brideSide : row.side === 'groom' ? tr.groomSide : ''}
                                 </div>
                               )}
                             </div>
@@ -409,23 +418,23 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                         <td>
                           {!row.isCompanion ? (
                             <div className="flex items-center gap-1">
-                              <button className="btn-ghost p-1.5" onClick={() => openEditModal(row.guestId)} title="Modifier">
+                              <button className="btn-ghost p-1.5" onClick={() => openEditModal(row.guestId)} title={tr.edit}>
                                 <Edit3 size={14} />
                               </button>
                               {row.source !== 'rsvp' && (
                                 <>
-                                  <button className="btn-ghost p-1.5" onClick={() => copyLink(row)} title="Copier le lien">
+                                  <button className="btn-ghost p-1.5" onClick={() => copyLink(row)} title={tr.editTitle}>
                                     {copiedId === row.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
                                   </button>
                                   {(event?.plan === 'pro' || event?.plan === 'premium') && (
-                                    <button className="btn-ghost p-1.5" title="Envoyer par SMS"><MessageSquare size={14} /></button>
+                                    <button className="btn-ghost p-1.5" title={tr.sendSms}><MessageSquare size={14} /></button>
                                   )}
                                   {event?.plan === 'premium' && (
-                                    <button className="btn-ghost p-1.5" title="Envoyer par WhatsApp"><WhatsAppIcon size={14} /></button>
+                                    <button className="btn-ghost p-1.5" title={tr.sendWhatsapp}><WhatsAppIcon size={14} /></button>
                                   )}
                                 </>
                               )}
-                              <button className="btn-ghost p-1.5" onClick={() => setDeleteTarget({ id: row.guestId, name: `${row.firstName} ${row.lastName}`.trim() })} title="Supprimer"><Trash2 size={14} style={{ color: '#F87171' }} /></button>
+                              <button className="btn-ghost p-1.5" onClick={() => setDeleteTarget({ id: row.guestId, name: `${row.firstName} ${row.lastName}`.trim() })} title={tr.delete}><Trash2 size={14} style={{ color: '#F87171' }} /></button>
                             </div>
                           ) : (
                             <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
@@ -443,7 +452,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           {sorted.length === 0 && (
             <div style={{ textAlign: 'center', padding: '3rem' }}>
               <Users size={40} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem' }} />
-              <p style={{ color: 'var(--text-muted)' }}>Aucun invité trouvé</p>
+              <p style={{ color: 'var(--text-muted)' }}>{tr.noGuests}</p>
             </div>
           )}
 
@@ -457,13 +466,13 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
             }}>
               {/* Left: result count */}
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                {sorted.length} résultat{sorted.length > 1 ? 's' : ''}
-                {sorted.length !== displayRows.length && ` sur ${displayRows.length}`}
+                {sorted.length} {sorted.length > 1 ? tr.resultsPlural : tr.results}
+                {sorted.length !== displayRows.length && ` ${tr.of} ${displayRows.length}`}
               </span>
 
               {/* Center: per-page selector */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Afficher</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.show}</span>
                 <select
                   className="input"
                   value={perPage}
@@ -472,7 +481,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                 >
                   {[10, 15, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>par page</span>
+                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.perPage}</span>
               </div>
 
               {/* Right: page nav */}
@@ -540,27 +549,27 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
             <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddModal(false)}>
               <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-display text-xl font-semibold">Ajouter un invité</h2>
+                  <h2 className="font-display text-xl font-semibold">{tr.addGuest}</h2>
                   <button className="btn-ghost p-1.5" onClick={() => setShowAddModal(false)}><X size={18} /></button>
                 </div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="label">Prénom *</label><input className="input" placeholder="Jean-Baptiste" value={newGuest.firstName} onChange={e => setNewGuest(p => ({ ...p, firstName: e.target.value }))} /></div>
-                    <div><label className="label">Nom *</label><input className="input" placeholder="Koné" value={newGuest.lastName} onChange={e => setNewGuest(p => ({ ...p, lastName: e.target.value }))} /></div>
+                    <div><label className="label">{tr.firstName}</label><input className="input" placeholder="Jean-Baptiste" value={newGuest.firstName} onChange={e => setNewGuest(p => ({ ...p, firstName: e.target.value }))} /></div>
+                    <div><label className="label">{tr.lastName}</label><input className="input" placeholder="Koné" value={newGuest.lastName} onChange={e => setNewGuest(p => ({ ...p, lastName: e.target.value }))} /></div>
                   </div>
-                  <div><label className="label">Email</label><input className="input" type="email" placeholder="email@exemple.com" value={newGuest.email} onChange={e => setNewGuest(p => ({ ...p, email: e.target.value }))} /></div>
-                  <div><label className="label">Téléphone</label><input className="input" placeholder="+225 07 12 34 56" value={newGuest.phone} onChange={e => setNewGuest(p => ({ ...p, phone: e.target.value }))} /></div>
+                  <div><label className="label">{tr.email}</label><input className="input" type="email" placeholder="email@exemple.com" value={newGuest.email} onChange={e => setNewGuest(p => ({ ...p, email: e.target.value }))} /></div>
+                  <div><label className="label">{tr.phone}</label><input className="input" placeholder="+225 07 12 34 56" value={newGuest.phone} onChange={e => setNewGuest(p => ({ ...p, phone: e.target.value }))} /></div>
                   <div>
-                    <label className="label">Groupe</label>
+                    <label className="label">{tr.group}</label>
                     <select className="input" value={newGuest.group} onChange={e => setNewGuest(p => ({ ...p, group: e.target.value }))}>
-                      <option value="">Sélectionner un groupe...</option>
+                      <option value="">{tr.selectGroup}</option>
                       {eventGuestGroups.map(g => <option key={g.id} value={g.name}>{g.emoji} {g.name}</option>)}
                     </select>
                   </div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>Annuler</button>
-                  <button className="btn-primary flex-1" onClick={handleAddGuest}>Ajouter</button>
+                  <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>{tr.cancel}</button>
+                  <button className="btn-primary flex-1" onClick={handleAddGuest}>{tr.add}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -573,20 +582,20 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
             <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowEditModal(false)}>
               <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-display text-xl font-semibold">Modifier l&apos;invité</h2>
+                  <h2 className="font-display text-xl font-semibold">{tr.editGuest}</h2>
                   <button className="btn-ghost p-1.5" onClick={() => setShowEditModal(false)}><X size={18} /></button>
                 </div>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3">
-                    <div><label className="label">Prénom *</label><input className="input" value={editForm.firstName} onChange={e => setEditForm(p => ({ ...p, firstName: e.target.value }))} /></div>
-                    <div><label className="label">Nom *</label><input className="input" value={editForm.lastName} onChange={e => setEditForm(p => ({ ...p, lastName: e.target.value }))} /></div>
+                    <div><label className="label">{tr.firstName}</label><input className="input" value={editForm.firstName} onChange={e => setEditForm(p => ({ ...p, firstName: e.target.value }))} /></div>
+                    <div><label className="label">{tr.lastName}</label><input className="input" value={editForm.lastName} onChange={e => setEditForm(p => ({ ...p, lastName: e.target.value }))} /></div>
                   </div>
-                  <div><label className="label">Email</label><input className="input" type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} /></div>
-                  <div><label className="label">Téléphone</label><input className="input" value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} /></div>
+                  <div><label className="label">{tr.email}</label><input className="input" type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} /></div>
+                  <div><label className="label">{tr.phone}</label><input className="input" value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} /></div>
                   <div>
-                    <label className="label">Groupe</label>
+                    <label className="label">{tr.group}</label>
                     <select className="input" value={editForm.group} onChange={e => setEditForm(p => ({ ...p, group: e.target.value }))}>
-                      <option value="">Sélectionner un groupe...</option>
+                      <option value="">{tr.selectGroup}</option>
                       {eventGuestGroups.map(g => <option key={g.id} value={g.name}>{g.emoji} {g.name}</option>)}
                       {/* Allow custom value if not in groups */}
                       {editForm.group && !eventGuestGroups.some(g => g.name === editForm.group) && (
@@ -595,7 +604,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                     </select>
                   </div>
                   <div>
-                    <label className="label">Statut RSVP</label>
+                    <label className="label">{tr.rsvpStatus}</label>
                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
                       {Object.entries(statusConfig).map(([key, cfg]) => {
                         const Icon = cfg.icon;
@@ -622,8 +631,8 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                   </div>
                 </div>
                 <div className="flex gap-3 mt-6">
-                  <button className="btn-secondary flex-1" onClick={() => setShowEditModal(false)}>Annuler</button>
-                  <button className="btn-primary flex-1" onClick={handleEditGuest}>Enregistrer</button>
+                  <button className="btn-secondary flex-1" onClick={() => setShowEditModal(false)}>{tr.cancel}</button>
+                  <button className="btn-primary flex-1" onClick={handleEditGuest}>{tr.save}</button>
                 </div>
               </motion.div>
             </motion.div>
@@ -668,10 +677,10 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                 </motion.div>
 
                 <h3 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                  Supprimer cet invité ?
+                  {tr.deleteConfirm}
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.25rem', lineHeight: 1.5 }}>
-                  Vous êtes sur le point de supprimer
+                  {tr.aboutToDelete}
                 </p>
                 <p style={{
                   fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)',
@@ -679,10 +688,10 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                   background: 'rgba(220,53,69,0.06)', border: '1px solid rgba(220,53,69,0.1)',
                   display: 'inline-block',
                 }}>
-                  {deleteTarget.name || 'Invité'}
+                  {deleteTarget.name || tr.guestFallback}
                 </p>
                 <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                  Cette action est irréversible.
+                  {tr.irreversible}
                 </p>
 
                 <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -695,7 +704,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                       cursor: 'pointer', transition: 'background 0.2s',
                     }}
                   >
-                    Annuler
+                    {tr.cancel}
                   </button>
                   <button
                     onClick={() => { removeGuest(deleteTarget.id); setDeleteTarget(null); }}
@@ -708,7 +717,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                     }}
                   >
                     <Trash2 size={14} />
-                    Supprimer
+                    {tr.delete}
                   </button>
                 </div>
               </motion.div>

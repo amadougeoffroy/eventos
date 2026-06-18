@@ -1,6 +1,7 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useMemo } from 'react';
@@ -21,6 +22,8 @@ const fadeUp = {
 
 export default function DashboardPage() {
   const { events, guests } = useApp();
+  const { t, lang } = useThemeLanguage();
+  const tr = t('dashboard');
 
   const totalGuests = guests.length;
   const confirmed = guests.filter(g => g.rsvpStatus === 'confirmed').length;
@@ -63,39 +66,39 @@ export default function DashboardPage() {
 
   // Contextual tips
   const tips = useMemo(() => {
-    const t: { text: string; icon: string; link?: string; linkLabel?: string }[] = [];
+    const tipList: { text: string; icon: string; link?: string; linkLabel?: string }[] = [];
     if (events.length === 0) {
-      t.push({ text: 'Créez votre premier événement pour commencer !', icon: '🎉', link: '/dashboard/events/new', linkLabel: 'Créer' });
+      tipList.push({ text: tr.tipCreate, icon: '🎉', link: '/dashboard/events/new', linkLabel: tr.tipCreateBtn });
     }
     if (nextEvent && nextEventDaysLeft <= 21 && nextEventDaysLeft > 0) {
-      t.push({ text: `J-${nextEventDaysLeft} pour "${nextEvent.name}" — pensez à relancer les invités en attente`, icon: '⏰' });
+      tipList.push({ text: tr.tipDDay.replace('{n}', String(nextEventDaysLeft)).replace('{name}', nextEvent.name), icon: '⏰' });
     }
     if (pending > totalGuests * 0.5 && totalGuests > 0) {
-      t.push({ text: `${pending} invités n'ont pas encore répondu (${Math.round((pending / totalGuests) * 100)}%)`, icon: '📩' });
+      tipList.push({ text: tr.tipPending.replace('{n}', String(pending)).replace('{pct}', String(Math.round((pending / totalGuests) * 100))), icon: '📩' });
     }
     const eventsWithoutImages = events.filter(e => !e.heroImages || e.heroImages.length === 0);
     if (eventsWithoutImages.length > 0) {
-      t.push({ text: 'Ajoutez des photos pour personnaliser vos invitations', icon: '📷', link: eventsWithoutImages[0] ? `/dashboard/events/${eventsWithoutImages[0].id}` : undefined, linkLabel: 'Ajouter' });
+      tipList.push({ text: tr.tipPhotos, icon: '📷', link: eventsWithoutImages[0] ? `/dashboard/events/${eventsWithoutImages[0].id}` : undefined, linkLabel: tr.tipPhotosBtn });
     }
-    return t.slice(0, 2);
+    return tipList.slice(0, 2);
   }, [events, nextEvent, nextEventDaysLeft, pending, totalGuests]);
 
   const stats = [
-    { label: 'Événements', value: events.length, icon: CalendarDays, color: '#C8A96E' },
-    { label: 'Invités', value: totalGuests, icon: Users, color: '#5B8DB8' },
-    { label: 'Confirmés', value: confirmed, icon: CheckCircle2, color: '#22964F' },
-    { label: 'En attente', value: pending, icon: Clock, color: '#DC8C28' },
+    { label: tr.events, value: events.length, icon: CalendarDays, color: '#C8A96E' },
+    { label: tr.totalGuests, value: totalGuests, icon: Users, color: '#5B8DB8' },
+    { label: tr.confirmed, value: confirmed, icon: CheckCircle2, color: '#22964F' },
+    { label: tr.pending, value: pending, icon: Clock, color: '#DC8C28' },
   ];
 
   function timeAgo(dateStr?: string) {
     if (!dateStr) return '';
     const diff = Date.now() - new Date(dateStr).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `il y a ${mins}min`;
+    if (mins < 60) return tr.agoMin.replace('{n}', String(mins));
     const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `il y a ${hrs}h`;
+    if (hrs < 24) return tr.agoH.replace('{n}', String(hrs));
     const days = Math.floor(hrs / 24);
-    return `il y a ${days}j`;
+    return tr.agoD.replace('{n}', String(days));
   }
 
   return (
@@ -109,12 +112,12 @@ export default function DashboardPage() {
               className="font-display text-3xl font-bold mb-1"
               initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
             >
-              Bienvenue, <span className="gradient-gold">Amadou</span> 👋
+              {tr.welcome}, <span className="gradient-gold">Amadou</span> 👋
             </motion.h1>
-            <p style={{ color: 'var(--text-muted)' }}>Voici un aperçu de vos événements</p>
+            <p style={{ color: 'var(--text-muted)' }}>{tr.subtitle}</p>
           </div>
           <Link href="/dashboard/events/new" className="btn-primary">
-            <Plus size={18} /> Nouvel événement
+            <Plus size={18} /> {tr.newEventBtn}
           </Link>
         </div>
 
@@ -135,7 +138,7 @@ export default function DashboardPage() {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '1rem', alignSelf: 'flex-start' }}>
               <TrendingUp size={16} style={{ color: 'var(--gold)' }} />
-              <span className="text-sm font-semibold">Répartition RSVP</span>
+              <span className="text-sm font-semibold">{tr.rsvpDistribution}</span>
             </div>
             <RsvpDonutChart confirmed={confirmed} pending={pending} declined={declined} />
           </div>
@@ -208,7 +211,7 @@ export default function DashboardPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
                   <Sparkles size={14} style={{ color: nextEventCfg.color }} />
                   <span className="text-xs font-semibold" style={{ color: nextEventCfg.color, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Prochain événement
+                    {tr.nextEvent}
                   </span>
                 </div>
 
@@ -226,7 +229,7 @@ export default function DashboardPage() {
                         <div className="text-xs" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
                             <CalendarDays size={11} />
-                            {new Date(nextEvent.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            {new Date(nextEvent.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </span>
                           {nextEvent.venue && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
@@ -240,7 +243,7 @@ export default function DashboardPage() {
                     {/* Mini progress bar */}
                     <div className="dash-next-event-progress" style={{ maxWidth: 300 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Confirmations</span>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.confirmations}</span>
                         <span className="text-xs font-bold" style={{ color: '#22964F' }}>{nextEventRate}%</span>
                       </div>
                       <div className="progress-bar" style={{ height: 6 }}>
@@ -259,9 +262,9 @@ export default function DashboardPage() {
                     <div style={{
                       fontSize: '2.5rem', fontWeight: 800, lineHeight: 1,
                       color: nextEventCfg.color,
-                    }}>J-{nextEventDaysLeft > 0 ? nextEventDaysLeft : 0}</div>
+                    }}>{tr.dDay}{nextEventDaysLeft > 0 ? nextEventDaysLeft : 0}</div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      {nextEventGuests.length} invité{nextEventGuests.length !== 1 ? 's' : ''}
+                      {nextEventGuests.length} {nextEventGuests.length !== 1 ? tr.guests : tr.guest}
                     </div>
                   </div>
                 </div>
@@ -283,7 +286,7 @@ export default function DashboardPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                 <Activity size={16} style={{ color: 'var(--gold)' }} />
-                <span className="text-sm font-semibold">Activité récente</span>
+                <span className="text-sm font-semibold">{tr.recentActivity}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {recentActivity.map((g, i) => (
@@ -323,7 +326,7 @@ export default function DashboardPage() {
                       color: g.rsvpStatus === 'confirmed' ? '#22964F' : '#DC3545',
                       whiteSpace: 'nowrap',
                     }}>
-                      {g.rsvpStatus === 'confirmed' ? '✅ Confirmé' : '❌ Décliné'}
+                      {g.rsvpStatus === 'confirmed' ? tr.confirmedStatus : tr.declinedStatus}
                     </div>
                     <div style={{ fontSize: '0.55rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                       {timeAgo(g.respondedAt)}
@@ -345,7 +348,7 @@ export default function DashboardPage() {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                 <Lightbulb size={16} style={{ color: 'var(--gold)' }} />
-                <span className="text-sm font-semibold">Conseils</span>
+                <span className="text-sm font-semibold">{tr.tips}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {tips.map((tip, i) => (
@@ -372,7 +375,7 @@ export default function DashboardPage() {
 
         {/* ── Mes événements ─────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
-          <h2 className="font-display text-xl font-semibold">Mes Événements</h2>
+          <h2 className="font-display text-xl font-semibold">{tr.manage}</h2>
         </div>
 
         <div className="grid md:grid-cols-2 gap-5">
@@ -434,7 +437,7 @@ export default function DashboardPage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                               <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                                 <CalendarDays size={12} />
-                                {new Date(evt.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                {new Date(evt.date).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
                               </span>
                               {evt.venue && (
                                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
@@ -456,7 +459,7 @@ export default function DashboardPage() {
                           fontWeight: 700,
                           whiteSpace: 'nowrap',
                         }}>
-                          J-{daysLeft > 0 ? daysLeft : 0}
+                          {tr.dDay}{daysLeft > 0 ? daysLeft : 0}
                         </div>
                       </div>
 
@@ -464,7 +467,7 @@ export default function DashboardPage() {
                       <div style={{ marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                           <span className="text-xs" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                            <TrendingUp size={12} /> Taux de confirmation
+                            <TrendingUp size={12} /> {tr.confirmationRate}
                           </span>
                           <span className="text-xs font-bold" style={{ color: '#22964F' }}>{confirmRate}%</span>
                         </div>
@@ -481,9 +484,9 @@ export default function DashboardPage() {
                       {/* RSVP mini-stats row */}
                       <div className="dash-event-rsvp-row" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem' }}>
                         {[
-                          { label: 'Confirmés', value: evtConfirmed, color: '#22964F', bg: 'rgba(34,150,79,0.06)' },
-                          { label: 'En attente', value: evtPending, color: '#DC8C28', bg: 'rgba(220,140,40,0.06)' },
-                          { label: 'Déclinés', value: evtDeclined, color: '#DC3545', bg: 'rgba(220,53,69,0.06)' },
+                          { label: tr.confirmed, value: evtConfirmed, color: '#22964F', bg: 'rgba(34,150,79,0.06)' },
+                          { label: tr.pending, value: evtPending, color: '#DC8C28', bg: 'rgba(220,140,40,0.06)' },
+                          { label: tr.declined, value: evtDeclined, color: '#DC3545', bg: 'rgba(220,53,69,0.06)' },
                         ].map(stat => (
                           <div key={stat.label} style={{
                             flex: 1, background: stat.bg, borderRadius: 10,
@@ -502,7 +505,7 @@ export default function DashboardPage() {
                         background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.12)',
                         color: 'var(--gold)', fontSize: '0.85rem', fontWeight: 600,
                       }}>
-                        Gérer l&apos;événement <ArrowRight size={14} />
+                        {tr.manageEvent} <ArrowRight size={14} />
                       </div>
                     </div>
                   </div>
@@ -534,8 +537,8 @@ export default function DashboardPage() {
                 }}>
                   <Plus size={28} style={{ color: 'var(--gold)' }} />
                 </div>
-                <div className="font-semibold" style={{ fontSize: '1.05rem', marginBottom: '0.35rem' }}>Créer un événement</div>
-                <div className="text-sm" style={{ color: 'var(--text-muted)', maxWidth: 200 }}>Mariage, anniversaire, baptême, gala...</div>
+                <div className="font-semibold" style={{ fontSize: '1.05rem', marginBottom: '0.35rem' }}>{tr.createEvent}</div>
+                <div className="text-sm" style={{ color: 'var(--text-muted)', maxWidth: 200 }}>{tr.eventTypesHint}</div>
               </div>
             </Link>
           </motion.div>

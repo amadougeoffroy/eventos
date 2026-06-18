@@ -1,6 +1,7 @@
 'use client';
 import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
+import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -44,6 +45,8 @@ const SectionCard = ({ children, title, icon: IconComp }: { children: React.Reac
 export default function NewEventPage() {
   const router = useRouter();
   const { addEvent, venues, addVenue } = useApp();
+  const { t } = useThemeLanguage();
+  const tr = t('newEvent');
   const [step, setStep] = useState(1);
   const totalSteps = 5;
   const [selectedTemplateId, setSelectedTemplateId] = useState('romance');
@@ -148,7 +151,7 @@ export default function NewEventPage() {
     router.push('/dashboard');
   };
 
-  const stepLabels = ['Type & Infos', 'Détails & Options', 'Template', 'Personnalisation', 'Programme'];
+  const stepLabels = [tr.step1, tr.step2, tr.step3, tr.step4, tr.step5];
 
   return (
     <div className="flex">
@@ -163,10 +166,10 @@ export default function NewEventPage() {
               <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
                 <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.5rem' }}>
                   <Crown size={22} style={{ display: 'inline', marginRight: '0.5rem', color: 'var(--gold)' }} />
-                  Choisissez votre formule
+                  {tr.choosePlan}
                 </h1>
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  Sélectionnez la formule adaptée à votre événement
+                  {tr.selectPlan}
                 </p>
               </div>
 
@@ -197,7 +200,7 @@ export default function NewEventPage() {
                           fontSize: '0.6rem', fontWeight: 700, padding: '0.15rem 0.6rem', borderRadius: 6,
                           background: 'linear-gradient(135deg, var(--gold), var(--gold-light))', color: '#fff',
                           letterSpacing: '0.04em',
-                        }}>⭐ POPULAIRE</div>
+                        }}>{tr.popular}</div>
                       )}
                       <div style={{
                         width: 52, height: 52, borderRadius: 14, flexShrink: 0,
@@ -236,7 +239,7 @@ export default function NewEventPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                 <h1 className="font-display text-2xl font-bold">
                   <Sparkles size={22} style={{ display: 'inline', marginRight: '0.5rem', color: 'var(--gold)' }} />
-                  Créer un événement
+                  {tr.title}
                 </h1>
                 {selectedPlan && planConfig[selectedPlan] && (
                   <span style={{
@@ -251,7 +254,7 @@ export default function NewEventPage() {
                 )}
               </div>
               <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                Étape {step} sur {totalSteps} — {stepLabels[step - 1]}
+                {tr.stepOf.replace('{step}', String(step)).replace('{total}', String(totalSteps))} — {stepLabels[step - 1]}
               </p>
             </div>
 
@@ -295,7 +298,7 @@ export default function NewEventPage() {
             {/* ── Step 1: Type & Basic Info ──────── */}
             {step === 1 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <SectionCard title="Type d'événement" icon={Sparkles}>
+                <SectionCard title={tr.eventType} icon={Sparkles}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {Object.entries(eventTypeConfig).map(([key, cfg]) => (
                       <button
@@ -318,37 +321,37 @@ export default function NewEventPage() {
                   </div>
                 </SectionCard>
 
-                <SectionCard title="Informations principales" icon={FileText}>
+                <SectionCard title={tr.mainInfo} icon={FileText}>
                   {/* Dynamic fields by type */}
                   {eventType === 'wedding' && (
                     <div className="grid grid-cols-2 gap-4" style={{ marginBottom: '1rem' }}>
-                      <div><label className="label">Prénom du marié</label><input className="input" placeholder="Amadou" value={groomName} onChange={e => setGroomName(e.target.value)} /></div>
-                      <div><label className="label">Prénom de la mariée</label><input className="input" placeholder="Fatou" value={brideName} onChange={e => setBrideName(e.target.value)} /></div>
+                      <div><label className="label">{tr.groomName}</label><input className="input" placeholder="Amadou" value={groomName} onChange={e => setGroomName(e.target.value)} /></div>
+                      <div><label className="label">{tr.brideName}</label><input className="input" placeholder="Fatou" value={brideName} onChange={e => setBrideName(e.target.value)} /></div>
                     </div>
                   )}
                   {eventType === 'birthday' && (
                     <div className="grid grid-cols-2 gap-4" style={{ marginBottom: '1rem' }}>
-                      <div><label className="label">Nom du / de la fêté(e)</label><input className="input" placeholder="Kofi" value={celebrantName} onChange={e => setCelebrantName(e.target.value)} /></div>
-                      <div><label className="label">Âge fêté</label><input className="input" type="number" placeholder="30" value={age} onChange={e => setAge(e.target.value)} /></div>
+                      <div><label className="label">{tr.celebrantName}</label><input className="input" placeholder="Kofi" value={celebrantName} onChange={e => setCelebrantName(e.target.value)} /></div>
+                      <div><label className="label">{tr.ageCelebrated}</label><input className="input" type="number" placeholder="30" value={age} onChange={e => setAge(e.target.value)} /></div>
                     </div>
                   )}
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="label">Nom de l&apos;événement</label>
+                    <label className="label">{tr.name}</label>
                     <input className="input" placeholder={eventType === 'wedding' ? 'Mariage Amadou & Fatou' : eventType === 'birthday' ? 'Les 30 ans de Kofi' : 'Mon événement'} value={name} onChange={e => setName(e.target.value)} />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div><label className="label">Date</label><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
-                    <div><label className="label">Heure</label><input className="input" type="time" value={time} onChange={e => setTime(e.target.value)} /></div>
+                    <div><label className="label">{tr.date}</label><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
+                    <div><label className="label">{tr.time}</label><input className="input" type="time" value={time} onChange={e => setTime(e.target.value)} /></div>
                   </div>
                 </SectionCard>
 
-                <SectionCard title="Localisation" icon={MapPin}>
+                <SectionCard title={tr.location} icon={MapPin}>
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="label">Nom du lieu</label>
+                    <label className="label">{tr.venueName}</label>
                     <input className="input" placeholder="Hôtel Ivoire" value={venue} onChange={e => setVenue(e.target.value)} />
                   </div>
                   <div>
-                    <label className="label">Adresse complète (pour Google Maps)</label>
+                    <label className="label">{tr.venueAddress}</label>
                     <input className="input" placeholder="Boulevard de France, Abidjan, Côte d'Ivoire" value={venueAddress} onChange={e => setVenueAddress(e.target.value)} />
                   </div>
                   {venueAddress && (
@@ -370,18 +373,18 @@ export default function NewEventPage() {
             {/* ── Step 2: Details & Options ──────────── */}
             {step === 2 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <SectionCard title="Message & Dress code" icon={FileText}>
+                <SectionCard title={tr.messageAndDressCode} icon={FileText}>
                   <div style={{ marginBottom: '1rem' }}>
-                    <label className="label">Dress code</label>
+                    <label className="label">{tr.dressCode}</label>
                     <input className="input" placeholder="Tenue de soirée — Tons champagne & or" value={dressCode} onChange={e => setDressCode(e.target.value)} />
                   </div>
                   <div>
-                    <label className="label">Message de bienvenue</label>
+                    <label className="label">{tr.welcomeMessage}</label>
                     <textarea className="input" rows={3} placeholder="Nous sommes ravis de partager ce moment avec vous..." value={welcomeMessage} onChange={e => setWelcomeMessage(e.target.value)} />
                   </div>
                 </SectionCard>
 
-                <SectionCard title="Accompagnants" icon={Users}>
+                <SectionCard title={tr.companions} icon={Users}>
                   <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '0.75rem 1rem', borderRadius: '0.75rem',
@@ -389,9 +392,9 @@ export default function NewEventPage() {
                     marginBottom: allowCompanions ? '1rem' : 0,
                   }}>
                     <div>
-                      <div className="font-medium text-sm">Autoriser les accompagnants</div>
+                      <div className="font-medium text-sm">{tr.allowCompanions}</div>
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        Les invités pourront indiquer des accompagnants
+                        {tr.allowCompanionsDesc}
                       </div>
                     </div>
                     <button
@@ -407,7 +410,7 @@ export default function NewEventPage() {
                   </div>
                   {allowCompanions && (
                     <div>
-                      <label className="label">Nombre max d&apos;accompagnants par invité</label>
+                      <label className="label">{tr.maxCompanions}</label>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         {[1, 2, 3, 4, 5].map(n => (
                           <button
@@ -436,7 +439,7 @@ export default function NewEventPage() {
             {/* ── Step 3: Template Selection ──────── */}
             {step === 3 && selectedPlan && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <SectionCard title="Choisissez votre template" icon={LayoutTemplate}>
+                <SectionCard title={tr.chooseTemplate} icon={LayoutTemplate}>
                   <TemplateSelector
                     plan={selectedPlan as 'essentiel' | 'pro' | 'premium'}
                     eventType={eventType}
@@ -455,9 +458,9 @@ export default function NewEventPage() {
               const defaultImage = currentVariant?.defaultHeroImages?.[0] ?? '';
 
               const HERO_LABELS: Record<string, { icon: React.ReactNode; label: string; desc: string }> = {
-                image: { icon: <ImageIcon size={18} />, label: 'Image fixe', desc: 'Une seule photo en fond' },
-                slideshow: { icon: <Film size={18} />, label: 'Diaporama', desc: 'Plusieurs photos en rotation' },
-                video: { icon: <Clapperboard size={18} />, label: 'Vidéo', desc: 'Vidéo de fond en boucle' },
+                image: { icon: <ImageIcon size={18} />, label: tr.fixedImage, desc: tr.fixedImageDesc },
+                slideshow: { icon: <Film size={18} />, label: tr.slideshowLabel, desc: tr.slideshowDesc },
+                video: { icon: <Clapperboard size={18} />, label: tr.videoLabel, desc: tr.videoDesc },
               };
 
               const maxImages = heroType === 'slideshow'
@@ -467,7 +470,7 @@ export default function NewEventPage() {
               return (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 {/* Hero type selector */}
-                <SectionCard title="Type de hero" icon={ImageIcon}>
+                <SectionCard title={tr.heroType} icon={ImageIcon}>
                   <div style={{ display: 'grid', gridTemplateColumns: `repeat(${availableHeroTypes.length}, 1fr)`, gap: '0.75rem' }}>
                     {availableHeroTypes.map(ht => {
                       const cfg = HERO_LABELS[ht];
@@ -513,7 +516,7 @@ export default function NewEventPage() {
                       display: 'flex', alignItems: 'center', gap: '0.3rem',
                     }}>
                       <Crown size={11} style={{ color: 'var(--gold)' }} />
-                      Passez à Pro pour le diaporama ou Premium pour la vidéo
+                      {tr.upgradeHint}
                     </div>
                   )}
                 </SectionCard>
@@ -528,7 +531,7 @@ export default function NewEventPage() {
                     : (!isUsingDefault || heroType === 'slideshow');
 
                   return (
-                <SectionCard title={heroType === 'slideshow' ? `Images du diaporama (${showImages.length}/${maxImages})` : 'Image du hero'} icon={Image}>
+                <SectionCard title={heroType === 'slideshow' ? `${tr.slideshowImages} (${showImages.length}/${maxImages})` : tr.heroImage} icon={Image}>
                   <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem', alignItems: 'center' }}>
                     {/* Existing images with delete cross */}
                     {showImages.map((img, i) => (
@@ -569,7 +572,7 @@ export default function NewEventPage() {
                             padding: '2px 0', textAlign: 'center',
                             background: 'rgba(0,0,0,0.55)', fontSize: '0.5rem', color: '#fff',
                             fontWeight: 600,
-                          }}>Par défaut</div>
+                          }}>{tr.defaultLabel}</div>
                         )}
                       </div>
                     ))}
@@ -586,7 +589,7 @@ export default function NewEventPage() {
                         background: 'var(--bg-warm)',
                       }}>
                         <Upload size={16} />
-                        <span style={{ fontWeight: 500 }}>{showImages.length === 0 ? 'Choisir' : 'Ajouter'}</span>
+                        <span style={{ fontWeight: 500 }}>{showImages.length === 0 ? tr.choose : tr.addMore}</span>
                         <input
                           type="file"
                           accept="image/jpeg,image/png,image/webp"
@@ -650,18 +653,18 @@ export default function NewEventPage() {
                       }}
                     >
                       <RotateCcw size={12} />
-                      Rétablir l'image par défaut
+                      {tr.restoreDefault}
                     </button>
                   )}
 
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
                     {showImages.length === 0
-                      ? 'Aucune image sélectionnée. Ajoutez votre photo ou rétablissez l\'image par défaut.'
+                      ? tr.noImageSelected
                       : isUsingDefault
-                        ? 'L\'image par défaut du template est utilisée. Supprimez-la pour ajouter la vôtre.'
+                        ? tr.defaultUsed
                         : heroType === 'slideshow'
-                          ? `Vous pouvez ajouter jusqu'à ${maxImages} images pour le diaporama.`
-                          : 'Votre image personnalisée sera affichée en hero.'
+                          ? tr.slideshowHint.replace('{n}', String(maxImages))
+                          : tr.customUsed
                     }
                   </p>
                 </SectionCard>
@@ -670,7 +673,7 @@ export default function NewEventPage() {
 
                 {/* Hero video — shown when heroType IS video */}
                 {heroType === 'video' && (
-                  <SectionCard title="Vidéo du hero" icon={Clapperboard}>
+                  <SectionCard title={tr.heroVideo} icon={Clapperboard}>
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.75rem', alignItems: 'center' }}>
                       {heroVideo ? (
                         <div style={{
@@ -712,7 +715,7 @@ export default function NewEventPage() {
                           background: 'var(--bg-warm)',
                         }}>
                           <Upload size={16} />
-                          <span style={{ fontWeight: 500 }}>Choisir une vidéo</span>
+                          <span style={{ fontWeight: 500 }}>{tr.chooseVideo}</span>
                           <input
                             type="file"
                             accept="video/mp4,video/webm"
@@ -760,24 +763,24 @@ export default function NewEventPage() {
                         }}
                       >
                         <RotateCcw size={12} />
-                        Rétablir la vidéo par défaut
+                        {tr.restoreDefaultVideo}
                       </button>
                     )}
 
                     <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
                       {heroVideo
-                        ? 'Votre vidéo sera affichée en boucle dans le hero.'
-                        : 'Aucune vidéo sélectionnée. Ajoutez votre vidéo ou rétablissez la vidéo par défaut.'
+                        ? tr.videoPlaying
+                        : tr.noVideoSelected
                       }
                     </p>
                   </SectionCard>
                 )}
 
                 {/* Colors */}
-                <SectionCard title="Couleurs du thème" icon={Palette}>
+                <SectionCard title={tr.themeColors} icon={Palette}>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="label">Couleur principale</label>
+                      <label className="label">{tr.primaryColor}</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{
                           width: 44, height: 44, borderRadius: 12,
@@ -795,7 +798,7 @@ export default function NewEventPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="label">Couleur secondaire</label>
+                      <label className="label">{tr.secondaryColor}</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{
                           width: 44, height: 44, borderRadius: 12,
@@ -821,7 +824,7 @@ export default function NewEventPage() {
                     color: '#FFFFFF', fontSize: '0.8rem', fontWeight: 600,
                     textShadow: '0 1px 3px rgba(0,0,0,0.3)',
                   }}>
-                    Aperçu de votre thème
+                    {tr.themePreview}
                   </div>
                 </SectionCard>
               </motion.div>
@@ -831,7 +834,7 @@ export default function NewEventPage() {
             {/* ── Step 5: Programme ───────── */}
             {step === 5 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                <SectionCard title="Programme de la journée" icon={Clock}>
+                <SectionCard title={tr.dayProgram} icon={Clock}>
                   {/* No venues hint */}
                   {venues.length === 0 ? (
                     <div style={{
@@ -841,7 +844,7 @@ export default function NewEventPage() {
                     }}>
                       <MapPin size={16} style={{ color: 'var(--gold)', flexShrink: 0 }} />
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', flex: 1 }}>
-                        Aucun lieu enregistré. Ajoutez vos lieux pour les associer au programme.
+                        {tr.noVenuesHint}
                       </span>
                       <button
                         type="button"
@@ -853,7 +856,7 @@ export default function NewEventPage() {
                           color: '#fff', flexShrink: 0, border: 'none', cursor: 'pointer',
                         }}
                       >
-                        <Plus size={12} /> Ajouter des lieux
+                        <Plus size={12} /> {tr.addVenues}
                       </button>
                     </div>
                   ) : (
@@ -880,7 +883,7 @@ export default function NewEventPage() {
                           border: '1px solid rgba(200,169,110,0.2)', cursor: 'pointer',
                         }}
                       >
-                        <Plus size={11} /> Ajouter
+                        <Plus size={11} /> {tr.addMore}
                       </button>
                     </div>
                   )}
@@ -947,9 +950,9 @@ export default function NewEventPage() {
                         <div style={{ flex: 1, minWidth: '200px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <input className="input" type="time" value={item.time} onChange={e => updateProgramItem(item.id, { time: e.target.value })} />
-                            <input className="input sm:col-span-2" placeholder="Titre de l'étape" value={item.title} onChange={e => updateProgramItem(item.id, { title: e.target.value })} />
+                            <input className="input sm:col-span-2" placeholder={tr.stepTitle} value={item.title} onChange={e => updateProgramItem(item.id, { title: e.target.value })} />
                           </div>
-                          <input className="input" placeholder="Description (optionnel)" value={item.description} onChange={e => updateProgramItem(item.id, { description: e.target.value })} />
+                          <input className="input" placeholder={tr.stepDesc} value={item.description} onChange={e => updateProgramItem(item.id, { description: e.target.value })} />
                           {/* Venue selector */}
                           {venues.length > 0 && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -960,7 +963,7 @@ export default function NewEventPage() {
                                 onChange={e => updateProgramItem(item.id, { venueId: e.target.value || undefined })}
                                 style={{ flex: 1 }}
                               >
-                                <option value="">— Aucun lieu —</option>
+                                <option value="">{tr.noVenue}</option>
                                 {venues.map(v => (
                                   <option key={v.id} value={v.id}>{v.emoji || '📍'} {v.name}</option>
                                 ))}
@@ -992,7 +995,7 @@ export default function NewEventPage() {
                       fontSize: '0.85rem', fontWeight: 500, transition: 'all 0.2s ease',
                     }}
                   >
-                    <Plus size={16} /> Ajouter une étape
+                    <Plus size={16} /> {tr.addStep}
                   </button>
                 </SectionCard>
               </motion.div>
@@ -1005,16 +1008,16 @@ export default function NewEventPage() {
             }}>
               {step > 1 && (
                 <button className="btn-secondary" style={{ flex: 1, padding: '0.85rem' }} onClick={() => setStep(s => s - 1)}>
-                  <ArrowLeft size={16} /> Précédent
+                  <ArrowLeft size={16} /> {tr.previous}
                 </button>
               )}
               {step < totalSteps ? (
                 <button className="btn-primary" style={{ flex: 1, padding: '0.85rem' }} onClick={() => setStep(s => s + 1)}>
-                  Suivant <ArrowRight size={16} />
+                  {tr.next} <ArrowRight size={16} />
                 </button>
               ) : (
                 <button className="btn-primary" style={{ flex: 1, padding: '0.85rem' }} onClick={handleCreate}>
-                  <Sparkles size={16} /> Créer l&apos;événement
+                  <Sparkles size={16} /> {tr.create}
                 </button>
               )}
             </div>
@@ -1036,7 +1039,7 @@ export default function NewEventPage() {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
               <Eye size={14} style={{ color: 'var(--gold)' }} />
-              <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>Aperçu en direct</span>
+              <span className="text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{tr.livePreview}</span>
             </div>
             <TemplatePreview
               templateId={selectedTemplateId}
@@ -1148,7 +1151,7 @@ export default function NewEventPage() {
                   position: sticky;
                   bottom: 0;
                   z-index: 30;
-                  background: rgba(255,255,255,0.95);
+                  background: var(--bg-sidebar);
                   backdrop-filter: blur(12px);
                   -webkit-backdrop-filter: blur(12px);
                   margin: 0 -0.85rem;
