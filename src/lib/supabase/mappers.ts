@@ -34,6 +34,7 @@ export function dbEventToApp(row: Record<string, unknown>): Event {
     backgroundMusicUrl: (row.background_music_url as string) || '',
     sectionsOrder: (row.sections_order as string[]) || undefined,
     createdAt: (row.created_at as string) || new Date().toISOString(),
+    views: (row.views as number) || 0,
   };
 }
 

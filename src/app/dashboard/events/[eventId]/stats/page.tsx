@@ -589,8 +589,10 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <MiniBadge label="Visites du lien" value={event.views || 0} color="#8B5CF6" />
               <MiniBadge label="Réponses reçues" value={`${responded}/${total}`} color="#22964F" />
               <MiniBadge label="Taux de réponse" value={`${total > 0 ? Math.round((responded / total) * 100) : 0}%`} color="#5B8DB8" />
+              <MiniBadge label="Taux de conversion" value={`${(event.views || 0) > 0 ? Math.round((responded / (event.views || 1)) * 100) : 0}%`} color="#C8A96E" />
               <MiniBadge label="Restrictions alimentaires" value={`${guestsWithAllergies} invité${guestsWithAllergies > 1 ? 's' : ''}`} color="#DC8C28" />
               {totalVotes > 0 && <MiniBadge label="Votes sondage menu" value={totalVotes} color="#FB923C" />}
             </div>

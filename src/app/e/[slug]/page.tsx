@@ -139,6 +139,22 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     loadPublicGifts();
   }, [event?.id]);
 
+  // Track page view
+  useEffect(() => {
+    if (!event?.id) return;
+    const trackView = async () => {
+      try {
+        const key = `eventos_viewed_${event.id}`;
+        if (sessionStorage.getItem(key)) return; // 1 view per session
+        sessionStorage.setItem(key, 'true');
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        await supabase.rpc('increment_event_views', { evt_id: event.id });
+      } catch {}
+    };
+    trackView();
+  }, [event?.id]);
+
   // Load menu categories & items for survey
   useEffect(() => {
     if (!event || !event.meta?.menuSurveyEnabled) return;

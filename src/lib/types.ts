@@ -58,6 +58,7 @@ export interface Event {
   sectionsOrder?: string[];
   customFonts?: { display?: string; body?: string; script?: string };
   createdAt: string;
+  views?: number;
 }
 
 export interface ProgramItem {
