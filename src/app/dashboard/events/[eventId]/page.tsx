@@ -159,8 +159,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
             pointerEvents: 'none',
           }} />
 
-          <div style={{ padding: '1.75rem 2rem' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
+          <div className="evt-hero-body" style={{ padding: '1.75rem 2rem' }}>
+            <div className="evt-hero-row" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1.5rem' }}>
               <div>
                 {/* Title row */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.5rem' }}>
@@ -228,7 +228,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
               </div>
 
               {/* Countdown */}
-              <div style={{ textAlign: 'center', padding: '0.5rem 1.25rem' }}>
+              <div className="evt-hero-countdown" style={{ textAlign: 'center', padding: '0.5rem 1.25rem' }}>
                 <div style={{
                   fontSize: '2.75rem', fontWeight: 800, lineHeight: 1,
                   background: `linear-gradient(135deg, ${cfg.color}, ${cfg.color}AA)`,
@@ -268,7 +268,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
         </motion.div>
 
         {/* ── RSVP Summary ────────────────────────── */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="evt-rsvp-grid grid grid-cols-3 gap-4 mb-6">
           {rsvpStats.map((s, i) => {
             const Icon = s.icon;
             return (
@@ -325,7 +325,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
 
         {/* ── Quick Actions ────────────────────────── */}
         <h2 className="font-display text-lg font-semibold mb-4">Actions rapides</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
+        <div className="evt-actions-grid grid grid-cols-2 lg:grid-cols-5 gap-3 mb-8">
           {quickActions.map((a, i) => {
             const Icon = a.icon;
             return (
@@ -443,7 +443,7 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
               return (
                 <>
                   {/* Type cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1.25rem' }}>
+                  <div className="evt-hero-type-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1.25rem' }}>
                     {heroOptions.map(opt => {
                       const optPlanLevel = planOrder[opt.minPlan as keyof typeof planOrder] ?? 0;
                       const locked = userPlanLevel < optPlanLevel;

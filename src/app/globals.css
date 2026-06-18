@@ -723,3 +723,64 @@ select.input option {
     min-height: 180px !important;
   }
 }
+
+/* ── Event detail mobile ──────────────────────── */
+@media (max-width: 768px) {
+  .evt-hero-body {
+    padding: 1rem !important;
+  }
+  .evt-hero-row {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+  }
+  .evt-hero-countdown {
+    align-self: center;
+    padding: 0.75rem 1.5rem !important;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    width: 100%;
+  }
+  .evt-hero-countdown > div:first-child {
+    font-size: 2rem !important;
+  }
+  .evt-rsvp-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .evt-rsvp-grid > div {
+    padding: 0.85rem 0.5rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .evt-rsvp-grid .text-xs {
+    font-size: 0.6rem !important;
+  }
+  .evt-actions-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .evt-actions-grid > div > a > div {
+    padding: 0.85rem 0.5rem !important;
+    border-radius: 0.85rem !important;
+  }
+  .evt-hero-type-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.4rem !important;
+  }
+  .evt-hero-type-grid > button {
+    padding: 0.65rem 0.35rem !important;
+    border-radius: 10px !important;
+  }
+  .evt-hero-type-grid > button span {
+    font-size: 0.7rem !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .evt-actions-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .evt-rsvp-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
