@@ -40,6 +40,7 @@ type DisplayRow = {
   dietaryRestrictions: string[];
   token: string;
   isCompanion: boolean;
+  source?: 'manual' | 'rsvp';
   companionIndex?: number;
   parentName?: string;
 };
@@ -86,6 +87,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         companions: g.companions,
         dietaryRestrictions: g.dietaryRestrictions || [],
         token: g.token,
+        source: g.source,
         isCompanion: false,
       });
       // Companion rows
@@ -181,7 +183,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
     addGuest({
       id: `g-${Date.now()}`, eventId, ...newGuest,
       rsvpStatus: 'pending', token: `tok-${Date.now()}`,
-      companions: 0, dietaryRestrictions: [],
+      companions: 0, dietaryRestrictions: [], source: 'manual',
     });
     setNewGuest({ firstName: '', lastName: '', email: '', phone: '', group: '' });
     setShowAddModal(false);
@@ -360,6 +362,15 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                   </span>
                                 )}
                               </div>
+                              {!row.isCompanion && (
+                                <span style={{
+                                  fontSize: '0.6rem', padding: '0.1rem 0.4rem', borderRadius: 4, fontWeight: 500,
+                                  background: row.source === 'rsvp' ? 'rgba(59,130,246,0.1)' : 'rgba(200,169,110,0.1)',
+                                  color: row.source === 'rsvp' ? '#60A5FA' : '#C8A96E',
+                                }}>
+                                  {row.source === 'rsvp' ? '📨 Via lien' : '✏️ Ajouté manuellement'}
+                                </span>
+                              )}
                               {row.side && !row.isCompanion && (
                                 <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                   {row.side === 'bride' ? 'Côté mariée' : row.side === 'groom' ? 'Côté marié' : ''}

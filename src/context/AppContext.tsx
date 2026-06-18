@@ -289,6 +289,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           allergies: row.allergies || '',
           dietaryRestrictions: row.dietary_restrictions || [],
           side: row.side || undefined,
+          source: row.source || 'manual',
           respondedAt: row.updated_at || undefined,
         })));
       }
@@ -592,6 +593,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         companions: guest.companions || 0,
         allergies: guest.allergies || null,
         side: guest.side || null,
+        source: guest.source || 'manual',
       })
       .select()
       .single();

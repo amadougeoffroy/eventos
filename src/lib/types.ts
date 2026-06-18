@@ -100,6 +100,7 @@ export interface Guest {
   menuChoices?: Record<string, string>; // categoryId -> menuItemId
   profilePhoto?: string;
   side?: "bride" | "groom" | "both";
+  source?: "manual" | "rsvp";
 }
 
 export interface GuestGroup {

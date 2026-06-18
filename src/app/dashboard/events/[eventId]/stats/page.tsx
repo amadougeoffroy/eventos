@@ -39,7 +39,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
   const confirmedWithCompanions = confirmed + confirmedCompanions;
 
   // ─── Countdown ───
-  const eventDate = new Date(event.date);
+  const eventDate = new Date(event?.date || '');
   const now = new Date();
   const diffMs = eventDate.getTime() - now.getTime();
   const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));

@@ -81,6 +81,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
           token,
           companions,
           allergies: allergies || null,
+          source: 'rsvp',
         }).select().single();
 
         if (insertErr) {
@@ -105,6 +106,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
             allergies,
             dietaryRestrictions: [],
             respondedAt: new Date().toISOString(),
+            source: 'rsvp' as const,
           });
 
           onRsvpComplete?.({
