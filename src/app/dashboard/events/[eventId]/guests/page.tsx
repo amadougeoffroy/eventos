@@ -406,10 +406,14 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                               <button className="btn-ghost p-1.5" onClick={() => openEditModal(row.guestId)} title="Modifier">
                                 <Edit3 size={14} />
                               </button>
-                              <button className="btn-ghost p-1.5" onClick={() => copyLink(row)} title="Copier le lien">
-                                {copiedId === row.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
-                              </button>
-                              <button className="btn-ghost p-1.5" title="Envoyer invitation"><Send size={14} /></button>
+                              {row.source !== 'rsvp' && (
+                                <>
+                                  <button className="btn-ghost p-1.5" onClick={() => copyLink(row)} title="Copier le lien">
+                                    {copiedId === row.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
+                                  </button>
+                                  <button className="btn-ghost p-1.5" title="Envoyer invitation"><Send size={14} /></button>
+                                </>
+                              )}
                               <button className="btn-ghost p-1.5" onClick={() => setDeleteTarget({ id: row.guestId, name: `${row.firstName} ${row.lastName}`.trim() })} title="Supprimer"><Trash2 size={14} style={{ color: '#F87171' }} /></button>
                             </div>
                           ) : (
