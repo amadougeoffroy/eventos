@@ -84,7 +84,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}
+        <motion.div className="venues-header" initial="hidden" animate="visible" variants={fadeUp} custom={0}
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.25rem' }}>Lieux</h1>
@@ -101,7 +101,7 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
         </motion.div>
 
         {/* Venues Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))', gap: '1.25rem' }}>
+        <div className="venues-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(250px, 100%), 1fr))', gap: '1.25rem' }}>
           {eventVenues.map((v, i) => (
             <motion.div
               key={v.id}

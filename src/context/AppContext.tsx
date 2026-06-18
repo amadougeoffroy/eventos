@@ -50,6 +50,7 @@ interface AppActions {
   addGift: (gift: GiftItem) => void;
   updateGift: (id: string, updates: Partial<GiftItem>) => void;
   removeGift: (id: string) => void;
+  updateProfile: (updates: { name?: string; email?: string; phone?: string }) => Promise<void>;
 }
 
 const AppContext = createContext<(AppState & AppActions) | undefined>(undefined);
@@ -972,6 +973,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, [supabase, venues]);
 
+  // ═══════════════════════════════════════════════════════════
+  // PROFILE — Supabase powered
+  // ═══════════════════════════════════════════════════════════
+  const updateProfile = useCallback(async (updates: { name?: string; email?: string; phone?: string }) => {
+    if (!userId) return;
+    const payload: Record<string, any> = {};
+    if (updates.name !== undefined) payload.full_name = updates.name;
+    if (updates.email !== undefined) payload.email = updates.email;
+    if (updates.phone !== undefined) payload.phone = updates.phone;
+
+    const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
+    if (error) {
+      console.error('Error updating profile:', error);
+      return;
+    }
+    setCurrentUser(prev => ({
+      ...prev,
+      ...(updates.name !== undefined && { name: updates.name }),
+      ...(updates.email !== undefined && { email: updates.email }),
+    }));
+  }, [supabase, userId]);
+
   return (
     <AppContext.Provider value={{
       events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders, gifts,
@@ -981,6 +1004,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addTable, updateTable, removeTable, addMenuItem, updateMenuItem, removeMenuItem, addMenuCategory, updateMenuCategory, removeMenuCategory,
       addOrder, updateOrder, addVenue, updateVenue, removeVenue,
       addGift, updateGift, removeGift,
+      updateProfile,
     }}>
       {children}
     </AppContext.Provider>

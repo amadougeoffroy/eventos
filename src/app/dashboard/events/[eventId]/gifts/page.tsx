@@ -84,7 +84,7 @@ function OfferersTable({ offerers }: { offerers: Offerer[] }) {
       </div>
 
       {/* Table */}
-      <div className="card" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
+      <div className="gifts-offerers-wrap card" style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border-light)' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
             <thead>
@@ -260,7 +260,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="gifts-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
             <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Liste de cadeaux</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
@@ -277,7 +277,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        <div className="gifts-stats grid grid-cols-4 gap-4 mb-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
           {[
             { label: 'Total', value: stats.total, color: '#5B8DB8', icon: Gift },
             { label: 'Seront offerts', value: stats.reserved, color: '#22964F', icon: Package },
@@ -299,7 +299,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
         </div>
 
         {/* Search + Filter */}
-        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+        <div className="gifts-filters" style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
             <input
@@ -341,7 +341,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
             }}><Plus size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Ajouter un cadeau</button>
           </motion.div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+          <div className="gifts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
             {filtered.map((gift, i) => (
               <motion.div key={gift.id} custom={i} variants={fadeUp} initial="hidden" animate="visible"
                 className="card" style={{

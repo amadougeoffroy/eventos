@@ -1039,3 +1039,104 @@ select.input option {
     padding: 1rem !important;
   }
 }
+
+/* ── Groups page mobile ───────────────────────── */
+@media (max-width: 768px) {
+  .groups-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .groups-header > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .groups-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .groups-stats > div {
+    padding: 0.85rem 0.5rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .groups-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Venues page mobile ───────────────────────── */
+@media (max-width: 768px) {
+  .venues-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .venues-header > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .venues-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Gifts page mobile ────────────────────────── */
+@media (max-width: 768px) {
+  .gifts-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .gifts-header > button {
+    width: 100%;
+    justify-content: center;
+  }
+  .gifts-stats {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .gifts-stats > div {
+    padding: 0.85rem 0.5rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .gifts-filters {
+    flex-direction: column !important;
+  }
+  .gifts-filters > div {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .gifts-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .gifts-offerers-wrap table thead {
+    display: none;
+  }
+  .gifts-offerers-wrap table,
+  .gifts-offerers-wrap table tbody {
+    display: block;
+    width: 100%;
+  }
+  .gifts-offerers-wrap table tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+    align-items: center;
+  }
+  .gifts-offerers-wrap table td {
+    border: none !important;
+    padding: 0 !important;
+  }
+  .gifts-offerers-wrap table td:nth-child(1) { flex: 1; }
+  .gifts-offerers-wrap table td:nth-child(2) { width: 100%; order: 3; font-size: 0.72rem; }
+  .gifts-offerers-wrap table td:nth-child(3) { margin-left: auto; }
+}
+
+/* ── Settings page mobile ─────────────────────── */
+@media (max-width: 768px) {
+  .settings-sections > div > div {
+    padding: 1.25rem !important;
+  }
+  .settings-profile-grid {
+    grid-template-columns: 1fr !important;
+  }
+}

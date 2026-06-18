@@ -45,7 +45,7 @@ function SectionCard({ title, icon: Icon, children, badge }: {
 }
 
 export default function SettingsPage() {
-  const { currentUser } = useApp();
+  const { currentUser, updateProfile } = useApp();
 
   // Profile
   const [profileName, setProfileName] = useState(currentUser.name);
@@ -69,7 +69,8 @@ export default function SettingsPage() {
   const [dangerOpen, setDangerOpen] = useState(false);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
 
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
+    await updateProfile({ name: profileName, email: profileEmail, phone: profilePhone });
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2000);
   };
@@ -86,7 +87,7 @@ export default function SettingsPage() {
           <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Gérez votre compte et vos préférences</p>
         </motion.div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <div className="settings-sections" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
           {/* ── Profile ──────────────────── */}
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
@@ -111,7 +112,7 @@ export default function SettingsPage() {
                   <label className="label"><User size={12} style={{ display: 'inline', marginRight: 4 }} />Nom complet</label>
                   <input className="input" value={profileName} onChange={e => setProfileName(e.target.value)} />
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                <div className="settings-profile-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                   <div>
                     <label className="label"><Mail size={12} style={{ display: 'inline', marginRight: 4 }} />Email</label>
                     <input className="input" type="email" value={profileEmail} onChange={e => setProfileEmail(e.target.value)} />

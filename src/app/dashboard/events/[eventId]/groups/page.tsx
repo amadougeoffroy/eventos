@@ -74,7 +74,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="groups-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Groupes d&apos;invités</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
@@ -83,7 +83,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="groups-stats grid grid-cols-3 gap-4 mb-6">
           {[
             { label: 'Groupes', value: eventGroups.length, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))', icon: UsersRound },
             { label: 'Invités assignés', value: eventGuests.filter(g => eventGroups.some(gr => gr.name === g.group)).length, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))', icon: Users },
@@ -105,7 +105,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
         </div>
 
         {/* Groups grid */}
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="groups-grid grid md:grid-cols-2 gap-4">
           {eventGroups.map((group, i) => {
             const groupGuests = getGuestsInGroup(group.name);
             const confirmed = groupGuests.filter(g => g.rsvpStatus === 'confirmed').length;
