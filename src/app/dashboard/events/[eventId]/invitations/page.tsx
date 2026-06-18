@@ -162,12 +162,20 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
                   {guest.rsvpStatus === 'confirmed' ? 'Confirmé' : guest.rsvpStatus === 'declined' ? 'Décliné' : guest.rsvpStatus === 'maybe' ? 'Peut-être' : 'En attente'}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
-                  <button className="btn-ghost p-1.5" title="Copier le lien" onClick={() => copyPersonalLink(guest)}>
-                    {copiedId === guest.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
-                  </button>
-                  {guest.email && <button className="btn-ghost p-1.5" title="Envoyer par email"><Mail size={14} /></button>}
-                  {guest.phone && <button className="btn-ghost p-1.5" title="Envoyer par SMS"><Phone size={14} /></button>}
-                  {guest.phone && <button className="btn-ghost p-1.5" title="Envoyer par WhatsApp"><MessageSquare size={14} /></button>}
+                  {guest.source === 'rsvp' ? (
+                    <span style={{ fontSize: '0.6rem', padding: '0.15rem 0.45rem', borderRadius: 4, background: 'rgba(59,130,246,0.1)', color: '#60A5FA', fontWeight: 500 }}>
+                      📨 Auto-inscrit
+                    </span>
+                  ) : (
+                    <>
+                      <button className="btn-ghost p-1.5" title="Copier le lien" onClick={() => copyPersonalLink(guest)}>
+                        {copiedId === guest.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
+                      </button>
+                      {guest.email && <button className="btn-ghost p-1.5" title="Envoyer par email"><Mail size={14} /></button>}
+                      {guest.phone && <button className="btn-ghost p-1.5" title="Envoyer par SMS"><Phone size={14} /></button>}
+                      {guest.phone && <button className="btn-ghost p-1.5" title="Envoyer par WhatsApp"><MessageSquare size={14} /></button>}
+                    </>
+                  )}
                 </div>
               </div>
             ))}
