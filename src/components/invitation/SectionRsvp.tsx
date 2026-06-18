@@ -419,7 +419,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
                         padding: '0.75rem 1.5rem', borderRadius: 14, border: 'none', cursor: 'pointer',
                         background: 'linear-gradient(135deg, var(--t-accent, var(--gold)), var(--t-accent, var(--gold-light)))',
                         color: '#fff', fontWeight: 600, fontSize: '0.85rem',
-                        marginTop: '1rem', width: '100%', maxWidth: 320,
+                        marginTop: '1rem', width: '100%', maxWidth: 320, margin: '1rem auto 0',
                       }}
                     >
                       🍽️ Participer au sondage menu
