@@ -12,9 +12,11 @@ interface SectionRsvpProps {
   updateGuest: (id: string, updates: Partial<Guest>) => void;
   addGuest: (guest: Guest) => void;
   onRsvpComplete?: (guest: Guest) => void;
+  menuSurveyEnabled?: boolean;
+  onOpenSurvey?: () => void;
 }
 
-export default function SectionRsvp({ event, knownGuest, groups, updateGuest, addGuest, onRsvpComplete }: SectionRsvpProps) {
+export default function SectionRsvp({ event, knownGuest, groups, updateGuest, addGuest, onRsvpComplete, menuSurveyEnabled, onOpenSurvey }: SectionRsvpProps) {
   const [rsvpChoice, setRsvpChoice] = useState<'confirmed' | 'declined' | 'maybe' | null>(null);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -406,6 +408,23 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
                   <motion.div className="text-6xl mb-4" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.5 }}>🎉</motion.div>
                   <h3 className="font-display text-2xl font-bold mb-2">Merci {guestName.split(' ')[0]} !</h3>
                   <p style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>Votre présence est confirmée. Nous avons hâte de vous retrouver !</p>
+                  {menuSurveyEnabled && onOpenSurvey && (
+                    <motion.button
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.5 }}
+                      onClick={onOpenSurvey}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                        padding: '0.75rem 1.5rem', borderRadius: 14, border: 'none', cursor: 'pointer',
+                        background: 'linear-gradient(135deg, var(--t-accent, var(--gold)), var(--t-accent, var(--gold-light)))',
+                        color: '#fff', fontWeight: 600, fontSize: '0.85rem',
+                        marginTop: '1rem', width: '100%', maxWidth: 320,
+                      }}
+                    >
+                      🍽️ Participer au sondage menu
+                    </motion.button>
+                  )}
                 </>
               ) : rsvpChoice === 'declined' ? (
                 <>

@@ -14,7 +14,7 @@ const fadeUp = {
 
 export default function MenuPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, menuCategories, menuItems, addMenuCategory, updateMenuCategory, removeMenuCategory, addMenuItem, updateMenuItem, removeMenuItem, eventsLoading } = useApp();
+  const { events, menuCategories, menuItems, addMenuCategory, updateMenuCategory, removeMenuCategory, addMenuItem, updateMenuItem, removeMenuItem, updateEvent, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
 
   const evtCategories = useMemo(() => menuCategories.filter(c => c.eventId === eventId).sort((a, b) => a.order - b.order), [menuCategories, eventId]);
@@ -135,6 +135,46 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
             }}
           >
             <BarChart3 size={14} /> Sondage
+          </button>
+        </div>
+
+        {/* Survey toggle */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0.75rem 1.25rem', marginBottom: '1.25rem',
+          background: 'var(--bg-card)', border: '1px solid var(--border-light)',
+          borderRadius: 14,
+        }}>
+          <div>
+            <div className="font-medium" style={{ fontSize: '0.9rem' }}>Sondage menu</div>
+            <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              {event.meta?.menuSurveyEnabled
+                ? 'Les invités peuvent voter après confirmation'
+                : 'Désactivé — les invités ne verront pas le sondage'}
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const currentMeta = event.meta || {};
+              updateEvent(eventId, {
+                meta: { ...currentMeta, menuSurveyEnabled: !currentMeta.menuSurveyEnabled },
+              });
+            }}
+            style={{
+              width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+              background: event.meta?.menuSurveyEnabled
+                ? 'linear-gradient(135deg, var(--gold), var(--gold-light))'
+                : 'var(--glass-border)',
+              position: 'relative', transition: 'background 0.3s',
+              flexShrink: 0,
+            }}
+          >
+            <div style={{
+              width: 20, height: 20, borderRadius: '50%', background: '#fff',
+              position: 'absolute', top: 3,
+              left: event.meta?.menuSurveyEnabled ? 25 : 3,
+              transition: 'left 0.3s', boxShadow: '0 1px 4px rgba(0,0,0,0.15)',
+            }} />
           </button>
         </div>
 

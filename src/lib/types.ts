@@ -25,6 +25,8 @@ export interface EventMeta {
   godMotherName?: string;
   // Generic
   hostName?: string;
+  // Menu survey
+  menuSurveyEnabled?: boolean;
 }
 
 export interface Event {

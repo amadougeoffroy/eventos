@@ -22,6 +22,8 @@ import SectionOurStory from '@/components/invitation/SectionOurStory';
 import SectionGallery from '@/components/invitation/SectionGallery';
 import SectionGiftList from '@/components/invitation/SectionGiftList';
 import BackgroundMusic, { startBackgroundMusic } from '@/components/invitation/BackgroundMusic';
+import MenuSurveyModal from '@/components/invitation/MenuSurveyModal';
+import { MenuCategory, MenuItem } from '@/lib/types';
 
 export default function GuestLandingPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -105,6 +107,9 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   // ── Load gifts for public view ──
   const [publicGifts, setPublicGifts] = useState<GiftItem[]>([]);
+  const [publicMenuCategories, setPublicMenuCategories] = useState<MenuCategory[]>([]);
+  const [publicMenuItems, setPublicMenuItems] = useState<MenuItem[]>([]);
+  const [showMenuSurvey, setShowMenuSurvey] = useState(false);
   useEffect(() => {
     if (!event) return;
     const loadPublicGifts = async () => {
@@ -133,6 +138,67 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     };
     loadPublicGifts();
   }, [event?.id]);
+
+  // Load menu categories & items for survey
+  useEffect(() => {
+    if (!event || !event.meta?.menuSurveyEnabled) return;
+    const loadMenu = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: cats } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .eq('event_id', event.id)
+        .order('sort_order', { ascending: true });
+      if (cats) {
+        setPublicMenuCategories(cats.map((r: any) => ({
+          id: r.id, eventId: r.event_id, name: r.name || '',
+          icon: r.icon || '🍽️', order: r.sort_order ?? 0,
+        })));
+      }
+      const { data: items } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('event_id', event.id)
+        .order('created_at', { ascending: true });
+      if (items) {
+        setPublicMenuItems(items.map((r: any) => ({
+          id: r.id, eventId: r.event_id, categoryId: r.category_id,
+          name: r.name || '', description: r.description || '',
+          tags: r.tags || [], status: r.status === 'inactive' ? 'draft' as const : 'active' as const,
+          votes: r.votes ?? 0,
+        })));
+      }
+    };
+    loadMenu();
+  }, [event?.id, event?.meta?.menuSurveyEnabled]);
+
+  const handleSurveySubmit = async (selectedItemIds: string[]) => {
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+    // Increment votes for each selected item
+    for (const itemId of selectedItemIds) {
+      try {
+        const { error } = await supabase.rpc('increment_menu_vote', { item_id: itemId });
+        if (error) {
+          // Fallback: manual increment
+          const item = publicMenuItems.find(i => i.id === itemId);
+          if (item) {
+            await supabase.from('menu_items').update({ votes: (item.votes || 0) + 1 }).eq('id', itemId);
+          }
+        }
+      } catch {
+        const item = publicMenuItems.find(i => i.id === itemId);
+        if (item) {
+          await supabase.from('menu_items').update({ votes: (item.votes || 0) + 1 }).eq('id', itemId);
+        }
+      }
+    }
+    // Save voted state in localStorage
+    if (event) {
+      try { localStorage.setItem(`eventos_survey_${event.id}`, 'true'); } catch {}
+    }
+  };
 
   const handlePublicReserve = async (giftId: string, guestFullName: string) => {
     const { createClient } = await import('@/lib/supabase/client');
@@ -319,6 +385,8 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         groups={allGroups}
         updateGuest={updateGuest}
         addGuest={addGuest}
+        menuSurveyEnabled={!!event.meta?.menuSurveyEnabled && publicMenuCategories.length > 0}
+        onOpenSurvey={() => setShowMenuSurvey(true)}
         onRsvpComplete={(guest) => {
           setKnownGuest(guest);
           try { localStorage.setItem(`eventos_rsvp_${event.id}`, JSON.stringify({ guestId: guest.id })); } catch {}
@@ -476,6 +544,20 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           Propulsé par <span className="gradient-gold font-semibold">EventOS</span>
         </p>
       </footer>
+
+      {/* Menu Survey Modal */}
+      <AnimatePresence>
+        {showMenuSurvey && event && (
+          <MenuSurveyModal
+            event={event}
+            categories={publicMenuCategories}
+            items={publicMenuItems}
+            guestName={knownGuest ? `${knownGuest.firstName} ${knownGuest.lastName}` : ''}
+            onClose={() => setShowMenuSurvey(false)}
+            onSubmit={handleSurveySubmit}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Background music — Premium only */}
       {event.backgroundMusicUrl && (
