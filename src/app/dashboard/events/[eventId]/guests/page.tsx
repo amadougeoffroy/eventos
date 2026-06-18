@@ -248,7 +248,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
       <Sidebar eventId={eventId} />
       <main className="main-content">
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div className="guests-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="font-display text-2xl font-bold" style={{ marginBottom: '0.15rem' }}>Invités</h1>
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
@@ -260,7 +260,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div className="guests-stats grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
           {statCards.map((s, i) => (
             <motion.div
               key={s.label} initial="hidden" animate="visible" variants={fadeUp} custom={i}
@@ -293,7 +293,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           initial="hidden" animate="visible" variants={fadeUp} custom={6}
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1rem', padding: '1rem 1.25rem', marginBottom: '1.25rem' }}
         >
-          <div className="flex flex-wrap gap-3 items-center">
+          <div className="guests-filters flex flex-wrap gap-3 items-center">
             <div className="relative flex-1 min-w-[200px]">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
               <input className="input pl-10" placeholder="Rechercher un invité..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
@@ -320,7 +320,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           initial="hidden" animate="visible" variants={fadeUp} custom={7}
           style={{ background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem', overflow: 'hidden' }}
         >
-          <div style={{ overflowX: 'auto' }}>
+          <div className="guests-table-wrap" style={{ overflowX: 'auto' }}>
             <table className="data-table">
               <thead>
                 <tr>
@@ -449,7 +449,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
 
           {/* Pagination Footer */}
           {sorted.length > 0 && (
-            <div style={{
+            <div className="guests-pagination" style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
               padding: '0.85rem 1.25rem',
               borderTop: '1px solid var(--border-light)',

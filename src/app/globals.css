@@ -784,3 +784,100 @@ select.input option {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ── Guests page mobile ───────────────────────── */
+@media (max-width: 768px) {
+  .guests-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .guests-header > div:last-child {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .guests-header > div:last-child > button {
+    flex: 1;
+    justify-content: center;
+  }
+  .guests-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  .guests-stats > div {
+    padding: 0.85rem !important;
+    border-radius: 0.75rem !important;
+  }
+  .guests-filters {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  .guests-filters > div {
+    width: 100% !important;
+    min-width: unset !important;
+  }
+  .guests-filters select.input {
+    width: 100% !important;
+  }
+
+  /* ── Mobile card layout for table ── */
+  .guests-table-wrap table thead {
+    display: none;
+  }
+  .guests-table-wrap table,
+  .guests-table-wrap table tbody {
+    display: block;
+    width: 100%;
+  }
+  .guests-table-wrap table tr {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.85rem;
+    border-bottom: 1px solid var(--border-light);
+    align-items: center;
+  }
+  .guests-table-wrap table tr:hover td {
+    background: transparent !important;
+  }
+  .guests-table-wrap table td {
+    border-bottom: none !important;
+    padding: 0 !important;
+  }
+  /* Name column — full width */
+  .guests-table-wrap table td:nth-child(1) {
+    width: 100%;
+    margin-bottom: 0.15rem;
+  }
+  /* Group */
+  .guests-table-wrap table td:nth-child(2) {
+    order: 2;
+  }
+  /* Status badge */
+  .guests-table-wrap table td:nth-child(3) {
+    order: 1;
+  }
+  /* Contact */
+  .guests-table-wrap table td:nth-child(4) {
+    width: 100%;
+    order: 3;
+  }
+  /* Dietary */
+  .guests-table-wrap table td:nth-child(5) {
+    order: 4;
+  }
+  /* Actions */
+  .guests-table-wrap table td:nth-child(6) {
+    margin-left: auto;
+    order: 5;
+  }
+
+  .guests-pagination {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+  .guests-pagination > * {
+    justify-content: center;
+  }
+}
