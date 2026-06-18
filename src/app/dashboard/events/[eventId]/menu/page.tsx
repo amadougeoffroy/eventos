@@ -3,7 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import EventLoader from '@/components/EventLoader';
 import { useApp } from '@/context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { use, useState, useMemo } from 'react';
+import { use, useState, useMemo, useCallback } from 'react';
 import { Plus, X, UtensilsCrossed, BarChart3, ChevronDown, Edit3, Trash2 } from 'lucide-react';
 import { ProgramItem, MenuCategory, MenuItem } from '@/lib/types';
 
@@ -14,7 +14,7 @@ const fadeUp = {
 
 export default function MenuPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, menuCategories, menuItems, addMenuCategory, addMenuItem, updateMenuItem, eventsLoading } = useApp();
+  const { events, menuCategories, menuItems, addMenuCategory, updateMenuCategory, removeMenuCategory, addMenuItem, updateMenuItem, removeMenuItem, eventsLoading } = useApp();
   const event = events.find(e => e.id === eventId);
 
   const evtCategories = useMemo(() => menuCategories.filter(c => c.eventId === eventId).sort((a, b) => a.order - b.order), [menuCategories, eventId]);
@@ -27,10 +27,14 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
   const [addingToCat, setAddingToCat] = useState<string>('');
   const [newCat, setNewCat] = useState({ name: '', icon: '🍽️' });
   const [newItem, setNewItem] = useState({ name: '', description: '', tags: '' });
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [editItem, setEditItem] = useState({ name: '', description: '', tags: '' });
+  const [confirmDeleteCat, setConfirmDeleteCat] = useState<string | null>(null);
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState<string | null>(null);
 
   const handleAddCategory = () => {
     if (!newCat.name) return;
-    addMenuCategory({ id: `cat-${Date.now()}`, eventId, name: newCat.name, icon: newCat.icon, order: evtCategories.length + 1 });
+    addMenuCategory({ id: crypto.randomUUID(), eventId, name: newCat.name, icon: newCat.icon, order: evtCategories.length + 1 });
     setNewCat({ name: '', icon: '🍽️' });
     setShowAddCat(false);
   };
@@ -38,13 +42,33 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
   const handleAddItem = () => {
     if (!newItem.name) return;
     addMenuItem({
-      id: `mi-${Date.now()}`, eventId, categoryId: addingToCat,
+      id: crypto.randomUUID(), eventId, categoryId: addingToCat,
       name: newItem.name, description: newItem.description,
       tags: newItem.tags ? newItem.tags.split(',').map(t => t.trim()) : [],
       status: 'active', votes: 0,
     });
     setNewItem({ name: '', description: '', tags: '' });
     setShowAddItem(false);
+  };
+
+  const handleEditItem = () => {
+    if (!editingItem || !editItem.name) return;
+    updateMenuItem(editingItem.id, {
+      name: editItem.name,
+      description: editItem.description,
+      tags: editItem.tags ? editItem.tags.split(',').map(t => t.trim()) : [],
+    });
+    setEditingItem(null);
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    removeMenuCategory(catId);
+    setConfirmDeleteCat(null);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    removeMenuItem(itemId);
+    setConfirmDeleteItem(null);
   };
 
   const totalVotes = evtItems.reduce((sum, i) => sum + (i.votes || 0), 0);
@@ -148,7 +172,10 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                         {items.length} {items.length > 1 ? 'items' : 'item'}
                       </span>
                     </div>
-                    <ChevronDown size={18} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteCat(cat.id); }} className="btn-ghost p-1.5" style={{ color: '#DC3545' }}><Trash2 size={14} /></button>
+                      <ChevronDown size={18} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+                    </div>
                   </button>
 
                   <AnimatePresence>
@@ -189,7 +216,8 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                                       background: 'rgba(200,169,110,0.08)', color: 'var(--gold-light)', fontWeight: 600,
                                     }}>{item.votes} votes</span>
                                   )}
-                                  <button className="btn-ghost p-1.5"><Edit3 size={14} /></button>
+                                  <button onClick={() => { setEditingItem(item); setEditItem({ name: item.name, description: item.description || '', tags: item.tags.join(', ') }); }} className="btn-ghost p-1.5"><Edit3 size={14} /></button>
+                                  <button onClick={() => setConfirmDeleteItem(item.id)} className="btn-ghost p-1.5" style={{ color: '#DC3545' }}><Trash2 size={14} /></button>
                                 </div>
                               </div>
                             ))}
@@ -309,6 +337,71 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                 <div className="flex gap-3 mt-6">
                   <button className="btn-secondary flex-1" onClick={() => setShowAddItem(false)}>Annuler</button>
                   <button className="btn-primary flex-1" onClick={handleAddItem}>Ajouter</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Item Modal */}
+        <AnimatePresence>
+          {editingItem && (
+            <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setEditingItem(null)}>
+              <motion.div className="modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-display text-xl font-semibold">Modifier le plat</h2>
+                  <button className="btn-ghost p-1.5" onClick={() => setEditingItem(null)}><X size={18} /></button>
+                </div>
+                <div className="space-y-4">
+                  <div><label className="label">Nom du plat *</label><input className="input" value={editItem.name} onChange={e => setEditItem(p => ({ ...p, name: e.target.value }))} /></div>
+                  <div><label className="label">Description</label><textarea className="input" rows={3} value={editItem.description} onChange={e => setEditItem(p => ({ ...p, description: e.target.value }))} /></div>
+                  <div><label className="label">Tags (séparés par des virgules)</label><input className="input" value={editItem.tags} onChange={e => setEditItem(p => ({ ...p, tags: e.target.value }))} /></div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button className="btn-secondary flex-1" onClick={() => setEditingItem(null)}>Annuler</button>
+                  <button className="btn-primary flex-1" onClick={handleEditItem}>Enregistrer</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Category Confirmation */}
+        <AnimatePresence>
+          {confirmDeleteCat && (
+            <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setConfirmDeleteCat(null)}>
+              <motion.div className="modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(220,53,69,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                    <Trash2 size={24} style={{ color: '#DC3545' }} />
+                  </div>
+                  <h3 className="font-semibold" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Supprimer cette catégorie ?</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Tous les plats de cette catégorie seront aussi supprimés. Cette action est irréversible.</p>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button className="btn-secondary flex-1" onClick={() => setConfirmDeleteCat(null)}>Annuler</button>
+                  <button className="flex-1" onClick={() => handleDeleteCategory(confirmDeleteCat)} style={{ padding: '0.65rem 1.25rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', background: 'linear-gradient(135deg, #DC3545, #C82333)', color: '#fff' }}>Supprimer</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Item Confirmation */}
+        <AnimatePresence>
+          {confirmDeleteItem && (
+            <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setConfirmDeleteItem(null)}>
+              <motion.div className="modal" initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(220,53,69,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+                    <Trash2 size={24} style={{ color: '#DC3545' }} />
+                  </div>
+                  <h3 className="font-semibold" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Supprimer ce plat ?</h3>
+                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Cette action est irréversible.</p>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <button className="btn-secondary flex-1" onClick={() => setConfirmDeleteItem(null)}>Annuler</button>
+                  <button className="flex-1" onClick={() => handleDeleteItem(confirmDeleteItem)} style={{ padding: '0.65rem 1.25rem', borderRadius: 12, border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', background: 'linear-gradient(135deg, #DC3545, #C82333)', color: '#fff' }}>Supprimer</button>
                 </div>
               </motion.div>
             </motion.div>

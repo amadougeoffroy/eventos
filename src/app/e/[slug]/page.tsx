@@ -266,6 +266,16 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     return event.coverPhoto ? [event.coverPhoto, ...defaults.slice(1)] : defaults;
   }, [event, variant]);
 
+  // ── Intro splash state (must be before early returns) ──
+  const [showIntro, setShowIntro] = useState(true);
+
+  const handleEnter = useCallback(() => {
+    if (event?.backgroundMusicUrl) {
+      startBackgroundMusic(event.backgroundMusicUrl);
+    }
+    setShowIntro(false);
+  }, [event]);
+
   // ── Loading state ──
   if (publicLoading) {
     return (
@@ -338,16 +348,6 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   // Use template sections order, or event custom order, or fallback
   const sections = event.sectionsOrder || template.sections;
 
-  // ── Intro splash state ──
-  const [showIntro, setShowIntro] = useState(true);
-
-  const handleEnter = useCallback(() => {
-    // Start music from user gesture (guaranteed by browser)
-    if (event?.backgroundMusicUrl) {
-      startBackgroundMusic(event.backgroundMusicUrl);
-    }
-    setShowIntro(false);
-  }, [event]);
 
   // Intro splash screen
   if (showIntro && event) {

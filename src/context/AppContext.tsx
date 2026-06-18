@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue, GiftItem } from '@/lib/types';
 import {
-  mockMenuCategories, mockMenuItems, mockOrders
+  mockOrders
 } from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
 import { dbEventToApp, appEventToDb } from '@/lib/supabase/mappers';
@@ -38,7 +38,10 @@ interface AppActions {
   removeTable: (id: string) => void;
   addMenuItem: (item: MenuItem) => void;
   updateMenuItem: (id: string, updates: Partial<MenuItem>) => void;
+  removeMenuItem: (id: string) => void;
   addMenuCategory: (cat: MenuCategory) => void;
+  updateMenuCategory: (id: string, updates: Partial<MenuCategory>) => void;
+  removeMenuCategory: (id: string) => void;
   updateOrder: (id: string, updates: Partial<Order>) => void;
   addOrder: (order: Order) => void;
   addVenue: (venue: Venue) => void;
@@ -246,8 +249,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ═══════════════════════════════════════════════════════════
   const [guests, setGuests] = useState<Guest[]>([]);
   const [gifts, setGifts] = useState<GiftItem[]>([]);
-  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>(mockMenuCategories);
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(mockMenuItems);
+  const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [orders, setOrders] = useState<Order[]>(mockOrders);
   const [venues, setVenues] = useState<Venue[]>([]);
 
@@ -292,6 +295,60 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     loadGuests();
   }, [userId]);
+
+  // Load menu categories & items from Supabase
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadMenu = async () => {
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('user_id', userId);
+
+      if (!userEvents || userEvents.length === 0) return;
+      const eventIds = userEvents.map(e => e.id);
+
+      // Load categories
+      const { data: catRows, error: catErr } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('sort_order', { ascending: true });
+
+      if (!catErr && catRows) {
+        setMenuCategories(catRows.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          name: row.name || '',
+          icon: row.icon || '🍽️',
+          order: row.sort_order ?? 0,
+        })));
+      }
+
+      // Load items
+      const { data: itemRows, error: itemErr } = await supabase
+        .from('menu_items')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: true });
+
+      if (!itemErr && itemRows) {
+        setMenuItems(itemRows.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          categoryId: row.category_id,
+          name: row.name || '',
+          description: row.description || '',
+          tags: row.tags || [],
+          status: row.status === 'inactive' ? 'draft' : 'active',
+          votes: row.votes ?? 0,
+        })));
+      }
+    };
+
+    loadMenu();
+  }, [userId, supabase]);
 
   // Load gifts from Supabase
   useEffect(() => {
@@ -786,12 +843,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) console.error('removeTable error:', JSON.stringify(error));
   }, [supabase]);
 
-  // ─── Menu CRUD ───
-  const addMenuItem = (item: MenuItem) => setMenuItems(prev => [...prev, item]);
-  const updateMenuItem = (id: string, updates: Partial<MenuItem>) =>
-    setMenuItems(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
-  const addMenuCategory = (cat: MenuCategory) =>
+  // ─── Menu CRUD (Supabase) ───
+  const addMenuCategory = useCallback(async (cat: MenuCategory) => {
     setMenuCategories(prev => [...prev, cat]);
+    const { error } = await supabase.from('menu_categories').insert({
+      id: cat.id,
+      event_id: cat.eventId,
+      name: cat.name,
+      icon: cat.icon,
+      sort_order: cat.order,
+    });
+    if (error) console.error('addMenuCategory error:', error);
+  }, [supabase]);
+
+  const updateMenuCategory = useCallback(async (id: string, updates: Partial<MenuCategory>) => {
+    setMenuCategories(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.icon !== undefined) payload.icon = updates.icon;
+    if (updates.order !== undefined) payload.sort_order = updates.order;
+    const { error } = await supabase.from('menu_categories').update(payload).eq('id', id);
+    if (error) console.error('updateMenuCategory error:', error);
+  }, [supabase]);
+
+  const removeMenuCategory = useCallback(async (id: string) => {
+    setMenuCategories(prev => prev.filter(c => c.id !== id));
+    setMenuItems(prev => prev.filter(i => i.categoryId !== id));
+    const { error } = await supabase.from('menu_categories').delete().eq('id', id);
+    if (error) console.error('removeMenuCategory error:', error);
+  }, [supabase]);
+
+  const addMenuItem = useCallback(async (item: MenuItem) => {
+    setMenuItems(prev => [...prev, item]);
+    const { error } = await supabase.from('menu_items').insert({
+      id: item.id,
+      event_id: item.eventId,
+      category_id: item.categoryId,
+      name: item.name,
+      description: item.description || '',
+      tags: item.tags || [],
+      status: item.status === 'draft' ? 'inactive' : 'active',
+      votes: item.votes ?? 0,
+    });
+    if (error) console.error('addMenuItem error:', error);
+  }, [supabase]);
+
+  const updateMenuItem = useCallback(async (id: string, updates: Partial<MenuItem>) => {
+    setMenuItems(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    const payload: Record<string, unknown> = {};
+    if (updates.name !== undefined) payload.name = updates.name;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.tags !== undefined) payload.tags = updates.tags;
+    if (updates.status !== undefined) payload.status = updates.status === 'draft' ? 'inactive' : 'active';
+    if (updates.votes !== undefined) payload.votes = updates.votes;
+    if (updates.categoryId !== undefined) payload.category_id = updates.categoryId;
+    const { error } = await supabase.from('menu_items').update(payload).eq('id', id);
+    if (error) console.error('updateMenuItem error:', error);
+  }, [supabase]);
+
+  const removeMenuItem = useCallback(async (id: string) => {
+    setMenuItems(prev => prev.filter(m => m.id !== id));
+    const { error } = await supabase.from('menu_items').delete().eq('id', id);
+    if (error) console.error('removeMenuItem error:', error);
+  }, [supabase]);
 
   // ─── Orders CRUD ───
   const addOrder = (order: Order) => setOrders(prev => [...prev, order]);
@@ -862,7 +976,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       currentUser, authLoading, eventsLoading,
       addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
       addGuestGroup, updateGuestGroup, removeGuestGroup,
-      addTable, updateTable, removeTable, addMenuItem, updateMenuItem, addMenuCategory,
+      addTable, updateTable, removeTable, addMenuItem, updateMenuItem, removeMenuItem, addMenuCategory, updateMenuCategory, removeMenuCategory,
       addOrder, updateOrder, addVenue, updateVenue, removeVenue,
       addGift, updateGift, removeGift,
     }}>
