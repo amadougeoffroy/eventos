@@ -24,7 +24,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
   const evtTables = useMemo(() => tables.filter(t => t.eventId === eventId), [tables, eventId]);
   const evtGifts = useMemo(() => gifts.filter(g => g.eventId === eventId), [gifts, eventId]);
 
-  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
+
 
   // ─── RSVP Stats ───
   const total = eventGuests.length;
@@ -141,6 +141,8 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
     { label: 'En attente', count: eventGuests.filter(g => g.rsvpStatus === 'pending').reduce((s, g) => s + g.companions, 0), color: '#DC8C28' },
     { label: 'Peut-être', count: eventGuests.filter(g => g.rsvpStatus === 'maybe').reduce((s, g) => s + g.companions, 0), color: '#A78BFA' },
   ].filter(c => c.count > 0), [eventGuests, confirmedCompanions]);
+
+  if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>Événement non trouvé</p></main></div>;
 
   /* Section wrapper */
   const SectionCard = ({ children, title, icon: IconComp, iconColor, delay }: { children: React.ReactNode; title: string; icon: React.ElementType; iconColor: string; delay: number }) => (
