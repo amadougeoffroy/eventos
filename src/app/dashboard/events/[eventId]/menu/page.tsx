@@ -151,7 +151,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                     borderRadius: '1.25rem', overflow: 'hidden',
                   }}
                 >
-                  <button
+                  <div
                     onClick={() => setOpenCat(isOpen ? null : cat.id)}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -176,7 +176,7 @@ export default function MenuPage({ params }: { params: Promise<{ eventId: string
                       <button onClick={(e) => { e.stopPropagation(); setConfirmDeleteCat(cat.id); }} className="btn-ghost p-1.5" style={{ color: '#DC3545' }}><Trash2 size={14} /></button>
                       <ChevronDown size={18} style={{ color: 'var(--text-muted)', transform: isOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
                     </div>
-                  </button>
+                  </div>
 
                   <AnimatePresence>
                     {isOpen && (
