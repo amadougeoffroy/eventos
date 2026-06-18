@@ -2,7 +2,7 @@
 import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/ConfirmModal';
 import {
   User, Mail, Phone, Shield, Bell, Palette,
@@ -50,14 +50,40 @@ export default function SettingsPage() {
   // Profile
   const [profileName, setProfileName] = useState(currentUser.name);
   const [profileEmail, setProfileEmail] = useState(currentUser.email);
-  const [profilePhone, setProfilePhone] = useState('+225 07 00 00 00');
+  const [profilePhone, setProfilePhone] = useState(currentUser.phone || '');
   const [profileSaved, setProfileSaved] = useState(false);
 
-  // Notifications
-  const [notifEmail, setNotifEmail] = useState(true);
-  const [notifSms, setNotifSms] = useState(false);
-  const [notifRsvp, setNotifRsvp] = useState(true);
-  const [notifReminder, setNotifReminder] = useState(true);
+  // Sync local state when currentUser loads from Supabase
+  useEffect(() => {
+    if (currentUser.id) {
+      setProfileName(currentUser.name);
+      setProfileEmail(currentUser.email);
+      setProfilePhone(currentUser.phone || '');
+    }
+  }, [currentUser.id, currentUser.name, currentUser.email, currentUser.phone]);
+
+  // Notifications — synced from BD
+  const [notifEmail, setNotifEmail] = useState(currentUser.notifEmail ?? true);
+  const [notifSms, setNotifSms] = useState(currentUser.notifSms ?? false);
+  const [notifRsvp, setNotifRsvp] = useState(currentUser.notifRsvp ?? true);
+  const [notifReminder, setNotifReminder] = useState(currentUser.notifReminder ?? true);
+
+  // Sync notification state from BD
+  useEffect(() => {
+    if (currentUser.id) {
+      setNotifEmail(currentUser.notifEmail ?? true);
+      setNotifSms(currentUser.notifSms ?? false);
+      setNotifRsvp(currentUser.notifRsvp ?? true);
+      setNotifReminder(currentUser.notifReminder ?? true);
+    }
+  }, [currentUser.id, currentUser.notifEmail, currentUser.notifSms, currentUser.notifRsvp, currentUser.notifReminder]);
+
+  // Toggle notification and persist to BD
+  const toggleNotif = (key: 'notifEmail' | 'notifSms' | 'notifRsvp' | 'notifReminder', setter: (v: boolean) => void, current: boolean) => {
+    const newVal = !current;
+    setter(newVal);
+    updateProfile({ [key]: newVal });
+  };
 
   // Appearance
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
@@ -143,10 +169,10 @@ export default function SettingsPage() {
             <SectionCard title="Notifications" icon={Bell}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {[
-                  { label: 'Notifications par email', desc: 'Recevoir les mises à jour par email', value: notifEmail, set: setNotifEmail },
-                  { label: 'Notifications par SMS', desc: 'Recevoir les alertes par SMS', value: notifSms, set: setNotifSms },
-                  { label: 'Alertes RSVP', desc: 'Être notifié à chaque nouvelle réponse', value: notifRsvp, set: setNotifRsvp },
-                  { label: 'Rappels événement', desc: 'Rappels 7j, 3j et 1j avant l\'événement', value: notifReminder, set: setNotifReminder },
+                  { label: 'Notifications par email', desc: 'Recevoir les mises à jour par email', value: notifEmail, key: 'notifEmail' as const, set: setNotifEmail },
+                  { label: 'Notifications par SMS', desc: 'Recevoir les alertes par SMS', value: notifSms, key: 'notifSms' as const, set: setNotifSms },
+                  { label: 'Alertes RSVP', desc: 'Être notifié à chaque nouvelle réponse', value: notifRsvp, key: 'notifRsvp' as const, set: setNotifRsvp },
+                  { label: 'Rappels événement', desc: 'Rappels 7j, 3j et 1j avant l\'événement', value: notifReminder, key: 'notifReminder' as const, set: setNotifReminder },
                 ].map(n => (
                   <div key={n.label} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -158,7 +184,7 @@ export default function SettingsPage() {
                       <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{n.desc}</div>
                     </div>
                     <button
-                      onClick={() => n.set(!n.value)}
+                      onClick={() => toggleNotif(n.key, n.set, n.value)}
                       style={{
                         width: 44, height: 24, borderRadius: 12, border: 'none', cursor: 'pointer',
                         background: n.value ? 'linear-gradient(135deg, var(--gold), var(--gold-light))' : 'var(--border-light)',

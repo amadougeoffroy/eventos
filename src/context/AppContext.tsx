@@ -18,7 +18,11 @@ interface AppState {
   menuItems: MenuItem[];
   venues: Venue[];
   orders: Order[];
-  currentUser: { id: string; name: string; email: string; avatar?: string };
+  currentUser: {
+    id: string; name: string; email: string; avatar?: string;
+    phone?: string;
+    notifEmail?: boolean; notifSms?: boolean; notifRsvp?: boolean; notifReminder?: boolean;
+  };
   authLoading: boolean;
   eventsLoading: boolean;
 }
@@ -50,7 +54,10 @@ interface AppActions {
   addGift: (gift: GiftItem) => void;
   updateGift: (id: string, updates: Partial<GiftItem>) => void;
   removeGift: (id: string) => void;
-  updateProfile: (updates: { name?: string; email?: string; phone?: string }) => Promise<void>;
+  updateProfile: (updates: {
+    name?: string; email?: string; phone?: string;
+    notifEmail?: boolean; notifSms?: boolean; notifRsvp?: boolean; notifReminder?: boolean;
+  }) => Promise<void>;
 }
 
 const AppContext = createContext<(AppState & AppActions) | undefined>(undefined);
@@ -71,17 +78,35 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setUserId(user.id);
-          const { data: profile } = await supabase
+          // Fetch profile — try with notif columns, fallback without
+          let profile: any = null;
+          const { data: p1, error: profileErr } = await supabase
             .from('profiles')
-            .select('full_name, email, avatar_url')
+            .select('full_name, email, avatar_url, phone, notif_email, notif_sms, notif_rsvp, notif_reminder')
             .eq('id', user.id)
             .single();
+          if (!profileErr) {
+            profile = p1;
+          } else {
+            // Columns might not exist yet — fetch basic profile
+            const { data: p2 } = await supabase
+              .from('profiles')
+              .select('full_name, email, avatar_url, phone')
+              .eq('id', user.id)
+              .single();
+            profile = p2;
+          }
 
           setCurrentUser({
             id: user.id,
             name: profile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '',
             email: profile?.email || user.email || '',
             avatar: profile?.avatar_url || undefined,
+            phone: profile?.phone || '',
+            notifEmail: profile?.notif_email ?? true,
+            notifSms: profile?.notif_sms ?? false,
+            notifRsvp: profile?.notif_rsvp ?? true,
+            notifReminder: profile?.notif_reminder ?? true,
           });
         }
       } catch {} finally {
@@ -976,12 +1001,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ═══════════════════════════════════════════════════════════
   // PROFILE — Supabase powered
   // ═══════════════════════════════════════════════════════════
-  const updateProfile = useCallback(async (updates: { name?: string; email?: string; phone?: string }) => {
+  const updateProfile = useCallback(async (updates: {
+    name?: string; email?: string; phone?: string;
+    notifEmail?: boolean; notifSms?: boolean; notifRsvp?: boolean; notifReminder?: boolean;
+  }) => {
     if (!userId) return;
     const payload: Record<string, any> = {};
     if (updates.name !== undefined) payload.full_name = updates.name;
     if (updates.email !== undefined) payload.email = updates.email;
     if (updates.phone !== undefined) payload.phone = updates.phone;
+    if (updates.notifEmail !== undefined) payload.notif_email = updates.notifEmail;
+    if (updates.notifSms !== undefined) payload.notif_sms = updates.notifSms;
+    if (updates.notifRsvp !== undefined) payload.notif_rsvp = updates.notifRsvp;
+    if (updates.notifReminder !== undefined) payload.notif_reminder = updates.notifReminder;
 
     const { error } = await supabase.from('profiles').update(payload).eq('id', userId);
     if (error) {
@@ -992,6 +1024,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...prev,
       ...(updates.name !== undefined && { name: updates.name }),
       ...(updates.email !== undefined && { email: updates.email }),
+      ...(updates.phone !== undefined && { phone: updates.phone }),
+      ...(updates.notifEmail !== undefined && { notifEmail: updates.notifEmail }),
+      ...(updates.notifSms !== undefined && { notifSms: updates.notifSms }),
+      ...(updates.notifRsvp !== undefined && { notifRsvp: updates.notifRsvp }),
+      ...(updates.notifReminder !== undefined && { notifReminder: updates.notifReminder }),
     }));
   }, [supabase, userId]);
 
