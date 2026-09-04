@@ -187,16 +187,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!userId) return;
 
     // Optimistic update
-    setEvents(prev => [event, ...prev]);
+    setEvents(prev => [event, ...prev.filter(e => e.id !== event.id)]);
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       ...appEventToDb({ ...event, userId }),
       slug: event.slug,
     };
+    if (event.id) {
+      payload.id = event.id;
+    }
 
     const { data, error } = await supabase
       .from('events')
-      .insert(payload)
+      .upsert(payload)
       .select()
       .single();
 
@@ -218,23 +221,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         const { data: savedVenues, error: venueError } = await supabase
           .from('venues')
-          .insert(venueRows)
+          .upsert(venueRows)
           .select();
 
         if (!venueError && savedVenues) {
-          setVenues(prev => [
-            ...prev,
-            ...savedVenues.map((v: any) => ({
-              id: v.id,
-              eventId: v.event_id,
-              name: v.name,
-              address: v.address || '',
-              lat: v.lat,
-              lng: v.lng,
-              emoji: v.emoji || '📍',
-              type: v.type || '',
-            }))
-          ]);
+          setVenues(prev => {
+            const list = [...prev];
+            savedVenues.forEach((sv: any) => {
+              const idx = list.findIndex(v => v.id === sv.id);
+              const mapped: Venue = {
+                id: sv.id,
+                eventId: sv.event_id,
+                name: sv.name,
+                address: sv.address || '',
+                lat: sv.lat,
+                lng: sv.lng,
+                emoji: sv.emoji || '📍',
+                type: sv.type || '',
+              };
+              if (idx !== -1) {
+                list[idx] = mapped;
+              } else {
+                list.push(mapped);
+              }
+            });
+            return list;
+          });
         } else if (venueError) {
           console.error('Error creating initial venues:', venueError);
         }
@@ -242,6 +254,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       // Save program items
       if (event.program && event.program.length > 0) {
+        // Clean up previous items for this event if updating draft
+        await supabase.from('program_items').delete().eq('event_id', data.id);
+
         const programRows = event.program.map((item, idx) => ({
           event_id: data.id,
           time: item.time || '00:00',
@@ -1046,7 +1061,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Venues CRUD (Supabase) ───
   const addVenue = useCallback(async (venue: Venue) => {
-    setVenues(prev => [...prev, venue]);
+    setVenues(prev => {
+      const idx = prev.findIndex(v => v.id === venue.id);
+      if (idx !== -1) {
+        const next = [...prev];
+        next[idx] = venue;
+        return next;
+      }
+      return [...prev, venue];
+    });
 
     if (!venue.eventId) {
       // Event not yet created in Supabase DB, keep in memory state
@@ -1055,7 +1078,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from('venues')
-      .insert({
+      .upsert({
         id: venue.id,
         event_id: venue.eventId,
         name: venue.name,
@@ -1075,9 +1098,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         emoji: data.emoji || '📍', type: data.type || '',
       };
       setVenues(prev => prev.map(v => v.id === venue.id ? real : v));
-    } else {
-      console.error('Error creating venue:', error);
-      setVenues(prev => prev.filter(v => v.id !== venue.id));
+    } else if (error) {
+      console.error('Error creating/upserting venue:', error);
     }
   }, [supabase]);
 

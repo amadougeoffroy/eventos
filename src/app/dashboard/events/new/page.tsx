@@ -110,7 +110,7 @@ export default function NewEventPage() {
   // Mobile preview drawer
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
-  const handleAddVenue = (data: VenueFormData) => {
+  const handleAddVenue = async (data: VenueFormData) => {
     const venueItem: Venue = {
       id: crypto.randomUUID(),
       eventId: newEventId,
@@ -120,8 +120,9 @@ export default function NewEventPage() {
       lat: data.lat,
       lng: data.lng,
     };
+
+    // Immediate UI feedback
     setNewEventVenues(prev => [...prev, venueItem]);
-    addVenue(venueItem);
 
     // If opened from a specific program item, assign it to that item
     if (venueModalTargetItemId) {
@@ -141,6 +142,39 @@ export default function NewEventPage() {
 
     setShowVenueModal(false);
     setVenueModalTargetItemId(null);
+
+    // Persist immediately to Supabase
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        // Ensure parent draft event exists in Supabase so foreign key constraint is satisfied
+        await supabase.from('events').upsert({
+          id: newEventId,
+          user_id: user.id,
+          name: name || `${eventTypeConfig[eventType].label}`,
+          slug: generateSlug() || `event-${Date.now()}`,
+          type: eventType,
+          date: date || new Date().toISOString().split('T')[0],
+          time: time || '14:00',
+          venue: venue || data.name,
+          venue_address: venueAddress || data.address,
+          theme: eventType,
+          primary_color: primaryColor,
+          secondary_color: secondaryColor,
+          plan: (selectedPlan as any) || 'essentiel',
+          template_id: selectedTemplateId,
+        });
+
+        // Save venue in Supabase
+        await addVenue(venueItem);
+      } else {
+        await addVenue(venueItem);
+      }
+    } catch (err) {
+      console.error('Error saving venue from popup:', err);
+      addVenue(venueItem);
+    }
   };
 
   const addProgramItem = () => {
