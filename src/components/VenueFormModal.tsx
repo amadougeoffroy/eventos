@@ -252,7 +252,12 @@ export function VenueFormModal({
               lng={form.lng}
               mapReady={mapReady}
               onSelect={(lat, lng, address) => {
-                setForm(p => ({ ...p, lat, lng, ...(address && !p.address ? { address } : {}) }));
+                setForm(p => ({
+                  ...p,
+                  lat,
+                  lng,
+                  address: address || p.address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
+                }));
               }}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
@@ -266,13 +271,21 @@ export function VenueFormModal({
               Annuler
             </button>
             <button
-              onClick={() => { if (form.name && form.address) onSave(form); }}
-              disabled={!form.name || !form.address}
+              onClick={() => {
+                if (form.name) {
+                  const finalForm = {
+                    ...form,
+                    address: form.address || `${form.lat.toFixed(5)}, ${form.lng.toFixed(5)}`,
+                  };
+                  onSave(finalForm);
+                }
+              }}
+              disabled={!form.name}
               className="btn-primary"
               style={{
                 flex: 1, padding: '0.65rem',
-                opacity: (!form.name || !form.address) ? 0.5 : 1,
-                cursor: (!form.name || !form.address) ? 'not-allowed' : 'pointer',
+                opacity: !form.name ? 0.5 : 1,
+                cursor: !form.name ? 'not-allowed' : 'pointer',
               }}
             >Ajouter</button>
           </div>

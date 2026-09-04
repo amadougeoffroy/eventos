@@ -28,7 +28,7 @@ interface AppState {
 }
 
 interface AppActions {
-  addEvent: (event: Event) => void;
+  addEvent: (event: Event, initialVenues?: Venue[]) => void;
   updateEvent: (id: string, updates: Partial<Event>) => void;
   removeEvent: (id: string) => void;
   addGuest: (guest: Guest) => void;
@@ -183,7 +183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadEvents();
   }, [userId, authLoading]);
 
-  const addEvent = useCallback(async (event: Event) => {
+  const addEvent = useCallback(async (event: Event, initialVenues?: Venue[]) => {
     if (!userId) return;
 
     // Optimistic update
@@ -202,6 +202,43 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       const realEvent = dbEventToApp(data);
+
+      // Save initial venues if any
+      if (initialVenues && initialVenues.length > 0) {
+        const venueRows = initialVenues.map(v => ({
+          id: v.id,
+          event_id: data.id,
+          name: v.name,
+          address: v.address || '',
+          lat: v.lat || null,
+          lng: v.lng || null,
+          emoji: v.emoji || '📍',
+          type: v.type || '',
+        }));
+
+        const { data: savedVenues, error: venueError } = await supabase
+          .from('venues')
+          .insert(venueRows)
+          .select();
+
+        if (!venueError && savedVenues) {
+          setVenues(prev => [
+            ...prev,
+            ...savedVenues.map((v: any) => ({
+              id: v.id,
+              eventId: v.event_id,
+              name: v.name,
+              address: v.address || '',
+              lat: v.lat,
+              lng: v.lng,
+              emoji: v.emoji || '📍',
+              type: v.type || '',
+            }))
+          ]);
+        } else if (venueError) {
+          console.error('Error creating initial venues:', venueError);
+        }
+      }
 
       // Save program items
       if (event.program && event.program.length > 0) {
@@ -1010,6 +1047,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ─── Venues CRUD (Supabase) ───
   const addVenue = useCallback(async (venue: Venue) => {
     setVenues(prev => [...prev, venue]);
+
+    if (!venue.eventId) {
+      // Event not yet created in Supabase DB, keep in memory state
+      return;
+    }
 
     const { data, error } = await supabase
       .from('venues')

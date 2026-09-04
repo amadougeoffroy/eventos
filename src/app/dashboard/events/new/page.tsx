@@ -3,7 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
 import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { eventTypeConfig, planConfig } from '@/lib/mock-data';
@@ -23,20 +23,22 @@ import {
 const SectionCard = ({ children, title, icon: IconComp }: { children: React.ReactNode; title: string; icon: React.ElementType }) => (
   <div style={{
     background: 'var(--bg-card)',
+    borderRadius: '1.25rem',
     border: '1px solid var(--border-light)',
-    borderRadius: '1rem',
-    padding: '1.5rem',
-    marginBottom: '1.25rem',
+    padding: '1.75rem',
+    marginBottom: '1.5rem',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.03)',
   }}>
     <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
       <div style={{
-        width: 36, height: 36, borderRadius: 10,
-        background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.2)',
+        width: 34, height: 34, borderRadius: 10,
+        background: 'rgba(200, 169, 110, 0.1)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: 'var(--gold)',
       }}>
-        <IconComp size={18} color="#C8A96E" />
+        <IconComp size={18} />
       </div>
-      <h3 className="font-semibold" style={{ fontSize: '1rem' }}>{title}</h3>
+      <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text)' }}>{title}</h3>
     </div>
     {children}
   </div>
@@ -51,6 +53,22 @@ export default function NewEventPage() {
   const totalSteps = 5;
   const [selectedTemplateId, setSelectedTemplateId] = useState('romance');
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
+
+  // Persistent event ID and venues for this draft event
+  const [newEventId] = useState(() => crypto.randomUUID());
+  const [newEventVenues, setNewEventVenues] = useState<Venue[]>([]);
+  const [venueModalTargetItemId, setVenueModalTargetItemId] = useState<string | null>(null);
+
+  // Combine user's existing venues and venues created in this wizard
+  const allAvailableVenues = useMemo(() => {
+    const list = [...newEventVenues];
+    venues.forEach(v => {
+      if (!list.some(existing => existing.id === v.id)) {
+        list.push(v);
+      }
+    });
+    return list;
+  }, [newEventVenues, venues]);
 
   const [eventType, setEventType] = useState<EventType>('wedding');
   const [name, setName] = useState('');
@@ -93,16 +111,36 @@ export default function NewEventPage() {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const handleAddVenue = (data: VenueFormData) => {
-    const venue: Venue = {
+    const venueItem: Venue = {
       id: crypto.randomUUID(),
+      eventId: newEventId,
       name: data.name,
       address: data.address,
-      emoji: data.emoji,
+      emoji: data.emoji || '📍',
       lat: data.lat,
       lng: data.lng,
     };
-    addVenue(venue);
+    setNewEventVenues(prev => [...prev, venueItem]);
+    addVenue(venueItem);
+
+    // If opened from a specific program item, assign it to that item
+    if (venueModalTargetItemId) {
+      setProgram(p => p.map(i => i.id === venueModalTargetItemId ? { ...i, venueId: venueItem.id } : i));
+    } else {
+      // Auto-assign to the first step that doesn't have a venue
+      setProgram(p => {
+        const idx = p.findIndex(item => !item.venueId);
+        if (idx !== -1) {
+          const next = [...p];
+          next[idx] = { ...next[idx], venueId: venueItem.id };
+          return next;
+        }
+        return p;
+      });
+    }
+
     setShowVenueModal(false);
+    setVenueModalTargetItemId(null);
   };
 
   const addProgramItem = () => {
@@ -125,10 +163,9 @@ export default function NewEventPage() {
 
   const handleCreate = () => {
     const slug = generateSlug();
-    const tempId = crypto.randomUUID();
     const template = getDefaultTemplate(eventType);
     const newEvent: Event = {
-      id: tempId, slug, type: eventType,
+      id: newEventId, slug, type: eventType,
       name: name || `${eventTypeConfig[eventType].label}`,
       date, time, venue, venueAddress, dressCode, welcomeMessage,
       theme: eventType, primaryColor, secondaryColor,
@@ -147,7 +184,7 @@ export default function NewEventPage() {
       heroVideo: heroType === 'video' ? heroVideo : undefined,
       createdAt: new Date().toISOString(),
     };
-    addEvent(newEvent);
+    addEvent(newEvent, newEventVenues);
     router.push('/dashboard');
   };
 
@@ -835,8 +872,8 @@ export default function NewEventPage() {
             {step === 5 && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                 <SectionCard title={tr.dayProgram} icon={Clock}>
-                  {/* No venues hint */}
-                  {venues.length === 0 ? (
+                  {/* Venues banner / chips */}
+                  {allAvailableVenues.length === 0 ? (
                     <div style={{
                       display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.75rem 1rem',
                       background: 'rgba(200,169,110,0.06)', border: '1px dashed var(--gold)',
@@ -848,7 +885,7 @@ export default function NewEventPage() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setShowVenueModal(true)}
+                        onClick={() => { setVenueModalTargetItemId(null); setShowVenueModal(true); }}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
                           fontSize: '0.75rem', fontWeight: 600, padding: '0.35rem 0.75rem', borderRadius: 8,
@@ -865,7 +902,7 @@ export default function NewEventPage() {
                       marginBottom: '0.85rem', flexWrap: 'wrap',
                     }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, flexWrap: 'wrap' }}>
-                        {venues.map(v => (
+                        {allAvailableVenues.map(v => (
                           <span key={v.id} style={{
                             fontSize: '0.7rem', padding: '0.2rem 0.5rem', borderRadius: 6,
                             background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.15)',
@@ -875,7 +912,7 @@ export default function NewEventPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => setShowVenueModal(true)}
+                        onClick={() => { setVenueModalTargetItemId(null); setShowVenueModal(true); }}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
                           fontSize: '0.7rem', fontWeight: 600, padding: '0.25rem 0.6rem', borderRadius: 6,
@@ -892,7 +929,7 @@ export default function NewEventPage() {
                   {showVenueModal && (
                     <VenueFormModal
                       onSave={handleAddVenue}
-                      onClose={() => setShowVenueModal(false)}
+                      onClose={() => { setShowVenueModal(false); setVenueModalTargetItemId(null); }}
                     />
                   )}
 
@@ -953,23 +990,38 @@ export default function NewEventPage() {
                             <input className="input sm:col-span-2" placeholder={tr.stepTitle} value={item.title} onChange={e => updateProgramItem(item.id, { title: e.target.value })} />
                           </div>
                           <input className="input" placeholder={tr.stepDesc} value={item.description} onChange={e => updateProgramItem(item.id, { description: e.target.value })} />
-                          {/* Venue selector */}
-                          {venues.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              <MapPin size={14} style={{ color: 'var(--gold)', flexShrink: 0 }} />
-                              <select
-                                className="input"
-                                value={item.venueId || ''}
-                                onChange={e => updateProgramItem(item.id, { venueId: e.target.value || undefined })}
-                                style={{ flex: 1 }}
-                              >
-                                <option value="">{tr.noVenue}</option>
-                                {venues.map(v => (
-                                  <option key={v.id} value={v.id}>{v.emoji || '📍'} {v.name}</option>
-                                ))}
-                              </select>
-                            </div>
-                          )}
+                          {/* Venue selector — always visible with quick add option */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <MapPin size={14} style={{ color: 'var(--gold)', flexShrink: 0 }} />
+                            <select
+                              className="input"
+                              value={item.venueId || ''}
+                              onChange={e => updateProgramItem(item.id, { venueId: e.target.value || undefined })}
+                              style={{ flex: 1 }}
+                            >
+                              <option value="">{tr.noVenue}</option>
+                              {allAvailableVenues.map(v => (
+                                <option key={v.id} value={v.id}>{v.emoji || '📍'} {v.name}</option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setVenueModalTargetItemId(item.id);
+                                setShowVenueModal(true);
+                              }}
+                              title={tr.addVenues || 'Ajouter un lieu'}
+                              style={{
+                                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem',
+                                padding: '0.5rem 0.65rem', borderRadius: 8,
+                                background: 'rgba(200,169,110,0.1)', color: 'var(--gold)',
+                                border: '1px solid rgba(200,169,110,0.25)', cursor: 'pointer',
+                                fontSize: '0.75rem', flexShrink: 0,
+                              }}
+                            >
+                              <Plus size={13} />
+                            </button>
+                          </div>
                         </div>
                         {program.length > 1 && (
                           <button
