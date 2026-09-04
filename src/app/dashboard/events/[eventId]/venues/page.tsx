@@ -42,6 +42,8 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
   const [form, setForm] = useState({ name: '', address: '', emoji: '📍', lat: 5.316, lng: -4.016 });
   const [mapReady, setMapReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     // Import leaflet CSS
@@ -54,6 +56,8 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
   const openAdd = () => {
     setEditing(null);
     setForm({ name: '', address: '', emoji: '📍', lat: 5.316, lng: -4.016 });
+    setErrorMessage('');
+    setIsSaving(false);
     setShowModal(true);
     setMapKey(k => k + 1);
   };
@@ -63,19 +67,38 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
     if (!v) return;
     setEditing(id);
     setForm({ name: v.name, address: v.address, emoji: v.emoji || '📍', lat: v.lat || 0, lng: v.lng || 0 });
+    setErrorMessage('');
+    setIsSaving(false);
     setShowModal(true);
     setMapKey(k => k + 1);
   };
 
-  const handleSave = () => {
-    if (!form.name.trim()) return;
-    const finalAddress = form.address.trim() || `${form.lat.toFixed(5)}, ${form.lng.toFixed(5)}`;
-    if (editing) {
-      updateVenue(editing, { name: form.name.trim(), address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
-    } else {
-      addVenue({ id: crypto.randomUUID(), eventId, name: form.name.trim(), address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
+  const handleSave = async () => {
+    const trimmedName = form.name.trim();
+    if (!trimmedName) return;
+
+    // Check duplicate name within this event
+    const isDup = eventVenues.some(v => v.id !== editing && v.name.trim().toLowerCase() === trimmedName.toLowerCase());
+    if (isDup) {
+      setErrorMessage((tr as any).duplicateName || 'Un lieu avec ce nom existe déjà pour cet événement.');
+      return;
     }
-    setShowModal(false);
+
+    setErrorMessage('');
+    setIsSaving(true);
+    try {
+      const finalAddress = form.address.trim() || `${form.lat.toFixed(5)}, ${form.lng.toFixed(5)}`;
+      if (editing) {
+        await updateVenue(editing, { name: trimmedName, address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
+      } else {
+        await addVenue({ id: crypto.randomUUID(), eventId, name: trimmedName, address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
+      }
+      setShowModal(false);
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Erreur lors de l\'enregistrement');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleDelete = (id: string) => {
@@ -258,18 +281,35 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                     </div>
                   </div>
 
+                  {errorMessage && (
+                    <div style={{
+                      color: '#ef4444',
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.25)',
+                      borderRadius: 8,
+                      padding: '0.5rem 0.75rem',
+                      fontSize: '0.75rem',
+                    }}>
+                      {errorMessage}
+                    </div>
+                  )}
+
                   {/* Buttons */}
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    <button onClick={() => setShowModal(false)} style={{
+                    <button onClick={() => setShowModal(false)} disabled={isSaving} style={{
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: '1px solid var(--border-light)',
-                      background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
+                      background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: isSaving ? 'not-allowed' : 'pointer',
                     }}>{tc.cancel}</button>
-                    <button onClick={handleSave} disabled={!form.name.trim()} style={{
+                    <button onClick={handleSave} disabled={!form.name.trim() || isSaving} style={{
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: 'none',
-                      background: !form.name.trim() ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
-                      color: !form.name.trim() ? 'var(--text-muted)' : '#fff',
-                      fontWeight: 600, fontSize: '0.8rem', cursor: !form.name.trim() ? 'not-allowed' : 'pointer',
-                    }}>{editing ? tr.save : tc.add}</button>
+                      background: (!form.name.trim() || isSaving) ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                      color: (!form.name.trim() || isSaving) ? 'var(--text-muted)' : '#fff',
+                      fontWeight: 600, fontSize: '0.8rem', cursor: (!form.name.trim() || isSaving) ? 'not-allowed' : 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                    }}>
+                      {isSaving && <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} />}
+                      {editing ? tr.save : tc.add}
+                    </button>
                   </div>
                 </div>
               </motion.div>

@@ -48,7 +48,7 @@ interface AppActions {
   removeMenuCategory: (id: string) => void;
   updateOrder: (id: string, updates: Partial<Order>) => void;
   addOrder: (order: Order) => void;
-  addVenue: (venue: Venue) => void;
+  addVenue: (venue: Venue) => Promise<{ success: boolean; venue?: Venue; error?: any } | void>;
   updateVenue: (id: string, updates: Partial<Venue>) => void;
   removeVenue: (id: string) => void;
   addGift: (gift: GiftItem) => void;
@@ -660,16 +660,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 !supaIds.has(v.id) && eventIds.includes(v.eventId)
               );
               if (toMigrate.length > 0) {
-                const rows = toMigrate.map((v: any) => ({
-                  id: v.id,
-                  event_id: v.eventId,
-                  name: v.name,
-                  address: v.address || '',
-                  lat: v.lat || null,
-                  lng: v.lng || null,
-                  emoji: v.emoji || '📍',
-                  type: v.type || '',
-                }));
+                const rows = toMigrate.map((v: any) => {
+                  const isUuid = v.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.id);
+                  return {
+                    id: isUuid ? v.id : crypto.randomUUID(),
+                    event_id: v.eventId,
+                    name: v.name,
+                    address: v.address || '',
+                    lat: v.lat || null,
+                    lng: v.lng || null,
+                    emoji: v.emoji || '📍',
+                    type: v.type || 'reception',
+                  };
+                });
                 await supabase.from('venues').upsert(rows);
                 // Reload after migration
                 const { data: refreshed } = await supabase
@@ -683,11 +686,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     emoji: v.emoji || '📍', type: v.type || '',
                   })));
                 }
-                localStorage.removeItem('eventos-venues');
               }
+              localStorage.removeItem('eventos-venues');
             }
           }
-        } catch {}
+        } catch {
+          try { localStorage.removeItem('eventos-venues'); } catch {}
+        }
       }
     };
     loadVenues();
@@ -1075,7 +1080,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   // ─── Venues CRUD (Supabase) ───
-  const addVenue = useCallback(async (venue: Venue) => {
+  const addVenue = useCallback(async (venue: Venue): Promise<{ success: boolean; venue?: Venue; error?: any }> => {
     // Ensure valid UUID for Postgres
     const isUuid = venue.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(venue.id);
     const validVenue = isUuid ? venue : { ...venue, id: crypto.randomUUID() };
@@ -1092,7 +1097,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     if (!validVenue.eventId) {
       // Event not yet created in Supabase DB, keep in memory state
-      return;
+      return { success: true, venue: validVenue };
     }
 
     const { data, error } = await supabase
@@ -1117,8 +1122,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         emoji: data.emoji || '📍', type: data.type || '',
       };
       setVenues(prev => prev.map(v => (v.id === validVenue.id || v.id === venue.id) ? real : v));
-    } else if (error) {
-      console.error('Error creating/upserting venue:', error);
+      return { success: true, venue: real };
+    } else {
+      if (error) console.error('Error creating/upserting venue:', error);
+      return { success: !error, venue: validVenue, error };
     }
   }, [supabase]);
 

@@ -111,11 +111,43 @@ export default function NewEventPage() {
   const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   const handleAddVenue = async (data: VenueFormData) => {
+    const trimmedName = data.name.trim();
+    // Check if a venue with the same name already exists for this user
+    const existing = allAvailableVenues.find(v => v.name.trim().toLowerCase() === trimmedName.toLowerCase());
+
+    if (existing) {
+      // Reuse existing venue for this user account
+      if (venueModalTargetItemId) {
+        setProgram(p => p.map(i => i.id === venueModalTargetItemId ? { ...i, venueId: existing.id } : i));
+      } else {
+        setProgram(p => {
+          const idx = p.findIndex(item => !item.venueId);
+          if (idx !== -1) {
+            const next = [...p];
+            next[idx] = { ...next[idx], venueId: existing.id };
+            return next;
+          }
+          // If all items already have a venue, add a new step with this existing venue
+          return [...p, {
+            id: `p-${Date.now()}`,
+            time: '15:00',
+            title: '',
+            description: '',
+            icon: '🎉',
+            venueId: existing.id,
+          }];
+        });
+      }
+      setShowVenueModal(false);
+      setVenueModalTargetItemId(null);
+      return;
+    }
+
     const venueItem: Venue = {
       id: crypto.randomUUID(),
       eventId: newEventId,
-      name: data.name,
-      address: data.address,
+      name: trimmedName,
+      address: data.address.trim(),
       emoji: data.emoji || '📍',
       lat: data.lat,
       lng: data.lng,
@@ -128,7 +160,7 @@ export default function NewEventPage() {
     if (venueModalTargetItemId) {
       setProgram(p => p.map(i => i.id === venueModalTargetItemId ? { ...i, venueId: venueItem.id } : i));
     } else {
-      // Auto-assign to the first step that doesn't have a venue
+      // Auto-assign to the first step that doesn't have a venue, or create a new step
       setProgram(p => {
         const idx = p.findIndex(item => !item.venueId);
         if (idx !== -1) {
@@ -136,7 +168,15 @@ export default function NewEventPage() {
           next[idx] = { ...next[idx], venueId: venueItem.id };
           return next;
         }
-        return p;
+        // If all existing steps already have a venue, auto-append a new step with this 2nd venue
+        return [...p, {
+          id: `p-${Date.now()}`,
+          time: '15:00',
+          title: '',
+          description: '',
+          icon: '🎉',
+          venueId: venueItem.id,
+        }];
       });
     }
 
