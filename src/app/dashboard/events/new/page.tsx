@@ -148,12 +148,13 @@ export default function NewEventPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const draftSlug = generateSlug();
         // Ensure parent draft event exists in Supabase so foreign key constraint is satisfied
-        await supabase.from('events').upsert({
+        const { error: eventError } = await supabase.from('events').upsert({
           id: newEventId,
           user_id: user.id,
           name: name || `${eventTypeConfig[eventType].label}`,
-          slug: generateSlug() || `event-${Date.now()}`,
+          slug: draftSlug,
           type: eventType,
           date: date || new Date().toISOString().split('T')[0],
           time: time || '14:00',
@@ -166,6 +167,10 @@ export default function NewEventPage() {
           template_id: selectedTemplateId,
         });
 
+        if (eventError) {
+          console.error('Error creating draft event for venue:', eventError);
+        }
+
         // Save venue in Supabase
         await addVenue(venueItem);
       } else {
@@ -173,7 +178,7 @@ export default function NewEventPage() {
       }
     } catch (err) {
       console.error('Error saving venue from popup:', err);
-      addVenue(venueItem);
+      await addVenue(venueItem);
     }
   };
 
@@ -188,11 +193,13 @@ export default function NewEventPage() {
   };
 
   const generateSlug = () => {
-    const prefix = eventType === 'wedding' ? `mariage-${groomName}-et-${brideName}`
-      : eventType === 'birthday' ? `anniversaire-${celebrantName}-${age}ans`
+    const prefix = eventType === 'wedding' ? `mariage-${groomName || ''}-et-${brideName || ''}`
+      : eventType === 'birthday' ? `anniversaire-${celebrantName || ''}-${age || ''}ans`
       : name;
+    const cleanPrefix = (prefix || 'evenement').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/--+/g, '-').replace(/^-|-$/g, '') || 'evenement';
     const year = date ? new Date(date).getFullYear() : new Date().getFullYear();
-    return `${prefix}-${year}`.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    const shortId = newEventId.slice(0, 6);
+    return `${cleanPrefix}-${year}-${shortId}`;
   };
 
   const handleCreate = () => {

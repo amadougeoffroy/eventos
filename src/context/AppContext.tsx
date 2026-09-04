@@ -197,27 +197,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
       payload.id = event.id;
     }
 
-    const { data, error } = await supabase
+    let insertResult = await supabase
       .from('events')
       .upsert(payload)
       .select()
       .single();
+
+    // If duplicate slug error (23505), append random timestamp suffix and retry
+    if (insertResult.error && (insertResult.error.code === '23505' || insertResult.error.message?.includes('slug'))) {
+      payload.slug = `${payload.slug}-${Date.now().toString(36)}`;
+      insertResult = await supabase
+        .from('events')
+        .upsert(payload)
+        .select()
+        .single();
+    }
+
+    const { data, error } = insertResult;
 
     if (!error && data) {
       const realEvent = dbEventToApp(data);
 
       // Save initial venues if any
       if (initialVenues && initialVenues.length > 0) {
-        const venueRows = initialVenues.map(v => ({
-          id: v.id,
-          event_id: data.id,
-          name: v.name,
-          address: v.address || '',
-          lat: v.lat || null,
-          lng: v.lng || null,
-          emoji: v.emoji || '📍',
-          type: v.type || '',
-        }));
+        const venueRows = initialVenues.map(v => {
+          const isUuid = v.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v.id);
+          return {
+            id: isUuid ? v.id : crypto.randomUUID(),
+            event_id: data.id,
+            name: v.name,
+            address: v.address || '',
+            lat: v.lat || null,
+            lng: v.lng || null,
+            emoji: v.emoji || '📍',
+            type: v.type || 'reception',
+          };
+        });
 
         const { data: savedVenues, error: venueError } = await supabase
           .from('venues')
@@ -1061,17 +1076,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Venues CRUD (Supabase) ───
   const addVenue = useCallback(async (venue: Venue) => {
+    // Ensure valid UUID for Postgres
+    const isUuid = venue.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(venue.id);
+    const validVenue = isUuid ? venue : { ...venue, id: crypto.randomUUID() };
+
     setVenues(prev => {
-      const idx = prev.findIndex(v => v.id === venue.id);
+      const idx = prev.findIndex(v => v.id === validVenue.id || (venue.id && v.id === venue.id));
       if (idx !== -1) {
         const next = [...prev];
-        next[idx] = venue;
+        next[idx] = validVenue;
         return next;
       }
-      return [...prev, venue];
+      return [...prev, validVenue];
     });
 
-    if (!venue.eventId) {
+    if (!validVenue.eventId) {
       // Event not yet created in Supabase DB, keep in memory state
       return;
     }
@@ -1079,14 +1098,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from('venues')
       .upsert({
-        id: venue.id,
-        event_id: venue.eventId,
-        name: venue.name,
-        address: venue.address || '',
-        lat: venue.lat || null,
-        lng: venue.lng || null,
-        emoji: venue.emoji || '📍',
-        type: venue.type || '',
+        id: validVenue.id,
+        event_id: validVenue.eventId,
+        name: validVenue.name,
+        address: validVenue.address || '',
+        lat: validVenue.lat || null,
+        lng: validVenue.lng || null,
+        emoji: validVenue.emoji || '📍',
+        type: validVenue.type || 'reception',
       })
       .select()
       .single();
@@ -1097,7 +1116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         address: data.address || '', lat: data.lat, lng: data.lng,
         emoji: data.emoji || '📍', type: data.type || '',
       };
-      setVenues(prev => prev.map(v => v.id === venue.id ? real : v));
+      setVenues(prev => prev.map(v => (v.id === validVenue.id || v.id === venue.id) ? real : v));
     } else if (error) {
       console.error('Error creating/upserting venue:', error);
     }

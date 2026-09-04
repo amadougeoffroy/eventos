@@ -68,11 +68,12 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
   };
 
   const handleSave = () => {
-    if (!form.name || !form.address) return;
+    if (!form.name.trim()) return;
+    const finalAddress = form.address.trim() || `${form.lat.toFixed(5)}, ${form.lng.toFixed(5)}`;
     if (editing) {
-      updateVenue(editing, { name: form.name, address: form.address, emoji: form.emoji, lat: form.lat, lng: form.lng });
+      updateVenue(editing, { name: form.name.trim(), address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
     } else {
-      addVenue({ id: `venue-${Date.now()}`, eventId, name: form.name, address: form.address, emoji: form.emoji, lat: form.lat, lng: form.lng });
+      addVenue({ id: crypto.randomUUID(), eventId, name: form.name.trim(), address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
     }
     setShowModal(false);
   };
@@ -263,11 +264,11 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: '1px solid var(--border-light)',
                       background: 'var(--glass)', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer',
                     }}>{tc.cancel}</button>
-                    <button onClick={handleSave} disabled={!form.name || !form.address} style={{
+                    <button onClick={handleSave} disabled={!form.name.trim()} style={{
                       flex: 1, padding: '0.6rem', borderRadius: 10, border: 'none',
-                      background: (!form.name || !form.address) ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
-                      color: (!form.name || !form.address) ? 'var(--text-muted)' : '#fff',
-                      fontWeight: 600, fontSize: '0.8rem', cursor: (!form.name || !form.address) ? 'not-allowed' : 'pointer',
+                      background: !form.name.trim() ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                      color: !form.name.trim() ? 'var(--text-muted)' : '#fff',
+                      fontWeight: 600, fontSize: '0.8rem', cursor: !form.name.trim() ? 'not-allowed' : 'pointer',
                     }}>{editing ? tr.save : tc.add}</button>
                   </div>
                 </div>
