@@ -71,7 +71,23 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     } catch { /* ignore */ }
     setHydrated(true);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [eventId]);
+
+  // Sync positions from Supabase tables if not in localStorage or across devices
+  useEffect(() => {
+    if (!tablesReady) return;
+    setDragPositions(prev => {
+      let changed = false;
+      const next = { ...prev };
+      tables.filter(t => t.eventId === eventId).forEach(t => {
+        if (!next[t.id] && (t.positionX !== undefined || t.positionY !== undefined)) {
+          next[t.id] = { x: t.positionX || 0, y: t.positionY || 0 };
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [tables, eventId, tablesReady]);
 
   // Keep assignments in sync with tables.guestIds (fires on every tables change)
   useEffect(() => {

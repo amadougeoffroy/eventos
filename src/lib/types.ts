@@ -152,6 +152,7 @@ export interface MenuSurvey {
 
 export interface Order {
   id: string;
+  eventId?: string;
   tableId: string;
   guestId?: string;
   items: OrderItem[];

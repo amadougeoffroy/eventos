@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700&family=Great+Vibes&display=swap');
 @import "tailwindcss";
+@import "../lib/templates/template-themes.css";
 
 :root {
   /* ── Gold palette ─────────────────── */
@@ -718,14 +719,64 @@ select.input option {
   .dash-activity-tips {
     grid-template-columns: 1fr !important;
   }
-  .dash-header {
+  .dash-header,
+  .guests-header,
+  .menu-header,
+  .tables-header,
+  .groups-header,
+  .venues-header,
+  .gifts-header,
+  .live-header {
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: 0.75rem !important;
+    align-items: stretch !important;
+    gap: 0.85rem !important;
   }
-  .dash-header .btn-primary {
-    width: 100%;
-    justify-content: center;
+  .dash-header > div:last-child,
+  .guests-header > div:last-child,
+  .menu-header > div:last-child,
+  .tables-header > div:last-child,
+  .groups-header > div:last-child,
+  .venues-header > div:last-child,
+  .gifts-header > div:last-child,
+  .live-header > div:last-child {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+  .dash-header .btn-primary,
+  .dash-header .btn-secondary,
+  .guests-header .btn-primary,
+  .guests-header .btn-secondary,
+  .menu-header .btn-primary,
+  .menu-header .btn-secondary,
+  .tables-header .btn-primary,
+  .tables-header .btn-secondary,
+  .groups-header .btn-primary,
+  .groups-header .btn-secondary,
+  .venues-header .btn-primary,
+  .venues-header .btn-secondary,
+  .gifts-header .btn-primary,
+  .gifts-header .btn-secondary,
+  .live-header .btn-primary,
+  .live-header .btn-secondary,
+  .inv-link-row button,
+  .modal .btn-primary,
+  .modal .btn-secondary {
+    width: 100% !important;
+    min-height: 44px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    display: inline-flex !important;
+    font-size: 0.85rem !important;
+  }
+  .modal div[style*="justify-content: flex-end"],
+  .modal div[style*="justifyContent: 'flex-end'"],
+  .modal div[style*="justifyContent: \"flex-end\""] {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
   }
   .dash-stats-grid {
     grid-template-columns: repeat(2, 1fr) !important;

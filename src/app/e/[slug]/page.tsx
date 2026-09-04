@@ -7,7 +7,6 @@ import { useSearchParams } from 'next/navigation';
 import { eventTypeConfig } from '@/lib/mock-data';
 import { Sparkles, ChevronDown } from 'lucide-react';
 import { getTemplate, getDefaultTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
-import '@/lib/templates/template-themes.css';
 
 // Invitation section components
 import HeroSlideshow from '@/components/invitation/HeroSlideshow';

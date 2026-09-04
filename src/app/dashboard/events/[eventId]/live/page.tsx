@@ -28,12 +28,17 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
     served:    { label: tr.served, color: '#22964F' },
   };
   const eventTables = useMemo(() => tables.filter(t => t.eventId === eventId), [tables, eventId]);
+  const eventTableIds = useMemo(() => new Set(eventTables.map(t => t.id)), [eventTables]);
+  const currentOrders = useMemo(() => {
+    return orders.filter(o => o.eventId === eventId || eventTableIds.has(o.tableId));
+  }, [orders, eventId, eventTableIds]);
+
   const [view, setView] = useState<'floor' | 'orders' | 'kitchen'>('floor');
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   const getTableStatus = (tableId: string) => {
-    const tableOrders = orders.filter(o => o.tableId === tableId);
+    const tableOrders = currentOrders.filter(o => o.tableId === tableId);
     if (tableOrders.length === 0) return 'empty';
     if (tableOrders.every(o => o.status === 'served')) return 'served';
     if (tableOrders.some(o => o.status === 'preparing')) return 'preparing';
@@ -51,16 +56,16 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
   };
 
   const advanceOrderStatus = (orderId: string) => {
-    const order = orders.find(o => o.id === orderId);
+    const order = currentOrders.find(o => o.id === orderId);
     if (!order) return;
     const next = order.status === 'pending' ? 'preparing' : order.status === 'preparing' ? 'ready' : 'served';
     updateOrder(orderId, { status: next });
   };
 
-  const ordersPending = orders.filter(o => o.status === 'pending').length;
-  const ordersPreparing = orders.filter(o => o.status === 'preparing').length;
-  const ordersReady = orders.filter(o => o.status === 'ready').length;
-  const ordersServed = orders.filter(o => o.status === 'served').length;
+  const ordersPending = currentOrders.filter(o => o.status === 'pending').length;
+  const ordersPreparing = currentOrders.filter(o => o.status === 'preparing').length;
+  const ordersReady = currentOrders.filter(o => o.status === 'ready').length;
+  const ordersServed = currentOrders.filter(o => o.status === 'served').length;
 
   const statCards = [
     { label: tr.waiting, value: ordersPending, color: '#DC8C28', bg: 'linear-gradient(135deg, rgba(220,140,40,0.12), rgba(220,140,40,0.04))', icon: Clock },
@@ -184,7 +189,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
         {/* ── Orders View ─────────────────── */}
         {view === 'orders' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {orders.map((order, i) => {
+            {currentOrders.map((order, i) => {
               const table = eventTables.find(t => t.id === order.tableId);
               const sLabel = statusLabels[order.status];
               return (
@@ -240,7 +245,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
           <div className="grid md:grid-cols-3 gap-5 live-kitchen">
             {['pending', 'preparing', 'ready'].map(status => {
               const sLabel = statusLabels[status];
-              const filteredOrders = orders.filter(o => o.status === status);
+              const filteredOrders = currentOrders.filter(o => o.status === status);
               return (
                 <div key={status}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>

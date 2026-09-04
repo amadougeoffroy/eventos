@@ -412,6 +412,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadGifts();
   }, [userId]);
 
+  // Load orders from Supabase
+  useEffect(() => {
+    if (!userId) return;
+    const loadOrders = async () => {
+      const { data: userEvents } = await supabase
+        .from('events')
+        .select('id')
+        .eq('user_id', userId);
+      if (!userEvents || userEvents.length === 0) return;
+      const eventIds = userEvents.map(e => e.id);
+
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .in('event_id', eventIds)
+        .order('created_at', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        setOrders(data.map((row: any) => ({
+          id: row.id,
+          eventId: row.event_id,
+          tableId: row.table_id || '',
+          items: Array.isArray(row.items) ? row.items : [],
+          status: row.status || 'pending',
+          createdAt: row.created_at || new Date().toISOString(),
+        })));
+      }
+    };
+    loadOrders();
+  }, [userId, supabase]);
+
   // ═══════════════════════════════════════════════════════════
   // GUEST GROUPS — Supabase powered 🚀
   // ═══════════════════════════════════════════════════════════
@@ -935,10 +966,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) console.error('removeMenuItem error:', error);
   }, [supabase]);
 
-  // ─── Orders CRUD ───
-  const addOrder = (order: Order) => setOrders(prev => [...prev, order]);
-  const updateOrder = (id: string, updates: Partial<Order>) =>
+  // ─── Orders CRUD (Supabase) ───
+  const addOrder = useCallback(async (order: Order) => {
+    setOrders(prev => [...prev, order]);
+    const isRealUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(order.id);
+    const { data, error } = await supabase
+      .from('orders')
+      .insert({
+        ...(isRealUuid ? { id: order.id } : {}),
+        event_id: order.eventId,
+        table_id: order.tableId || null,
+        items: order.items || [],
+        status: order.status || 'pending',
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      setOrders(prev => prev.map(o => o.id === order.id ? { ...o, id: data.id } : o));
+    } else if (error) {
+      console.error('addOrder error:', error);
+    }
+  }, [supabase]);
+
+  const updateOrder = useCallback(async (id: string, updates: Partial<Order>) => {
     setOrders(prev => prev.map(o => o.id === id ? { ...o, ...updates } : o));
+
+    const payload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.items !== undefined) payload.items = updates.items;
+    if (updates.tableId !== undefined) payload.table_id = updates.tableId;
+
+    const { error } = await supabase
+      .from('orders')
+      .update(payload)
+      .eq('id', id);
+
+    if (error) console.error('updateOrder error:', error);
+  }, [supabase]);
 
   // ─── Venues CRUD (Supabase) ───
   const addVenue = useCallback(async (venue: Venue) => {
