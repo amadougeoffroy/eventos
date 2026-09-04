@@ -70,13 +70,35 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           .select('*')
           .eq('event_id', evtRow.id);
 
-        if (venueRows) {
-          setPublicVenues(venueRows.map((v: any) => ({
-            id: v.id, eventId: v.event_id, name: v.name,
-            address: v.address, lat: v.lat, lng: v.lng,
-            emoji: v.emoji, type: v.type,
-          })));
+        const mappedVenues = (venueRows || []).map((v: any) => ({
+          id: v.id, eventId: v.event_id, name: v.name,
+          address: v.address, lat: v.lat, lng: v.lng,
+          emoji: v.emoji, type: v.type,
+        }));
+
+        // Also fetch any venues linked to program items that might belong to another event
+        const missingVenueIds = program
+          .map((p: any) => p.venueId)
+          .filter((vId: any): vId is string => Boolean(vId) && !mappedVenues.some((mv: any) => mv.id === vId));
+
+        if (missingVenueIds.length > 0) {
+          const { data: extraVenues } = await supabase
+            .from('venues')
+            .select('*')
+            .in('id', missingVenueIds);
+
+          if (extraVenues) {
+            extraVenues.forEach((v: any) => {
+              mappedVenues.push({
+                id: v.id, eventId: v.event_id, name: v.name,
+                address: v.address, lat: v.lat, lng: v.lng,
+                emoji: v.emoji, type: v.type,
+              });
+            });
+          }
         }
+
+        setPublicVenues(mappedVenues);
 
         const { dbEventToApp } = await import('@/lib/supabase/mappers');
         setPublicEvent({ ...dbEventToApp(evtRow), program });
@@ -389,7 +411,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   const sectionRenderers: Record<string, () => React.ReactNode> = {
     hero: () => <HeroSlideshow key="hero" event={event} heroSlides={heroSlides} heroVideo={event.heroType === 'video' ? (event.heroVideo || '/default_video.mp4') : undefined} cfg={cfg} />,
     welcome: () => <SectionWelcome key="welcome" event={event} />,
-    program: () => <SectionProgram key="program" event={event} venues={allVenues.filter(v => v.eventId === event.id)} />,
+    program: () => <SectionProgram key="program" event={event} venues={allVenues} />,
     dressCode: () => <SectionDressCode key="dressCode" event={event} />,
     location: () => <SectionLocation key="location" event={event} itineraryStops={itineraryStops} />,
     rsvp: () => (

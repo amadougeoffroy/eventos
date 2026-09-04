@@ -56,7 +56,7 @@ export default function SectionProgram({ event, venues }: { event: Event; venues
                           <MapPin size={11} /> {venue.name}
                         </div>
                         <a
-                          href={`https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
+                          href={`https://www.google.com/maps/search/?api=1&query=${(venue.lat && venue.lng) ? `${venue.lat},${venue.lng}` : encodeURIComponent(venue.address || venue.name)}`}
                           target="_blank" rel="noopener noreferrer"
                           style={{
                             display: 'inline-flex', alignItems: 'center', gap: '0.2rem',

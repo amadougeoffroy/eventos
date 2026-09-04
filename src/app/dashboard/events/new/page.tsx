@@ -245,13 +245,46 @@ export default function NewEventPage() {
     try {
       const slug = generateSlug();
       const template = getDefaultTemplate(eventType);
+
+      // Ensure all venues used in the program are part of this new event
+      // If a venue was chosen from another event, duplicate it for this event
+      const venueIdMapping = new Map<string, string>();
+      const venuesToAttach: Venue[] = [...newEventVenues];
+
+      const updatedProgram = program.filter(p => p.title).map(item => {
+        if (!item.venueId) return item;
+        if (venuesToAttach.some(v => v.id === item.venueId)) {
+          return item;
+        }
+        if (venueIdMapping.has(item.venueId)) {
+          return { ...item, venueId: venueIdMapping.get(item.venueId) };
+        }
+        const existing = allAvailableVenues.find(v => v.id === item.venueId);
+        if (existing) {
+          const newVenueId = crypto.randomUUID();
+          venueIdMapping.set(item.venueId, newVenueId);
+          venuesToAttach.push({
+            id: newVenueId,
+            eventId: newEventId,
+            name: existing.name,
+            address: existing.address,
+            lat: existing.lat,
+            lng: existing.lng,
+            emoji: existing.emoji,
+            type: existing.type,
+          });
+          return { ...item, venueId: newVenueId };
+        }
+        return item;
+      });
+
       const newEvent: Event = {
         id: newEventId, slug, type: eventType,
         name: name || `${eventTypeConfig[eventType].label}`,
         date, time, venue, venueAddress, dressCode, welcomeMessage,
         theme: eventType, primaryColor, secondaryColor,
         allowCompanions, maxCompanions: allowCompanions ? maxCompanions : undefined,
-        program: program.filter(p => p.title),
+        program: updatedProgram,
         meta: {
           brideName: eventType === 'wedding' ? brideName : undefined,
           groomName: eventType === 'wedding' ? groomName : undefined,
@@ -265,7 +298,7 @@ export default function NewEventPage() {
         heroVideo: heroType === 'video' ? heroVideo : undefined,
         createdAt: new Date().toISOString(),
       };
-      await addEvent(newEvent, newEventVenues);
+      await addEvent(newEvent, venuesToAttach);
       router.push('/dashboard');
     } catch (err) {
       console.error('Error creating event:', err);
