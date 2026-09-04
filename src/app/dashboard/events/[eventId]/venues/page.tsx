@@ -91,7 +91,11 @@ export default function VenuesPage({ params }: { params: Promise<{ eventId: stri
       if (editing) {
         await updateVenue(editing, { name: trimmedName, address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
       } else {
-        await addVenue({ id: crypto.randomUUID(), eventId, name: trimmedName, address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
+        const res = await addVenue({ id: crypto.randomUUID(), eventId, name: trimmedName, address: finalAddress, emoji: form.emoji, lat: form.lat, lng: form.lng });
+        if (res && !res.success) {
+          setErrorMessage(res.error?.message || 'Erreur lors de l\'enregistrement dans la base de données');
+          return;
+        }
       }
       setShowModal(false);
     } catch (err: any) {

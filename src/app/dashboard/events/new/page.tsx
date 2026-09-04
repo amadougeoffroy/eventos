@@ -183,42 +183,37 @@ export default function NewEventPage() {
     setShowVenueModal(false);
     setVenueModalTargetItemId(null);
 
-    // Persist immediately to Supabase
+    // Persist immediately via /api/venues (service role ensures event exists with valid date fallback)
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const draftSlug = generateSlug();
-        // Ensure parent draft event exists in Supabase so foreign key constraint is satisfied
-        const { error: eventError } = await supabase.from('events').upsert({
-          id: newEventId,
-          user_id: user.id,
-          name: name || `${eventTypeConfig[eventType].label}`,
-          slug: draftSlug,
-          type: eventType,
-          date: date || new Date().toISOString().split('T')[0],
-          time: time || '14:00',
-          venue: venue || data.name,
-          venue_address: venueAddress || data.address,
-          theme: eventType,
-          primary_color: primaryColor,
-          secondary_color: secondaryColor,
-          plan: (selectedPlan as any) || 'essentiel',
-          template_id: selectedTemplateId,
-        });
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
 
-        if (eventError) {
-          console.error('Error creating draft event for venue:', eventError);
-        }
-
-        // Save venue in Supabase
-        await addVenue(venueItem);
-      } else {
-        await addVenue(venueItem);
+      const draftSlug = generateSlug();
+      const res = await fetch('/api/venues', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...venueItem,
+          draftEvent: {
+            name: name || `${eventTypeConfig[eventType].label}`,
+            slug: draftSlug,
+            type: eventType,
+            date: date || new Date().toISOString().split('T')[0],
+            time: time || '14:00',
+            primaryColor,
+            secondaryColor,
+            plan: selectedPlan,
+          },
+        }),
+      });
+      const resJson = await res.json();
+      if (res.ok && resJson.venue) {
+        setNewEventVenues(prev => prev.map(v => v.id === venueItem.id ? resJson.venue : v));
       }
     } catch (err) {
       console.error('Error saving venue from popup:', err);
-      await addVenue(venueItem);
     }
   };
 
@@ -242,31 +237,40 @@ export default function NewEventPage() {
     return `${cleanPrefix}-${year}-${shortId}`;
   };
 
-  const handleCreate = () => {
-    const slug = generateSlug();
-    const template = getDefaultTemplate(eventType);
-    const newEvent: Event = {
-      id: newEventId, slug, type: eventType,
-      name: name || `${eventTypeConfig[eventType].label}`,
-      date, time, venue, venueAddress, dressCode, welcomeMessage,
-      theme: eventType, primaryColor, secondaryColor,
-      allowCompanions, maxCompanions: allowCompanions ? maxCompanions : undefined,
-      program: program.filter(p => p.title),
-      meta: {
-        brideName: eventType === 'wedding' ? brideName : undefined,
-        groomName: eventType === 'wedding' ? groomName : undefined,
-        celebrantName: eventType === 'birthday' ? celebrantName : undefined,
-        age: eventType === 'birthday' ? Number(age) : undefined,
-      },
-      plan: (selectedPlan as 'essentiel' | 'pro' | 'premium') || undefined,
-      templateId: selectedTemplateId,
-      heroType,
-      heroImages: heroImages.length > 0 ? heroImages : undefined,
-      heroVideo: heroType === 'video' ? heroVideo : undefined,
-      createdAt: new Date().toISOString(),
-    };
-    addEvent(newEvent, newEventVenues);
-    router.push('/dashboard');
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+
+  const handleCreate = async () => {
+    if (isCreatingEvent) return;
+    setIsCreatingEvent(true);
+    try {
+      const slug = generateSlug();
+      const template = getDefaultTemplate(eventType);
+      const newEvent: Event = {
+        id: newEventId, slug, type: eventType,
+        name: name || `${eventTypeConfig[eventType].label}`,
+        date, time, venue, venueAddress, dressCode, welcomeMessage,
+        theme: eventType, primaryColor, secondaryColor,
+        allowCompanions, maxCompanions: allowCompanions ? maxCompanions : undefined,
+        program: program.filter(p => p.title),
+        meta: {
+          brideName: eventType === 'wedding' ? brideName : undefined,
+          groomName: eventType === 'wedding' ? groomName : undefined,
+          celebrantName: eventType === 'birthday' ? celebrantName : undefined,
+          age: eventType === 'birthday' ? Number(age) : undefined,
+        },
+        plan: (selectedPlan as 'essentiel' | 'pro' | 'premium') || undefined,
+        templateId: selectedTemplateId,
+        heroType,
+        heroImages: heroImages.length > 0 ? heroImages : undefined,
+        heroVideo: heroType === 'video' ? heroVideo : undefined,
+        createdAt: new Date().toISOString(),
+      };
+      await addEvent(newEvent, newEventVenues);
+      router.push('/dashboard');
+    } catch (err) {
+      console.error('Error creating event:', err);
+      setIsCreatingEvent(false);
+    }
   };
 
   const stepLabels = [tr.step1, tr.step2, tr.step3, tr.step4, tr.step5];
@@ -1149,8 +1153,8 @@ export default function NewEventPage() {
                   {tr.next} <ArrowRight size={16} />
                 </button>
               ) : (
-                <button className="btn-primary" style={{ flex: 1, padding: '0.85rem' }} onClick={handleCreate}>
-                  <Sparkles size={16} /> {tr.create}
+                <button className="btn-primary" style={{ flex: 1, padding: '0.85rem' }} onClick={handleCreate} disabled={isCreatingEvent}>
+                  <Sparkles size={16} /> {isCreatingEvent ? 'Création en cours...' : tr.create}
                 </button>
               )}
             </div>

@@ -28,7 +28,7 @@ interface AppState {
 }
 
 interface AppActions {
-  addEvent: (event: Event, initialVenues?: Venue[]) => void;
+  addEvent: (event: Event, initialVenues?: Venue[]) => Promise<void>;
   updateEvent: (id: string, updates: Partial<Event>) => void;
   removeEvent: (id: string) => void;
   addGuest: (guest: Guest) => void;
@@ -115,7 +115,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
     fetchUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
       if (session?.user) {
         setUserId(session.user.id);
         setCurrentUser(prev => ({
@@ -153,7 +153,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (eventsErr || !eventsData) return;
 
       // Load all program items for these events
-      const eventIds = eventsData.map(e => e.id);
+      const eventIds = eventsData.map((e: any) => e.id);
       const { data: programData } = await supabase
         .from('program_items')
         .select('*')
@@ -174,7 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         programByEvent.set(row.event_id, items);
       });
 
-      setEvents(eventsData.map(row => ({
+      setEvents(eventsData.map((row: any) => ({
         ...dbEventToApp(row),
         program: programByEvent.get(row.id as string) || [],
       })));
@@ -234,36 +234,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
           };
         });
 
-        const { data: savedVenues, error: venueError } = await supabase
-          .from('venues')
-          .upsert(venueRows)
-          .select();
-
-        if (!venueError && savedVenues) {
-          setVenues(prev => {
-            const list = [...prev];
-            savedVenues.forEach((sv: any) => {
-              const idx = list.findIndex(v => v.id === sv.id);
-              const mapped: Venue = {
-                id: sv.id,
-                eventId: sv.event_id,
-                name: sv.name,
-                address: sv.address || '',
-                lat: sv.lat,
-                lng: sv.lng,
-                emoji: sv.emoji || '📍',
-                type: sv.type || '',
-              };
-              if (idx !== -1) {
-                list[idx] = mapped;
-              } else {
-                list.push(mapped);
-              }
+        // Save initial venues via /api/venues (service role) to guarantee insertion
+        for (const v of venueRows) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+            const res = await fetch('/api/venues', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                id: v.id,
+                eventId: v.event_id,
+                name: v.name,
+                address: v.address,
+                lat: v.lat,
+                lng: v.lng,
+                emoji: v.emoji,
+                type: v.type,
+              }),
             });
-            return list;
-          });
-        } else if (venueError) {
-          console.error('Error creating initial venues:', venueError);
+            const resJson = await res.json();
+            if (res.ok && resJson.venue) {
+              setVenues(prev => [...prev.filter(x => x.id !== v.id), resJson.venue]);
+            }
+          } catch {
+            await supabase.from('venues').upsert([v]);
+          }
         }
       }
 
@@ -359,7 +356,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (!userEvents || userEvents.length === 0) return;
 
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
       const { data, error } = await supabase
         .from('guests')
         .select('*')
@@ -401,7 +398,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .eq('user_id', userId);
 
       if (!userEvents || userEvents.length === 0) return;
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
 
       // Load categories
       const { data: catRows, error: catErr } = await supabase
@@ -453,7 +450,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .select('id')
         .eq('user_id', userId);
       if (!userEvents || userEvents.length === 0) return;
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
       const { data, error } = await supabase
         .from('gifts')
         .select('*')
@@ -488,7 +485,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .select('id')
         .eq('user_id', userId);
       if (!userEvents || userEvents.length === 0) return;
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
 
       const { data, error } = await supabase
         .from('orders')
@@ -528,7 +525,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (!userEvents || userEvents.length === 0) return;
 
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
       const { data, error } = await supabase
         .from('guest_groups')
         .select('*')
@@ -631,7 +628,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (!userEvents || userEvents.length === 0) return;
 
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
       const { data, error } = await supabase
         .from('venues')
         .select('*')
@@ -834,7 +831,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const loadTables = async () => {
       const userEvents = events.filter(e => e.id && e.id !== 'evt-001' && e.id !== 'evt-002');
       if (userEvents.length === 0) { setTablesReady(true); return; }
-      const eventIds = userEvents.map(e => e.id);
+      const eventIds = userEvents.map((e: any) => e.id);
       const { data, error } = await supabase
         .from('event_tables')
         .select('*')
@@ -1079,9 +1076,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (error) console.error('updateOrder error:', error);
   }, [supabase]);
 
-  // ─── Venues CRUD (Supabase) ───
+  // ─── Venues CRUD (Server API + Supabase fallback) ───
   const addVenue = useCallback(async (venue: Venue): Promise<{ success: boolean; venue?: Venue; error?: any }> => {
-    // Ensure valid UUID for Postgres
     const isUuid = venue.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(venue.id);
     const validVenue = isUuid ? venue : { ...venue, id: crypto.randomUUID() };
 
@@ -1096,36 +1092,69 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
 
     if (!validVenue.eventId) {
-      // Event not yet created in Supabase DB, keep in memory state
       return { success: true, venue: validVenue };
     }
 
-    const { data, error } = await supabase
-      .from('venues')
-      .upsert({
-        id: validVenue.id,
-        event_id: validVenue.eventId,
-        name: validVenue.name,
-        address: validVenue.address || '',
-        lat: validVenue.lat || null,
-        lng: validVenue.lng || null,
-        emoji: validVenue.emoji || '📍',
-        type: validVenue.type || 'reception',
-      })
-      .select()
-      .single();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      }
 
-    if (!error && data) {
-      const real: Venue = {
-        id: data.id, eventId: data.event_id, name: data.name,
-        address: data.address || '', lat: data.lat, lng: data.lng,
-        emoji: data.emoji || '📍', type: data.type || '',
-      };
-      setVenues(prev => prev.map(v => (v.id === validVenue.id || v.id === venue.id) ? real : v));
-      return { success: true, venue: real };
-    } else {
-      if (error) console.error('Error creating/upserting venue:', error);
-      return { success: !error, venue: validVenue, error };
+      const res = await fetch('/api/venues', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          id: validVenue.id,
+          eventId: validVenue.eventId,
+          name: validVenue.name,
+          address: validVenue.address || '',
+          lat: validVenue.lat || null,
+          lng: validVenue.lng || null,
+          emoji: validVenue.emoji || '📍',
+          type: validVenue.type || 'reception',
+        }),
+      });
+
+      const resJson = await res.json();
+      if (res.ok && resJson.success && resJson.venue) {
+        const saved: Venue = resJson.venue;
+        setVenues(prev => prev.map(v => (v.id === validVenue.id || v.id === venue.id) ? saved : v));
+        return { success: true, venue: saved };
+      } else {
+        const errMsg = resJson?.error || 'Erreur lors de l\'enregistrement';
+        console.error('/api/venues error:', errMsg);
+        return { success: false, venue: validVenue, error: { message: errMsg } };
+      }
+    } catch (err: any) {
+      console.warn('Network error on /api/venues, trying direct Supabase:', err);
+      const { data, error } = await supabase
+        .from('venues')
+        .upsert({
+          id: validVenue.id,
+          event_id: validVenue.eventId,
+          name: validVenue.name,
+          address: validVenue.address || '',
+          lat: validVenue.lat || null,
+          lng: validVenue.lng || null,
+          emoji: validVenue.emoji || '📍',
+          type: validVenue.type || 'reception',
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        const real: Venue = {
+          id: data.id, eventId: data.event_id, name: data.name,
+          address: data.address || '', lat: data.lat, lng: data.lng,
+          emoji: data.emoji || '📍', type: data.type || '',
+        };
+        setVenues(prev => prev.map(v => (v.id === validVenue.id || v.id === venue.id) ? real : v));
+        return { success: true, venue: real };
+      } else {
+        return { success: false, venue: validVenue, error };
+      }
     }
   }, [supabase]);
 
@@ -1148,10 +1177,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const backup = venues;
     setVenues(prev => prev.filter(v => v.id !== id));
 
-    const { error } = await supabase.from('venues').delete().eq('id', id);
-    if (error) {
-      console.error('Error deleting venue:', error);
-      setVenues(backup);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers: Record<string, string> = {};
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+      const res = await fetch(`/api/venues?id=${id}`, { method: 'DELETE', headers });
+      if (!res.ok) {
+        await supabase.from('venues').delete().eq('id', id);
+      }
+    } catch {
+      const { error } = await supabase.from('venues').delete().eq('id', id);
+      if (error) {
+        console.error('Error deleting venue:', error);
+        setVenues(backup);
+      }
     }
   }, [supabase, venues]);
 
