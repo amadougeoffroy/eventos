@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, X, Users, Utensils } from 'lucide-react';
 
 interface TableAssignmentModalProps {
   isOpen: boolean;
@@ -21,170 +20,316 @@ export default function TableAssignmentModal({
   onClose,
   guestName,
   groupName,
-  groupEmoji = '👥',
-  groupColor = '#C8A96E',
   tableName,
   companions = 0,
   planUrl,
 }: TableAssignmentModalProps) {
   if (!isOpen) return null;
 
-  // Extract first name for the warm greeting (fallback to full guestName)
-  const firstName = guestName?.trim() ? guestName.trim().split(' ')[0] : 'Invité';
+  // Extract first name (e.g. "Raissa")
+  const firstName = guestName?.trim() ? guestName.trim().split(' ')[0] : 'Cher invité';
 
   return (
     <AnimatePresence>
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-table-overlay"
         style={{
-          background: 'rgba(20, 18, 15, 0.45)',
+          background: 'rgba(30, 24, 18, 0.45)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
         }}
       >
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Cormorant:ital@0;1&family=Jost:wght@400;500;600&display=swap');
+
+          .modal-table-overlay {
+            --ivoire: #FBF6EE;
+            --ivoire-carte: #FFFDF9;
+            --encre: #2B2420;
+            --encre-douce: #6B6055;
+            --or: #B8863C;
+            --or-clair: #D9AE6C;
+            --or-fond: #F3E4C6;
+            --trait: #E7DCC5;
+            --bleu-etiquette: #5B6E8C;
+            --bleu-fond: #EAEEF4;
+            font-family: 'Jost', sans-serif;
+          }
+
+          .modal-table-overlay .carte {
+            position: relative;
+            width: 100%;
+            max-width: 460px;
+            background: var(--ivoire-carte);
+            border-radius: 28px;
+            padding: 44px 36px 32px;
+            box-shadow:
+              0 1px 0 rgba(255,255,255,0.8) inset,
+              0 30px 60px -20px rgba(60,45,20,0.18),
+              0 10px 24px -12px rgba(60,45,20,0.10);
+            border: 1px solid var(--trait);
+            max-height: 92vh;
+            overflow-y: auto;
+          }
+
+          .modal-table-overlay .carte::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 24px; right: 24px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, var(--or-clair), transparent);
+            border-radius: 2px;
+          }
+
+          .modal-table-overlay .fermer {
+            position: absolute;
+            top: 20px; right: 20px;
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            border: 1px solid var(--trait);
+            background: var(--ivoire);
+            display: flex; align-items: center; justify-content: center;
+            color: var(--encre-douce);
+            cursor: pointer;
+            font-size: 15px;
+            line-height: 1;
+            transition: background .15s ease, color .15s ease;
+          }
+          .modal-table-overlay .fermer:hover { background: var(--or-fond); color: var(--encre); }
+
+          .modal-table-overlay .monogramme {
+            width: 64px; height: 64px;
+            margin: 0 auto 22px;
+            border-radius: 50%;
+            background: linear-gradient(160deg, #FFFCF6, var(--or-fond));
+            border: 1px solid var(--or-clair);
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+          }
+          .modal-table-overlay .monogramme svg { width: 26px; height: 26px; }
+
+          .modal-table-overlay .eyebrow {
+            text-align: center;
+            font-family: 'Jost', sans-serif;
+            font-size: 11.5px;
+            letter-spacing: .16em;
+            color: var(--or);
+            font-weight: 500;
+            margin-bottom: 10px;
+          }
+
+          .modal-table-overlay h1 {
+            text-align: center;
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            font-size: 38px;
+            line-height: 1.15;
+            color: var(--encre);
+            letter-spacing: .01em;
+          }
+
+          .modal-table-overlay .sous-titre {
+            text-align: center;
+            font-family: 'Cormorant', serif;
+            font-style: italic;
+            font-size: 16px;
+            color: var(--encre-douce);
+            margin-top: 6px;
+            margin-bottom: 18px;
+          }
+
+          .modal-table-overlay .etiquette-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 26px;
+          }
+          .modal-table-overlay .etiquette {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 16px;
+            border-radius: 999px;
+            background: var(--bleu-fond);
+            color: var(--bleu-etiquette);
+            font-size: 13.5px;
+            font-weight: 500;
+            border: 1px solid #DCE3ED;
+          }
+          .modal-table-overlay .etiquette span.point {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--bleu-etiquette);
+            display: inline-block;
+          }
+
+          .modal-table-overlay .separateur {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 22px;
+          }
+          .modal-table-overlay .separateur .ligne {
+            flex: 1;
+            height: 1px;
+            background: var(--trait);
+          }
+          .modal-table-overlay .separateur .texte {
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            color: var(--or);
+            white-space: nowrap;
+            font-weight: 500;
+          }
+
+          .modal-table-overlay .bloc-table {
+            text-align: center;
+            background: linear-gradient(180deg, #FFFCF5, #FDF6E8);
+            border: 1px solid var(--or-clair);
+            border-radius: 18px;
+            padding: 22px 20px 24px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+          }
+          .modal-table-overlay .bloc-table::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 0%, rgba(217,174,108,0.12), transparent 60%);
+            pointer-events: none;
+          }
+          .modal-table-overlay .bloc-table .numero {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 13px;
+            letter-spacing: .1em;
+            color: var(--or);
+            margin-bottom: 6px;
+            font-weight: 600;
+          }
+          .modal-table-overlay .bloc-table .nom-table {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 700;
+            font-size: 32px;
+            color: var(--encre);
+          }
+
+          .modal-table-overlay .description {
+            text-align: center;
+            font-size: 14.5px;
+            line-height: 1.65;
+            color: var(--encre-douce);
+            max-width: 360px;
+            margin: 0 auto 28px;
+          }
+
+          .modal-table-overlay .actions {
+            display: flex;
+            gap: 10px;
+          }
+          .modal-table-overlay .btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 12px;
+            border-radius: 14px;
+            font-family: 'Jost', sans-serif;
+            font-size: 14.5px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            text-decoration: none;
+            transition: transform .15s ease, box-shadow .15s ease;
+          }
+          .modal-table-overlay .btn:active { transform: translateY(1px); }
+
+          .modal-table-overlay .btn-principal {
+            background: linear-gradient(180deg, #C99A4E, var(--or));
+            color: #FFFBF2 !important;
+            box-shadow: 0 10px 20px -8px rgba(184,134,60,0.55);
+          }
+          .modal-table-overlay .btn-principal svg { width: 15px; height: 15px; }
+
+          .modal-table-overlay .btn-secondaire {
+            background: transparent;
+            color: var(--encre);
+            border: 1px solid var(--trait);
+          }
+          .modal-table-overlay .btn-secondaire:hover { background: var(--ivoire); }
+
+          @media (max-width: 480px) {
+            .modal-table-overlay .carte { padding: 36px 22px 24px; }
+            .modal-table-overlay h1 { font-size: 32px; }
+            .modal-table-overlay .actions { flex-direction: column; }
+          }
+        `}</style>
+
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-[390px] sm:max-w-[430px] max-h-[92vh] overflow-y-auto rounded-3xl p-6 sm:p-8 text-center"
-          style={{
-            background: '#FAF7F2',
-            border: '1px solid rgba(212, 175, 55, 0.3)',
-            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 35px rgba(212, 175, 55, 0.1)',
-          }}
+          className="carte"
         >
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/80 hover:bg-white text-stone-500 hover:text-stone-800 border border-stone-200"
-            aria-label="Fermer"
-          >
-            <X size={15} />
-          </button>
+          <button className="fermer" onClick={onClose} aria-label="Fermer">✕</button>
 
-          {/* Top Utensils Icon in Gold Circle */}
-          <div className="flex justify-center mb-4">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, #FAF4E8 0%, #F0E3CC 100%)',
-                border: '1px solid #DFC9A7',
-                boxShadow: '0 2px 8px rgba(180, 150, 100, 0.12)',
-              }}
-            >
-              <Utensils size={22} strokeWidth={1.5} className="text-[#A67C38]" />
-            </div>
+          <div className="monogramme">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#B8863C" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2v8a2 2 0 0 0 4 0V2"/>
+              <path d="M8 12v10"/>
+              <path d="M18 2c-1.5 1-2 3-2 5s0.5 4 2 5c1.5-1 2-3 2-5s-0.5-4-2-5Z"/>
+              <path d="M18 12v10"/>
+            </svg>
           </div>
 
-          {/* Tagline */}
-          <p
-            className="text-[10px] sm:text-[11px] uppercase tracking-widest font-semibold mb-1"
-            style={{ color: '#A67C38' }}
-          >
-            Votre table d'honneur
-          </p>
+          <p className="eyebrow">Votre table d'honneur</p>
+          <h1>Bonjour {firstName}</h1>
+          <p className="sous-titre">Nous sommes ravis de vous compter parmi nous</p>
 
-          {/* Greeting */}
-          <h2 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[#1F1D1A] mb-1">
-            Bonjour {firstName}
-          </h2>
-
-          {/* Subtitle */}
-          <p className="italic text-xs sm:text-sm text-[#736B5E] mb-3.5">
-            Nous sommes ravis de vous compter parmi nous
-          </p>
-
-          {/* Category / Group Badge */}
           {groupName && (
-            <div className="flex justify-center mb-5">
-              <span
-                className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium"
-                style={{
-                  background: '#EDF2F8',
-                  border: '1px solid #D3DFEE',
-                  color: '#4B6B94',
-                }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-[#4B6B94]" />
-                <span>{groupName}</span>
+            <div className="etiquette-wrap">
+              <span className="etiquette">
+                <span className="point"></span>
+                {groupName}
               </span>
             </div>
           )}
 
-          {/* Divider with Center Label */}
-          <div className="relative my-5">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#E8DEC8]" />
-            </div>
-            <div className="relative flex justify-center">
-              <span
-                className="px-3 text-[10px] sm:text-[11px] font-semibold tracking-widest uppercase"
-                style={{
-                  background: '#FAF7F2',
-                  color: '#9C7A4A',
-                }}
-              >
-                Votre table assignée
-              </span>
-            </div>
+          <div className="separateur">
+            <span className="ligne"></span>
+            <span className="texte">VOTRE TABLE ASSIGNÉE</span>
+            <span className="ligne"></span>
           </div>
 
-          {/* Table Highlight Card */}
-          <div
-            className="rounded-2xl p-5 mb-5 text-center"
-            style={{
-              background: 'linear-gradient(180deg, #FDFBF7 0%, #F5EFE3 100%)',
-              border: '1px solid #DFCDB5',
-              boxShadow: '0 2px 10px rgba(180, 150, 100, 0.08)',
-            }}
-          >
-            <p
-              className="text-[10px] sm:text-[11px] uppercase tracking-widest font-semibold mb-1"
-              style={{ color: '#A07E48' }}
-            >
-              Table
-            </p>
-
-            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
-              {tableName}
-            </div>
-
+          <div className="bloc-table">
+            <p className="numero">TABLE</p>
+            <p className="nom-table">{tableName}</p>
             {companions > 0 && (
-              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full text-xs text-[#736B5E] bg-white/70 border border-[#E8DEC8]">
-                <Users size={12} style={{ color: '#A07E48' }} />
-                <span>Avec {companions} accompagnant{companions > 1 ? 's' : ''}</span>
-              </div>
+              <p style={{ fontSize: '12px', color: 'var(--encre-douce)', marginTop: '6px' }}>
+                Avec {companions} accompagnant{companions > 1 ? 's' : ''}
+              </p>
             )}
           </div>
 
-          {/* Descriptive text */}
-          <p className="text-xs sm:text-[13px] leading-relaxed text-[#5C5549] text-center mb-6 max-w-xs mx-auto">
+          <p className="description">
             Une place privilégiée vous a été préparée pour célébrer ces instants inoubliables. Découvrez l'agencement exact de la salle en consultant le plan de table.
           </p>
 
-          {/* Two Action Buttons Side-by-Side */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="actions">
             <a
               href={planUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}
-              className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-semibold text-xs sm:text-sm text-white transition-all transform hover:scale-[1.01] active:scale-[0.99] shadow-md cursor-pointer"
-              style={{
-                background: 'linear-gradient(135deg, #B88846 0%, #A2722F 100%)',
-                boxShadow: '0 4px 14px rgba(162, 114, 47, 0.35)',
-              }}
+              className="btn btn-principal"
             >
-              <MapPin size={15} />
-              <span>Voir le plan de table</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z"/>
+                <circle cx="12" cy="10" r="3"/>
+              </svg>
+              Voir le plan de table
             </a>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex items-center justify-center py-3 px-3 rounded-xl font-semibold text-xs sm:text-sm text-[#2D2823] transition-colors border border-[#E0D9CD] bg-white hover:bg-[#FAF8F5] cursor-pointer"
-            >
+            <button className="btn btn-secondaire" onClick={onClose}>
               Mon invitation
             </button>
           </div>
