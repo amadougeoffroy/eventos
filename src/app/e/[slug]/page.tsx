@@ -452,24 +452,21 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   // Use template sections order, or event custom order, or fallback
   const baseSections = event.sectionsOrder || template.sections;
-  const sections = useMemo(() => {
-    const list = [...baseSections];
-    const eventGifts = (allGifts && allGifts.length > 0 ? allGifts : publicGifts).filter(g => g.eventId === event?.id);
-    if (eventGifts.length > 0 && !list.includes('giftList')) {
-      const rsvpIdx = list.indexOf('rsvp');
-      if (rsvpIdx !== -1) {
-        list.splice(rsvpIdx + 1, 0, 'giftList');
+  const sections = [...baseSections];
+  const eventGifts = (allGifts && allGifts.length > 0 ? allGifts : publicGifts).filter(g => g.eventId === event.id);
+  if (eventGifts.length > 0 && !sections.includes('giftList')) {
+    const rsvpIdx = sections.indexOf('rsvp');
+    if (rsvpIdx !== -1) {
+      sections.splice(rsvpIdx + 1, 0, 'giftList');
+    } else {
+      const sweetIdx = sections.indexOf('sweetMessage');
+      if (sweetIdx !== -1) {
+        sections.splice(sweetIdx, 0, 'giftList');
       } else {
-        const sweetIdx = list.indexOf('sweetMessage');
-        if (sweetIdx !== -1) {
-          list.splice(sweetIdx, 0, 'giftList');
-        } else {
-          list.push('giftList');
-        }
+        sections.push('giftList');
       }
     }
-    return list;
-  }, [baseSections, allGifts, publicGifts, event?.id]);
+  }
 
 
   // Intro splash screen
