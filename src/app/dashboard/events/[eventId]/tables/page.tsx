@@ -280,6 +280,10 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     const newIds = [...table.guestIds, guestId];
     updateTable(tableId, { guestIds: newIds });
     setAssignments(prev => ({ ...prev, [guestId]: tableId }));
+
+    // Also persist tableId on guest
+    const actualGuestId = guestId.includes('-comp-') ? guestId.split('-comp-')[0] : guestId;
+    updateGuest(actualGuestId, { tableId });
   };
 
   const handleUnassign = (guestId: string) => {
@@ -299,6 +303,13 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
       delete copy[guestId];
       return copy;
     });
+
+    // If guest has no more seats at this table or others, clear tableId
+    const actualGuestId = guestId.includes('-comp-') ? guestId.split('-comp-')[0] : guestId;
+    const hasRemainingSeat = newIds.some(id => id === actualGuestId || id.startsWith(`${actualGuestId}-comp-`));
+    if (!hasRemainingSeat) {
+      updateGuest(actualGuestId, { tableId: undefined });
+    }
   };
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;

@@ -22,6 +22,7 @@ import SectionGallery from '@/components/invitation/SectionGallery';
 import SectionGiftList from '@/components/invitation/SectionGiftList';
 import BackgroundMusic, { startBackgroundMusic } from '@/components/invitation/BackgroundMusic';
 import MenuSurveyModal from '@/components/invitation/MenuSurveyModal';
+import TableAssignmentModal from '@/components/invitation/TableAssignmentModal';
 import { MenuCategory, MenuItem } from '@/lib/types';
 
 export default function GuestLandingPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -379,6 +380,73 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     setShowIntro(false);
   }, [event]);
 
+  // ── Seating assignment for known guest ──
+  const [seatingInfo, setSeatingInfo] = useState<{
+    tableName: string;
+    groupName?: string;
+    groupEmoji?: string;
+    groupColor?: string;
+  } | null>(null);
+  const [showTableModal, setShowTableModal] = useState(false);
+
+  useEffect(() => {
+    if (!event) return;
+
+    const fetchSeating = async () => {
+      try {
+        const tokenQuery = urlToken || knownGuest?.token || '';
+        const guestIdQuery = knownGuest?.id || '';
+        if (!tokenQuery && !guestIdQuery && !urlGuestParam) return;
+
+        const res = await fetch(`/api/seating?slug=${encodeURIComponent(slug)}&token=${encodeURIComponent(tokenQuery)}&guestId=${encodeURIComponent(guestIdQuery)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        let currentG = data.currentGuest;
+        if (!currentG && urlGuestParam) {
+          const rawName = decodeURIComponent(urlGuestParam).toLowerCase().replace(/-/g, ' ');
+          const match = (data.guests || []).find((g: any) => {
+            const full = `${g.firstName} ${g.lastName}`.toLowerCase();
+            return full.includes(rawName) || rawName.includes(g.firstName.toLowerCase());
+          });
+          if (match) {
+            const assignedTableId = match.tableId || (data.tables || []).find((t: any) => t.guestIds.includes(match.id))?.id;
+            const table = (data.tables || []).find((t: any) => t.id === assignedTableId);
+            const grp = (data.groups || []).find((gr: any) => gr.name === match.group);
+            if (table) {
+              currentG = {
+                firstName: match.firstName,
+                lastName: match.lastName,
+                tableName: table.name,
+                group: match.group,
+                groupEmoji: grp?.emoji,
+                groupColor: grp?.color,
+              };
+            }
+          }
+        }
+
+        if (currentG?.tableName) {
+          setSeatingInfo({
+            tableName: currentG.tableName,
+            groupName: currentG.group,
+            groupEmoji: currentG.groupEmoji,
+            groupColor: currentG.groupColor,
+          });
+
+          const sessionDismissed = sessionStorage.getItem(`table_modal_dismissed_${event.id}`);
+          if (!sessionDismissed) {
+            setShowTableModal(true);
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching seating:', e);
+      }
+    };
+
+    fetchSeating();
+  }, [event?.id, slug, urlToken, urlGuestParam, knownGuest?.id, knownGuest?.token]);
+
   // ── Loading state ──
   if (publicLoading) {
     return (
@@ -610,6 +678,53 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           />
         )}
       </AnimatePresence>
+
+      {/* Table Assignment Modal */}
+      {seatingInfo && (
+        <TableAssignmentModal
+          isOpen={showTableModal && !showIntro}
+          onClose={() => {
+            setShowTableModal(false);
+            if (event?.id) {
+              try { sessionStorage.setItem(`table_modal_dismissed_${event.id}`, 'true'); } catch {}
+            }
+          }}
+          guestName={knownGuest ? `${knownGuest.firstName} ${knownGuest.lastName}` : (urlGuestParam ? decodeURIComponent(urlGuestParam).replace(/-/g, ' ') : '')}
+          groupName={seatingInfo.groupName}
+          groupEmoji={seatingInfo.groupEmoji}
+          groupColor={seatingInfo.groupColor}
+          tableName={seatingInfo.tableName}
+          companions={knownGuest?.companions || 0}
+          planUrl={`/e/${slug}/plan-de-table${urlToken ? `?token=${urlToken}` : urlGuestParam ? `?guest=${urlGuestParam}` : ''}`}
+        />
+      )}
+
+      {/* Floating Seating Pill */}
+      {seatingInfo && !showIntro && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="fixed bottom-6 right-6 z-40"
+        >
+          <a
+            href={`/e/${slug}/plan-de-table${urlToken ? `?token=${urlToken}` : urlGuestParam ? `?guest=${urlGuestParam}` : ''}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 text-xs font-bold text-white border border-red-500/50"
+            style={{
+              background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
+              boxShadow: '0 8px 25px rgba(220, 38, 38, 0.45)',
+            }}
+          >
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
+            <span>🍽️ {seatingInfo.tableName}</span>
+            <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold">Plan</span>
+          </a>
+        </motion.div>
+      )}
 
       {/* Background music — Premium only */}
       {event.backgroundMusicUrl && (
