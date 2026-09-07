@@ -410,7 +410,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                       padding: '0.15rem 0.5rem', borderRadius: 6,
                       background: 'rgba(200,169,110,0.1)', fontSize: '0.75rem',
                       fontWeight: 700, color: 'var(--gold)',
-                    }}>{gift.price.toLocaleString('fr-FR')}€</span>
+                    }}>{gift.price.toLocaleString('fr-FR')} {gift.price >= 500 ? 'FCFA' : '€'}</span>
                   )}
                   <span style={{
                     padding: '0.15rem 0.5rem', borderRadius: 6,

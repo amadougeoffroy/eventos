@@ -68,6 +68,7 @@ const SECTIONS_ESSENTIEL: string[] = [
   'dressCode',
   'location',
   'rsvp',
+  'giftList',
   'sweetMessage',
 ];
 

@@ -132,7 +132,7 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                           fontSize: '0.8rem', fontWeight: 700, marginTop: '0.25rem',
                           color: 'var(--t-accent, var(--gold))',
                         }}>
-                          {gift.price.toLocaleString('fr-FR')}€
+                          {gift.price.toLocaleString('fr-FR')} {gift.price >= 500 ? 'FCFA' : '€'}
                         </div>
                       )}
                       {displayNames.length > 0 && (
