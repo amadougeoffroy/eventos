@@ -2,20 +2,6 @@
 
 import React, { use, useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  ArrowLeft,
-  MapPin,
-  Sparkles,
-  Search,
-  Users,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
-  Utensils,
-  CheckCircle2,
-  Info,
-} from 'lucide-react';
 import Link from 'next/link';
 
 interface TableData {
@@ -109,6 +95,8 @@ function SeatingPlanContent({ slug }: { slug: string }) {
         setCurrentTable(tableObj);
         if (tableObj) {
           setSelectedTable(tableObj);
+        } else if (data.tables && data.tables.length > 0) {
+          setSelectedTable(data.tables[0]);
         }
       } catch (err) {
         console.error(err);
@@ -124,16 +112,22 @@ function SeatingPlanContent({ slug }: { slug: string }) {
   useEffect(() => {
     if (currentTable && containerRef.current) {
       setTimeout(() => {
-        const targetX = currentTable.positionX || 0;
-        const targetY = currentTable.positionY || 0;
-        containerRef.current?.scrollTo({
-          left: Math.max(0, targetX - 100),
-          top: Math.max(0, targetY - 100),
-          behavior: 'smooth',
-        });
+        centerOnTable(currentTable);
       }, 350);
     }
   }, [currentTable]);
+
+  // Center helper
+  const centerOnTable = (table: TableData) => {
+    if (!containerRef.current) return;
+    const targetX = table.positionX || 0;
+    const targetY = table.positionY || 0;
+    containerRef.current.scrollTo({
+      left: Math.max(0, targetX - 80),
+      top: Math.max(0, targetY - 60),
+      behavior: 'smooth',
+    });
+  };
 
   // Handle guest search filter
   const searchedGuest = useMemo(() => {
@@ -149,391 +143,696 @@ function SeatingPlanContent({ slug }: { slug: string }) {
     return null;
   }, [searchedGuest, currentTable, currentGuest]);
 
-  // Calculate canvas bounding box so all tables fit
+  // Normalized table coordinates
   const canvasDimensions = useMemo(() => {
-    let maxX = 800;
-    let maxY = 600;
+    let maxX = 900;
+    let maxY = 550;
     tables.forEach(t => {
       if ((t.positionX || 0) + 240 > maxX) maxX = (t.positionX || 0) + 240;
-      if ((t.positionY || 0) + 240 > maxY) maxY = (t.positionY || 0) + 240;
+      if ((t.positionY || 0) + 220 > maxY) maxY = (t.positionY || 0) + 220;
     });
-    return { width: Math.max(1000, maxX), height: Math.max(750, maxY) };
+    return { width: Math.max(1050, maxX), height: Math.max(680, maxY) };
   }, [tables]);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0F0E0C] text-white flex flex-col items-center justify-center p-4">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 rounded-full border-2 border-[#D4AF37] border-t-transparent mb-4"
-        />
-        <p className="text-sm text-[#C8A96E] font-medium tracking-wide">Chargement du plan de table...</p>
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#FBF6EE',
+        fontFamily: "'Jost', sans-serif",
+        color: '#B8863C',
+      }}>
+        <p style={{ fontSize: '15px', letterSpacing: '.04em' }}>Chargement du plan de table...</p>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-[#0E0D0B] text-white flex flex-col selection:bg-[#EF4444] selection:text-white">
-      {/* ── Top Navigation Bar ── */}
-      <header className="sticky top-0 z-30 bg-[#161412]/95 backdrop-blur-md border-b border-[#C8A96E]/20 px-4 py-3 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/e/${slug}${token ? `?token=${token}` : ''}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-medium transition-all text-white/80 hover:text-white"
-            >
-              <ArrowLeft size={14} />
-              <span>Retour à l'invitation</span>
-            </Link>
+  const userTable = tables.find(t => t.id === activeHighlightedTableId);
 
-            <div>
-              <h1 className="font-serif text-lg sm:text-xl font-bold tracking-wide text-[#F3E5AB]">
-                Plan de Table
-              </h1>
-              <p className="text-xs text-white/50">{event?.name || 'Réception'}</p>
-            </div>
+  return (
+    <div className="seating-plan-wrapper">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Cormorant:ital@1&family=Jost:wght@400;500;600&display=swap');
+
+        .seating-plan-wrapper {
+          --ivoire: #FBF6EE;
+          --ivoire-carte: #FFFDF9;
+          --encre: #2B2420;
+          --encre-douce: #6B6055;
+          --or: #B8863C;
+          --or-clair: #D9AE6C;
+          --or-fond: #F3E4C6;
+          --trait: #E7DCC5;
+          --bleu-etiquette: #5B6E8C;
+          --bleu-fond: #EAEEF4;
+          --accent: #C4633F;
+          --accent-fond: #FBEBE3;
+
+          font-family: 'Jost', sans-serif;
+          color: var(--encre);
+          background:
+            radial-gradient(ellipse at top left, #FFFDF8 0%, transparent 55%),
+            radial-gradient(ellipse at bottom right, #F6EEDD 0%, transparent 55%),
+            var(--ivoire);
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+        }
+
+        /* ---------- HEADER ---------- */
+        .seating-plan-wrapper header {
+          background: var(--ivoire-carte);
+          border-bottom: 1px solid var(--trait);
+          padding: 16px 28px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 24px;
+        }
+
+        .seating-plan-wrapper .retour {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 13.5px;
+          color: var(--encre-douce);
+          cursor: pointer;
+          white-space: nowrap;
+          text-decoration: none;
+        }
+        .seating-plan-wrapper .retour svg { width: 16px; height: 16px; }
+        .seating-plan-wrapper .retour:hover { color: var(--encre); }
+
+        .seating-plan-wrapper .titre-bloc { text-align: center; flex: 1; }
+        .seating-plan-wrapper .titre-bloc h1 {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 700;
+          font-size: 26px;
+          color: var(--encre);
+          line-height: 1.1;
+        }
+        .seating-plan-wrapper .titre-bloc p {
+          font-family: 'Cormorant', serif;
+          font-style: italic;
+          font-size: 14px;
+          color: var(--or);
+          margin-top: 2px;
+        }
+
+        .seating-plan-wrapper .header-droite {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .seating-plan-wrapper .recherche {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--ivoire);
+          border: 1px solid var(--trait);
+          border-radius: 999px;
+          padding: 9px 16px;
+          width: 220px;
+        }
+        .seating-plan-wrapper .recherche svg { width: 14px; height: 14px; color: var(--encre-douce); flex-shrink: 0; }
+        .seating-plan-wrapper .recherche input {
+          border: none; background: transparent; outline: none;
+          font-family: 'Jost', sans-serif; font-size: 13px; color: var(--encre);
+          width: 100%;
+        }
+        .seating-plan-wrapper .recherche input::placeholder { color: #B3A996; }
+
+        .seating-plan-wrapper .zoom {
+          display: flex; align-items: center; gap: 8px;
+          background: var(--ivoire);
+          border: 1px solid var(--trait);
+          border-radius: 999px;
+          padding: 8px 12px;
+          font-size: 12.5px;
+          color: var(--encre-douce);
+          user-select: none;
+        }
+        .seating-plan-wrapper .zoom svg { width: 15px; height: 15px; cursor: pointer; color: var(--encre-douce); }
+        .seating-plan-wrapper .zoom svg:hover { color: var(--or); }
+
+        /* ---------- BANNIÈRE PERSO ---------- */
+        .seating-plan-wrapper .banniere {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          background: var(--or-fond);
+          border-bottom: 1px solid var(--or-clair);
+          padding: 12px 28px;
+          flex-wrap: wrap;
+        }
+        .seating-plan-wrapper .banniere-gauche { display: flex; align-items: center; gap: 12px; }
+        .seating-plan-wrapper .banniere-icone {
+          width: 34px; height: 34px;
+          border-radius: 50%;
+          background: var(--ivoire-carte);
+          border: 1px solid var(--or-clair);
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .seating-plan-wrapper .banniere-icone svg { width: 16px; height: 16px; color: var(--or); }
+        .seating-plan-wrapper .banniere-texte .ligne1 {
+          font-size: 14px; font-weight: 600; color: var(--encre);
+          display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        }
+        .seating-plan-wrapper .badge-famille {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: var(--bleu-fond); color: var(--bleu-etiquette);
+          font-size: 11.5px; font-weight: 500;
+          padding: 3px 10px; border-radius: 999px;
+          border: 1px solid #DCE3ED;
+        }
+        .seating-plan-wrapper .banniere-texte .ligne2 {
+          font-size: 12.5px; color: var(--encre-douce); margin-top: 2px;
+        }
+        .seating-plan-wrapper .banniere-texte .ligne2 strong { color: var(--or); font-weight: 600; }
+
+        .seating-plan-wrapper .btn-centrer {
+          display: flex; align-items: center; gap: 7px;
+          background: var(--accent);
+          color: #fff;
+          border: none;
+          padding: 10px 18px;
+          border-radius: 999px;
+          font-size: 13px; font-weight: 500;
+          cursor: pointer;
+          box-shadow: 0 8px 16px -8px rgba(196,99,63,0.5);
+          white-space: nowrap;
+          transition: transform .15s ease, opacity .15s ease;
+        }
+        .seating-plan-wrapper .btn-centrer:active { transform: translateY(1px); }
+        .seating-plan-wrapper .btn-centrer svg { width: 14px; height: 14px; }
+
+        /* ---------- ZONE PRINCIPALE ---------- */
+        .seating-plan-wrapper .zone-principale {
+          flex: 1;
+          display: flex;
+          overflow: hidden;
+          position: relative;
+        }
+
+        .seating-plan-wrapper .canvas {
+          flex: 1;
+          position: relative;
+          background-image: radial-gradient(circle, #E7DCC5 1px, transparent 1px);
+          background-size: 22px 22px;
+          overflow: auto;
+          padding: 40px;
+          min-height: 600px;
+        }
+
+        .seating-plan-wrapper .label-scene {
+          position: absolute;
+          top: 30px; left: 50%;
+          transform: translateX(-50%);
+          display: flex; align-items: center; gap: 8px;
+          background: var(--ivoire-carte);
+          border: 1px solid var(--or-clair);
+          padding: 8px 18px;
+          border-radius: 999px;
+          font-family: 'Jost', sans-serif;
+          font-size: 12px;
+          letter-spacing: .08em;
+          font-weight: 500;
+          color: var(--or);
+          white-space: nowrap;
+          z-index: 2;
+        }
+
+        .seating-plan-wrapper .tag-ici {
+          position: absolute;
+          display: flex; flex-direction: column; align-items: center;
+          z-index: 10;
+          pointer-events: none;
+          transform: translate(-50%, -100%);
+          margin-top: -12px;
+        }
+        .seating-plan-wrapper .tag-ici .pastille {
+          display: flex; align-items: center; gap: 6px;
+          background: var(--accent);
+          color: #fff;
+          font-size: 11px; font-weight: 600; letter-spacing: .05em;
+          padding: 6px 14px;
+          border-radius: 999px;
+          box-shadow: 0 6px 14px -4px rgba(196,99,63,0.6);
+          white-space: nowrap;
+        }
+        .seating-plan-wrapper .tag-ici .pastille svg { width: 12px; height: 12px; }
+        .seating-plan-wrapper .tag-ici .fleche {
+          width: 2px; height: 14px;
+          background: var(--accent);
+          margin-top: 2px;
+        }
+
+        .seating-plan-wrapper .table {
+          position: absolute;
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          text-align: center;
+          background: var(--ivoire-carte);
+          border: 1px solid var(--trait);
+          box-shadow: 0 6px 16px -8px rgba(60,45,20,0.12);
+          transition: transform .15s ease, box-shadow .15s ease;
+          cursor: pointer;
+          user-select: none;
+        }
+        .seating-plan-wrapper .table:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 12px 22px -10px rgba(60,45,20,0.18);
+        }
+        .seating-plan-wrapper .table svg { width: 20px; height: 20px; color: var(--or); margin-bottom: 6px; }
+        .seating-plan-wrapper .table .nom { font-size: 13.5px; font-weight: 600; color: var(--encre); line-height: 1.25; padding: 0 8px; }
+        .seating-plan-wrapper .table .places { font-size: 11.5px; color: var(--encre-douce); margin-top: 2px; }
+
+        .seating-plan-wrapper .table.carre { border-radius: 20px; width: 150px; height: 130px; }
+        .seating-plan-wrapper .table.rond { border-radius: 50%; width: 150px; height: 150px; }
+
+        .seating-plan-wrapper .table.active {
+          border: 2px solid var(--accent);
+          box-shadow: 0 0 0 6px var(--accent-fond), 0 14px 26px -10px rgba(196,99,63,0.45);
+        }
+        .seating-plan-wrapper .table.active .nom { color: var(--accent); }
+        .seating-plan-wrapper .table.active svg { color: var(--accent); }
+
+        /* ---------- SIDEBAR ---------- */
+        .seating-plan-wrapper .sidebar {
+          width: 310px;
+          flex-shrink: 0;
+          background: var(--ivoire-carte);
+          border-left: 1px solid var(--trait);
+          display: flex;
+          flex-direction: column;
+          z-index: 20;
+        }
+
+        .seating-plan-wrapper .sidebar-contenu {
+          padding: 22px 20px;
+          flex: 1;
+          overflow-y: auto;
+        }
+
+        .seating-plan-wrapper .sidebar-entete {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 14px;
+        }
+        .seating-plan-wrapper .sidebar-icone {
+          width: 42px; height: 42px;
+          border-radius: 14px;
+          background: var(--accent-fond);
+          border: 1px solid #E9C8B7;
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0;
+        }
+        .seating-plan-wrapper .sidebar-icone svg { width: 19px; height: 19px; color: var(--accent); }
+        .seating-plan-wrapper .sidebar-entete h2 {
+          font-family: 'Cormorant Garamond', serif;
+          font-weight: 700;
+          font-size: 19px;
+          color: var(--encre);
+          line-height: 1.15;
+        }
+        .seating-plan-wrapper .sidebar-entete p {
+          font-size: 12px; color: var(--encre-douce); margin-top: 1px;
+        }
+
+        .seating-plan-wrapper .badge-votre-table {
+          display: inline-block;
+          background: var(--accent);
+          color: #fff;
+          font-size: 10.5px;
+          font-weight: 600;
+          letter-spacing: .04em;
+          padding: 4px 10px;
+          border-radius: 999px;
+          margin-bottom: 16px;
+        }
+
+        .seating-plan-wrapper .info-box {
+          display: flex; gap: 10px;
+          background: var(--accent-fond);
+          border: 1px solid #EFD3C4;
+          border-radius: 14px;
+          padding: 12px 14px;
+          font-size: 13px;
+          line-height: 1.55;
+          color: #7A4A32;
+          margin-bottom: 22px;
+        }
+        .seating-plan-wrapper .info-box svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+
+        .seating-plan-wrapper .section-titre {
+          display: flex; align-items: center; gap: 7px;
+          font-size: 11.5px;
+          letter-spacing: .08em;
+          color: var(--encre-douce);
+          font-weight: 500;
+          margin-bottom: 12px;
+        }
+        .seating-plan-wrapper .section-titre svg { width: 14px; height: 14px; }
+
+        .seating-plan-wrapper .convive {
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 0;
+          border-top: 1px solid var(--trait);
+        }
+        .seating-plan-wrapper .convive:first-of-type { border-top: none; }
+        .seating-plan-wrapper .avatar {
+          width: 32px; height: 32px;
+          border-radius: 50%;
+          background: linear-gradient(160deg, var(--or-clair), var(--or));
+          color: #fff;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; font-weight: 600;
+          flex-shrink: 0;
+        }
+        .seating-plan-wrapper .convive-nom {
+          font-size: 13.5px; font-weight: 500; color: var(--encre);
+          display: flex; align-items: center; gap: 6px;
+        }
+        .seating-plan-wrapper .vous-tag {
+          font-size: 9.5px; font-weight: 700;
+          color: var(--accent);
+          letter-spacing: .03em;
+        }
+        .seating-plan-wrapper .convive-role {
+          margin-left: auto;
+          font-size: 11.5px;
+          color: var(--encre-douce);
+          white-space: nowrap;
+        }
+
+        .seating-plan-wrapper .sidebar-footer {
+          padding: 18px 20px;
+          border-top: 1px solid var(--trait);
+        }
+        .seating-plan-wrapper .btn-retour {
+          width: 100%;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          background: linear-gradient(180deg, #C99A4E, var(--or));
+          color: #FFFBF2 !important;
+          border: none;
+          padding: 13px;
+          border-radius: 14px;
+          font-size: 13.5px; font-weight: 500;
+          cursor: pointer;
+          box-shadow: 0 10px 18px -8px rgba(184,134,60,0.5);
+          text-decoration: none;
+          transition: transform .15s ease;
+        }
+        .seating-plan-wrapper .btn-retour:active { transform: translateY(1px); }
+        .seating-plan-wrapper .btn-retour svg { width: 14px; height: 14px; }
+
+        @media (max-width: 900px) {
+          .seating-plan-wrapper .sidebar {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            width: 100%;
+            max-height: 45vh;
+            border-left: none;
+            border-top: 1px solid var(--trait);
+            box-shadow: 0 -10px 25px rgba(0,0,0,0.08);
+          }
+          .seating-plan-wrapper .banniere {
+            flex-direction: column; align-items: flex-start;
+          }
+          .seating-plan-wrapper header {
+            padding: 12px 16px;
+            flex-wrap: wrap;
+          }
+          .seating-plan-wrapper .titre-bloc {
+            order: -1;
+            width: 100%;
+            margin-bottom: 6px;
+          }
+          .seating-plan-wrapper .recherche {
+            width: 160px;
+          }
+        }
+      `}</style>
+
+      {/* ---------- HEADER ---------- */}
+      <header>
+        <Link href={`/e/${slug}${token ? `?token=${token}` : ''}`} className="retour">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          Retour à l'invitation
+        </Link>
+
+        <div className="titre-bloc">
+          <h1>Plan de Table</h1>
+          <p>{event?.name || 'Réception de mariage'}</p>
+        </div>
+
+        <div className="header-droite">
+          <div className="recherche">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Chercher votre nom..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
 
-          {/* Search bar for guests */}
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:w-64">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
-              <input
-                type="text"
-                placeholder="Chercher votre nom..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs focus:outline-none focus:border-[#D4AF37] transition-all text-white placeholder-white/30"
-              />
-            </div>
-
-            {/* Zoom controls */}
-            <div className="flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl p-1">
-              <button
-                onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
-                className="p-1 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-all"
-                title="Dézoomer"
-              >
-                <ZoomOut size={15} />
-              </button>
-              <span className="text-[10px] font-mono px-1 text-white/60">{Math.round(zoomLevel * 100)}%</span>
-              <button
-                onClick={() => setZoomLevel(prev => Math.min(1.6, prev + 0.15))}
-                className="p-1 hover:bg-white/10 rounded-lg text-white/70 hover:text-white transition-all"
-                title="Zoomer"
-              >
-                <ZoomIn size={15} />
-              </button>
-            </div>
+          <div className="zoom">
+            <svg
+              onClick={() => setZoomLevel(prev => Math.max(0.6, prev - 0.15))}
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+              <path d="M8 11h6" />
+            </svg>
+            <span>{Math.round(zoomLevel * 100)}%</span>
+            <svg
+              onClick={() => setZoomLevel(prev => Math.min(1.5, prev + 0.15))}
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+              <path d="M11 8v6M8 11h6" />
+            </svg>
           </div>
         </div>
       </header>
 
-      {/* ── Guest Status Highlight Banner ── */}
+      {/* ---------- BANNIÈRE PERSO ---------- */}
       {(currentGuest || searchedGuest) && (
-        <div className="bg-gradient-to-r from-red-950/50 via-[#1C1815] to-amber-950/40 border-b border-red-500/30 px-4 py-2.5 sm:px-6">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full bg-red-600/20 border border-red-500/50 flex items-center justify-center text-red-400 shrink-0">
-                <MapPin size={16} />
+        <div className="banniere">
+          <div className="banniere-gauche">
+            <div className="banniere-icone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </div>
+            <div className="banniere-texte">
+              <div className="ligne1">
+                Bonjour {searchedGuest ? `${searchedGuest.firstName} ${searchedGuest.lastName}` : (currentGuest ? `${currentGuest.firstName} ${currentGuest.lastName}` : 'Invité')}
+                {(currentGuest?.group || searchedGuest?.group) && (
+                  <span className="badge-famille">{currentGuest?.group || searchedGuest?.group}</span>
+                )}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-white">
-                    {searchedGuest ? `${searchedGuest.firstName} ${searchedGuest.lastName}` : `Bonjour ${currentGuest.firstName} ${currentGuest.lastName}`}
-                  </span>
-                  {currentGuest?.group && (
-                    <span
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium"
-                      style={{
-                        background: `${currentGuest.groupColor || '#C8A96E'}20`,
-                        color: currentGuest.groupColor || '#C8A96E',
-                        border: `1px solid ${currentGuest.groupColor || '#C8A96E'}40`,
-                      }}
-                    >
-                      {currentGuest.groupEmoji} {currentGuest.group}
-                    </span>
-                  )}
-                </div>
-                <p className="text-xs text-white/70">
-                  Votre place est à la :{' '}
-                  <span className="font-bold text-red-400 underline decoration-red-400/50">
-                    {tables.find(t => t.id === activeHighlightedTableId)?.name || 'Non attribuée'}
-                  </span>
-                </p>
+              <div className="ligne2">
+                Votre place est à la : <strong>{userTable ? userTable.name : 'Non attribuée'}</strong>
               </div>
             </div>
-
-            {activeHighlightedTableId && (
-              <button
-                onClick={() => {
-                  const target = tables.find(t => t.id === activeHighlightedTableId);
-                  if (target) {
-                    setSelectedTable(target);
-                    containerRef.current?.scrollTo({
-                      left: Math.max(0, target.positionX - 100),
-                      top: Math.max(0, target.positionY - 100),
-                      behavior: 'smooth',
-                    });
-                  }
-                }}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-semibold transition-all shadow-lg shadow-red-900/30 self-start sm:self-auto"
-              >
-                <MapPin size={13} />
-                <span>Centrer sur ma table</span>
-              </button>
-            )}
           </div>
+
+          {userTable && (
+            <button className="btn-centrer" onClick={() => centerOnTable(userTable)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              Centrer sur ma table
+            </button>
+          )}
         </div>
       )}
 
-      {/* ── Main Canvas View ── */}
-      <main className="flex-1 relative flex flex-col md:flex-row overflow-hidden">
-        {/* Floor plan area */}
-        <div
-          ref={containerRef}
-          className="flex-1 overflow-auto p-6 relative cursor-grab active:cursor-grabbing"
-          style={{
-            backgroundImage: `radial-gradient(rgba(200, 169, 110, 0.08) 1px, transparent 1px)`,
-            backgroundSize: '24px 24px',
-          }}
-        >
-          {/* Stage / Mariés indicator */}
-          <div className="mb-6 flex justify-center">
-            <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-[#1F1B16] border border-[#C8A96E]/30 text-xs font-semibold tracking-widest uppercase text-[#D4AF37] shadow-lg">
-              <Sparkles size={14} />
-              <span>Scène & Estrade d'Honneur</span>
-              <Sparkles size={14} />
-            </div>
+      {/* ---------- ZONE PRINCIPALE ---------- */}
+      <div className="zone-principale">
+        <div className="canvas" ref={containerRef}>
+          <div className="label-scene">
+            ✦ &nbsp;SCÈNE & ESTRADE D'HONNEUR&nbsp; ✦
           </div>
 
-          {/* Scalable Room Layout */}
           <div
             style={{
+              position: 'relative',
               width: `${canvasDimensions.width}px`,
               height: `${canvasDimensions.height}px`,
               transform: `scale(${zoomLevel})`,
               transformOrigin: 'top left',
               transition: 'transform 0.15s ease-out',
-              position: 'relative',
             }}
           >
-            {tables.map((t) => {
+            {tables.map((t, index) => {
               const isUserTable = t.id === activeHighlightedTableId;
               const isSelected = selectedTable?.id === t.id;
-              const posX = t.positionX || 0;
-              const posY = t.positionY || 0;
+              const isRound = t.shape === 'round';
 
-              // Border radius by shape
-              let borderRadius = '50%';
-              if (t.shape === 'square') borderRadius = '16px';
-              if (t.shape === 'rectangle') borderRadius = '20px';
+              // Fallback default coordinates if not set in DB
+              const fallbackPositions = [
+                { x: 130, y: 120 },
+                { x: 380, y: 110 },
+                { x: 640, y: 100 },
+                { x: 880, y: 220 },
+                { x: 260, y: 320 },
+                { x: 520, y: 320 },
+                { x: 780, y: 340 },
+              ];
+              const posX = t.positionX || fallbackPositions[index % fallbackPositions.length].x;
+              const posY = t.positionY || fallbackPositions[index % fallbackPositions.length].y;
+
+              const tableClass = `table ${isRound ? 'rond' : 'carre'} ${isUserTable || isSelected ? 'active' : ''}`;
 
               return (
-                <div
-                  key={t.id}
-                  onClick={() => setSelectedTable(t)}
-                  style={{
-                    position: 'absolute',
-                    left: `${posX}px`,
-                    top: `${posY}px`,
-                    transform: 'translate(0, 0)',
-                    zIndex: isUserTable ? 20 : isSelected ? 15 : 5,
-                  }}
-                  className="cursor-pointer group"
-                >
-                  {/* Floating Marker if this is user table */}
-                  {isUserTable && (
-                    <motion.div
-                      initial={{ y: -5 }}
-                      animate={{ y: [0, -8, 0] }}
-                      transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                      className="absolute -top-12 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center pointer-events-none whitespace-nowrap"
-                    >
-                      <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-600 text-white font-extrabold text-[11px] uppercase tracking-wider shadow-xl shadow-red-900/60 border border-white/20">
-                        <MapPin size={12} className="animate-pulse" />
-                        <span>VOUS ÊTES ICI</span>
-                      </div>
-                      <div className="w-2 h-2 bg-red-600 rotate-45 -mt-1 shadow-md" />
-                    </motion.div>
-                  )}
-
-                  {/* Pulsating Ring for Guest Table */}
+                <React.Fragment key={t.id}>
                   {isUserTable && (
                     <div
-                      className="absolute -inset-3 rounded-full animate-ping pointer-events-none opacity-40"
+                      className="tag-ici"
                       style={{
-                        background: 'radial-gradient(circle, #EF4444 0%, transparent 70%)',
-                        borderRadius: borderRadius,
+                        top: `${posY}px`,
+                        left: `${posX + (isRound ? 75 : 75)}px`,
                       }}
-                    />
+                    >
+                      <span className="pastille">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0Z" />
+                          <circle cx="12" cy="10" r="3" />
+                        </svg>
+                        VOUS ÊTES ICI
+                      </span>
+                      <span className="fleche" />
+                    </div>
                   )}
 
-                  {/* The Table Element */}
                   <div
+                    className={tableClass}
                     style={{
-                      width: t.shape === 'rectangle' ? '160px' : '110px',
-                      height: '110px',
-                      borderRadius: borderRadius,
-                      background: isUserTable
-                        ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.4) 0%, rgba(153, 27, 27, 0.65) 100%)'
-                        : isSelected
-                        ? 'linear-gradient(135deg, rgba(200, 169, 110, 0.3) 0%, rgba(138, 107, 43, 0.4) 100%)'
-                        : 'linear-gradient(135deg, rgba(35, 30, 25, 0.85) 0%, rgba(20, 18, 15, 0.95) 100%)',
-                      border: isUserTable
-                        ? '3px solid #EF4444'
-                        : isSelected
-                        ? '2.5px solid #D4AF37'
-                        : '1.5px solid rgba(200, 169, 110, 0.3)',
-                      boxShadow: isUserTable
-                        ? '0 0 35px rgba(239, 68, 68, 0.6), inset 0 0 15px rgba(239, 68, 68, 0.3)'
-                        : isSelected
-                        ? '0 0 20px rgba(212, 175, 55, 0.4)'
-                        : '0 8px 16px rgba(0, 0, 0, 0.4)',
+                      top: `${posY}px`,
+                      left: `${posX}px`,
+                      zIndex: isUserTable ? 10 : isSelected ? 8 : 4,
                     }}
-                    className="flex flex-col items-center justify-center p-3 text-center transition-all duration-200 group-hover:scale-105"
+                    onClick={() => setSelectedTable(t)}
                   >
-                    <Utensils
-                      size={isUserTable ? 22 : 18}
-                      className={isUserTable ? 'text-red-200 mb-1' : 'text-[#D4AF37] mb-1 opacity-80'}
-                    />
-                    <span
-                      className={`text-xs font-bold leading-tight line-clamp-2 ${
-                        isUserTable ? 'text-white' : 'text-white/90'
-                      }`}
-                    >
-                      {t.name}
-                    </span>
-                    <span
-                      className={`text-[10px] font-medium mt-1 ${
-                        isUserTable ? 'text-red-200' : 'text-[#C8A96E]'
-                      }`}
-                    >
-                      {t.guestIds.length}/{t.capacity} places
-                    </span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M6 2v8a2 2 0 0 0 4 0V2" />
+                      <path d="M8 12v10" />
+                      <path d="M18 2c-1.5 1-2 3-2 5s.5 4 2 5c1.5-1 2-3 2-5s-.5-4-2-5Z" />
+                      <path d="M18 12v10" />
+                    </svg>
+                    <div className="nom">{t.name}</div>
+                    <div className="places">{t.guestIds.length}/{t.capacity} places</div>
                   </div>
-                </div>
+                </React.Fragment>
               );
             })}
           </div>
         </div>
 
-        {/* ── Sidebar / Bottom Drawer for Selected Table ── */}
-        <AnimatePresence>
-          {selectedTable && (
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="w-full md:w-80 lg:w-96 bg-[#161412] border-t md:border-t-0 md:border-l border-[#C8A96E]/20 p-5 flex flex-col justify-between shrink-0 shadow-2xl z-20"
-            >
+        {/* ---------- SIDEBAR ---------- */}
+        {selectedTable && (
+          <aside className="sidebar">
+            <div className="sidebar-contenu">
+              <div className="sidebar-entete">
+                <div className="sidebar-icone">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M6 2v8a2 2 0 0 0 4 0V2" />
+                    <path d="M8 12v10" />
+                    <path d="M18 2c-1.5 1-2 3-2 5s.5 4 2 5c1.5-1 2-3 2-5s-.5-4-2-5Z" />
+                    <path d="M18 12v10" />
+                  </svg>
+                </div>
+                <div>
+                  <h2>{selectedTable.name}</h2>
+                  <p>Capacité : {selectedTable.capacity} personnes</p>
+                </div>
+              </div>
+
+              {selectedTable.id === activeHighlightedTableId && (
+                <>
+                  <span className="badge-votre-table">VOTRE TABLE</span>
+                  <div className="info-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                      <path d="m9 11 3 3L22 4" />
+                    </svg>
+                    C'est votre table réservée pour toute la soirée&nbsp;! Vos proches et convives s'installeront ici.
+                  </div>
+                </>
+              )}
+
+              <div className="section-titre">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                CONVIVES À CETTE TABLE ({selectedTable.guestIds.length})
+              </div>
+
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                        selectedTable.id === activeHighlightedTableId
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/40'
-                          : 'bg-[#C8A96E]/15 text-[#D4AF37] border border-[#C8A96E]/30'
-                      }`}
-                    >
-                      <Utensils size={18} />
-                    </div>
-                    <div>
-                      <h3 className="font-serif font-bold text-base text-white">
-                        {selectedTable.name}
-                      </h3>
-                      <p className="text-[11px] text-white/50">
-                        Capacité : {selectedTable.capacity} personnes
-                      </p>
-                    </div>
-                  </div>
+                {selectedTable.guestIds.length === 0 ? (
+                  <p style={{ fontSize: '12.5px', color: 'var(--encre-douce)', fontStyle: 'italic', padding: '8px 0' }}>
+                    Aucun invité assigné pour le moment.
+                  </p>
+                ) : (
+                  selectedTable.guestIds.map((gid) => {
+                    const pureId = gid.includes('-comp-') ? gid.split('-comp-')[0] : gid;
+                    const g = guests.find((x) => x.id === pureId);
+                    const isMe = currentGuest?.id === pureId;
+                    const isCompanion = gid.includes('-comp-');
+                    const compIndex = isCompanion ? gid.split('-comp-')[1] : null;
 
-                  {selectedTable.id === activeHighlightedTableId && (
-                    <span className="px-2 py-0.5 rounded-full bg-red-600 text-white font-extrabold text-[10px] uppercase tracking-wide">
-                      Votre Table
-                    </span>
-                  )}
-                </div>
+                    const displayName = isCompanion
+                      ? `Accompagnant ${(Number(compIndex) || 0) + 1} (${g?.lastName || ''})`
+                      : (g ? `${g.firstName} ${g.lastName}` : 'Invité');
 
-                {selectedTable.id === activeHighlightedTableId && (
-                  <div className="rounded-xl p-3 bg-red-950/40 border border-red-500/30 text-xs text-red-200 mb-4 flex items-start gap-2">
-                    <CheckCircle2 size={16} className="text-red-400 shrink-0 mt-0.5" />
-                    <span>C'est votre table réservée pour toute la soirée ! Vos proches et convives s'installeront ici.</span>
-                  </div>
-                )}
+                    const avatarLetter = isCompanion ? 'A' : (g?.firstName?.[0] || 'I');
 
-                {/* Seated Guests at this table */}
-                <h4 className="text-xs uppercase tracking-wider font-semibold text-white/60 mb-2.5 flex items-center gap-1.5">
-                  <Users size={13} className="text-[#C8A96E]" />
-                  <span>Convives à cette table ({selectedTable.guestIds.length})</span>
-                </h4>
-
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  {selectedTable.guestIds.length === 0 ? (
-                    <p className="text-xs text-white/40 italic py-2">Aucun invité assigné pour le moment.</p>
-                  ) : (
-                    selectedTable.guestIds.map((gid) => {
-                      const pureId = gid.includes('-comp-') ? gid.split('-comp-')[0] : gid;
-                      const g = guests.find((x) => x.id === pureId);
-                      const isMe = currentGuest?.id === pureId;
-                      const isCompanion = gid.includes('-comp-');
-                      const compIndex = isCompanion ? gid.split('-comp-')[1] : null;
-
-                      return (
-                        <div
-                          key={gid}
-                          className={`flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all ${
-                            isMe
-                              ? 'bg-red-950/30 border-red-500/40 text-white font-semibold'
-                              : 'bg-white/5 border-white/5 text-white/80'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-[10px] font-bold text-[#C8A96E]">
-                              {isCompanion ? 'A' : (g?.firstName?.[0] || 'I')}
-                            </div>
-                            <div>
-                              <span>
-                                {isCompanion
-                                  ? `Accompagnant ${(Number(compIndex) || 0) + 1} (${g?.lastName || ''})`
-                                  : g ? `${g.firstName} ${g.lastName}` : 'Invité'}
-                              </span>
-                              {isMe && (
-                                <span className="ml-2 text-[10px] px-1.5 py-0.2 rounded bg-red-600 text-white font-bold">
-                                  VOUS
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {g?.group && (
-                            <span className="text-[10px] text-white/40">
-                              {g.group}
-                            </span>
-                          )}
+                    return (
+                      <div className="convive" key={gid}>
+                        <div className="avatar">{avatarLetter}</div>
+                        <div className="convive-nom">
+                          {displayName}
+                          {isMe && <span className="vous-tag">VOUS</span>}
                         </div>
-                      );
-                    })
-                  )}
-                </div>
+                        {g?.group && <div className="convive-role">{g.group}</div>}
+                      </div>
+                    );
+                  })
+                )}
               </div>
+            </div>
 
-              {/* Bottom return button */}
-              <div className="mt-5 pt-3 border-t border-white/10">
-                <Link
-                  href={`/e/${slug}${token ? `?token=${token}` : ''}`}
-                  className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#D4AF37] to-[#AA7C11] text-black font-semibold text-xs transition-all shadow-md hover:scale-[1.01]"
-                >
-                  <ArrowLeft size={14} />
-                  <span>Revenir à l'invitation principale</span>
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </main>
+            <div className="sidebar-footer">
+              <Link href={`/e/${slug}${token ? `?token=${token}` : ''}`} className="btn-retour">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Revenir à l'invitation principale
+              </Link>
+            </div>
+          </aside>
+        )}
+      </div>
     </div>
   );
 }
@@ -544,8 +843,16 @@ export default function SeatingPlanPage({ params }: { params: Promise<{ slug: st
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-[#0F0E0C] text-white flex items-center justify-center">
-          <p className="text-sm text-[#C8A96E]">Chargement du plan de table...</p>
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#FBF6EE',
+          fontFamily: "'Jost', sans-serif",
+          color: '#B8863C',
+        }}>
+          <p style={{ fontSize: '15px' }}>Chargement du plan de table...</p>
         </div>
       }
     >
