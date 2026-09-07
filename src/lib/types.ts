@@ -25,8 +25,20 @@ export interface EventMeta {
   godMotherName?: string;
   // Generic
   hostName?: string;
+  // Floor plan custom landmarks / elements
+  floorPlanElements?: FloorPlanElement[];
   // Menu survey
   menuSurveyEnabled?: boolean;
+  [key: string]: any;
+}
+
+export interface FloorPlanElement {
+  id: string;
+  name: string;
+  type?: string;
+  icon?: string;
+  positionX: number;
+  positionY: number;
 }
 
 export interface Event {

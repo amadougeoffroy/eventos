@@ -6,9 +6,10 @@ import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo, useRef, useEffect, useCallback, createRef } from 'react';
 import {
-  Users, Plus, Table, LayoutGrid, Settings, X, Check, Copy, Edit3, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, UserPlus, Save, RefreshCcw, Search, CheckCircle, Clock, UserX, Sparkles, Zap
+  Users, Plus, Table, LayoutGrid, Settings, X, Check, Copy, Edit3, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, UserPlus, Save, RefreshCcw, Search, CheckCircle, Clock, UserX, Sparkles, Zap, MapPin
 } from 'lucide-react';
 import Draggable from 'react-draggable'; // ensure this dependency exists
+import { FloorPlanElement } from '@/lib/types';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -21,7 +22,7 @@ type Assignment = { guestId: string; tableId: string; };
 
 export default function TablesPage({ params }: { params: Promise<{ eventId: string }> }) {
   const { eventId } = use(params);
-  const { events, guests, tables, tablesReady, guestGroups, addTable, updateTable, removeTable, updateGuest, eventsLoading } = useApp();
+  const { events, guests, tables, tablesReady, guestGroups, addTable, updateTable, removeTable, updateGuest, updateEvent, eventsLoading } = useApp();
   const { t } = useThemeLanguage();
   const tr = t('tables');
   const event = events.find(e => e.id === eventId);
@@ -29,6 +30,9 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
   // ---------- State ----------
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSmartModal, setShowSmartModal] = useState(false);
+  const [showLandmarksModal, setShowLandmarksModal] = useState(false);
+  const [newLandmarkName, setNewLandmarkName] = useState('');
+  const [newLandmarkIcon, setNewLandmarkIcon] = useState('✦');
   const [newTable, setNewTable] = useState<TableForm>({ name: '', capacity: 8, shape: 'round' });
   const [smartCapacity, setSmartCapacity] = useState(8);
   const [dragPositions, setDragPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -272,6 +276,60 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     updateTable(tableId, { positionX: data.x, positionY: data.y });
   };
 
+  // ---------- Landmarks / Repères de salle (Scène, DJ, Buffet...) ----------
+  const floorPlanElements: FloorPlanElement[] = useMemo(() => {
+    return event?.meta?.floorPlanElements || [];
+  }, [event?.meta?.floorPlanElements]);
+
+  const landmarkRefs = useRef<Record<string, React.RefObject<HTMLDivElement | null>>>({});
+  floorPlanElements.forEach(el => {
+    if (!landmarkRefs.current[el.id]) {
+      landmarkRefs.current[el.id] = createRef<HTMLDivElement>();
+    }
+  });
+
+  const handleAddLandmark = (name: string, icon = '✦', type = 'custom') => {
+    if (!name.trim()) return;
+    const newElement: FloorPlanElement = {
+      id: `elem-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: name.trim(),
+      icon,
+      type,
+      positionX: 200 + Math.floor(Math.random() * 150),
+      positionY: 25 + Math.floor(Math.random() * 60),
+    };
+    const updated = [...floorPlanElements, newElement];
+    updateEvent(eventId, {
+      meta: {
+        ...event?.meta,
+        floorPlanElements: updated,
+      },
+    });
+    setNewLandmarkName('');
+  };
+
+  const handleRemoveLandmark = (elemId: string) => {
+    const updated = floorPlanElements.filter(el => el.id !== elemId);
+    updateEvent(eventId, {
+      meta: {
+        ...event?.meta,
+        floorPlanElements: updated,
+      },
+    });
+  };
+
+  const handleDragLandmark = (_e: any, data: any, elemId: string) => {
+    const updated = floorPlanElements.map(el =>
+      el.id === elemId ? { ...el, positionX: Math.round(data.x), positionY: Math.round(data.y) } : el
+    );
+    updateEvent(eventId, {
+      meta: {
+        ...event?.meta,
+        floorPlanElements: updated,
+      },
+    });
+  };
+
   // ---------- Assignment UI ----------
   const handleAssign = (guestId: string, tableId: string) => {
     const table = tables.find(t => t.id === tableId);
@@ -325,6 +383,9 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+            <button className="btn-secondary" onClick={() => setShowLandmarksModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <MapPin size={16} /> Repères & Lieux ({floorPlanElements.length})
+            </button>
             <button className="btn-primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> {tr.addTable}</button>
             <button className="btn-secondary" onClick={() => setShowSmartModal(true)}><RefreshCcw size={16} /> {tr.smartOrg}</button>
           </div>
@@ -428,6 +489,69 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                       }}>{t.guestIds.length}/{t.capacity}</span>
                     </>
                   )}
+                </div>
+              </Draggable>
+            );
+          })}
+
+          {/* Draggable Floor Plan Landmarks (Scène, DJ, Buffet, Toilettes...) */}
+          {hydrated && floorPlanElements.map(el => {
+            const ref = landmarkRefs.current[el.id];
+            return (
+              <Draggable
+                key={el.id}
+                nodeRef={ref}
+                bounds="parent"
+                position={{ x: el.positionX, y: el.positionY }}
+                onStop={(e, data) => handleDragLandmark(e, data, el.id)}
+              >
+                <div
+                  ref={ref}
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    cursor: 'grab',
+                    padding: '8px 14px',
+                    borderRadius: '999px',
+                    background: 'rgba(200, 169, 110, 0.12)',
+                    border: '1.5px dashed var(--gold)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.04em',
+                    color: 'var(--gold)',
+                    backdropFilter: 'blur(8px)',
+                    zIndex: 20,
+                    userSelect: 'none',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+                  }}
+                  title="Glisser pour déplacer ce repère"
+                >
+                  <span style={{ fontSize: '0.9rem' }}>{el.icon || '✦'}</span>
+                  <span>{el.name}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveLandmark(el.id);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '2px',
+                      marginLeft: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderRadius: '50%',
+                    }}
+                    title="Supprimer ce repère"
+                  >
+                    <X size={12} />
+                  </button>
                 </div>
               </Draggable>
             );
@@ -912,6 +1036,251 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                     }}
                   >
                     <Sparkles size={14} /> {tr.apply}
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* ── Modal: Repères & Lieux Clés (Scène, DJ, Buffet...) ── */}
+          {showLandmarksModal && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem',
+              }}
+              onClick={() => setShowLandmarksModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+                style={{
+                  background: 'var(--bg-card)', border: '1px solid var(--border-light)', borderRadius: '1.25rem',
+                  padding: '1.5rem', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflowY: 'auto',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                }}
+                onClick={e => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: 10,
+                      background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.25)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--gold)',
+                    }}>
+                      <MapPin size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                        Repères & Lieux clés de la salle
+                      </h3>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+                        Ajoutez des repères qui apparaîtront sur le plan des invités (Scène, DJ, Buffet...)
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowLandmarksModal(false)}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Suggestions en 1 clic */}
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.5rem' }}>
+                    Ajout rapide en 1 clic :
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {[
+                      { name: "SCÈNE & ESTRADE D'HONNEUR", icon: "✦", type: 'stage' },
+                      { name: "DJ & SONORISATION", icon: "🎧", type: 'dj' },
+                      { name: "BUFFET GASTRONOMIQUE", icon: "🍽️", type: 'buffet' },
+                      { name: "BAR & RAFRAÎCHISSEMENTS", icon: "🍸", type: 'bar' },
+                      { name: "TOILETTES", icon: "🚻", type: 'toilets' },
+                      { name: "ENTRÉE PRINCIPALE", icon: "🚪", type: 'entrance' },
+                      { name: "PHOTOBOOTH", icon: "📸", type: 'photobooth' },
+                      { name: "PISTE DE DANSE", icon: "💃", type: 'dancefloor' },
+                      { name: "TABLE DES CADEAUX", icon: "🎁", type: 'giftstable' },
+                    ].map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleAddLandmark(preset.name, preset.icon, preset.type)}
+                        style={{
+                          background: 'rgba(200,169,110,0.08)',
+                          border: '1px solid rgba(200,169,110,0.25)',
+                          borderRadius: '999px',
+                          padding: '5px 12px',
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        <span>{preset.icon}</span>
+                        <span>{preset.name}</span>
+                        <Plus size={11} style={{ opacity: 0.6 }} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Formulaire texte libre */}
+                <div style={{
+                  background: 'var(--bg-card-hover)',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  marginBottom: '1.25rem',
+                }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', display: 'block', marginBottom: '0.5rem' }}>
+                    Ajouter un repère personnalisé (texte libre) :
+                  </label>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={newLandmarkIcon}
+                      onChange={e => setNewLandmarkIcon(e.target.value)}
+                      placeholder="Icon"
+                      style={{
+                        width: '55px',
+                        padding: '0.55rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-light)',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.85rem',
+                        textAlign: 'center',
+                        outline: 'none',
+                      }}
+                      title="Emoji ou symbole (ex: 📍, 🥂, ✦)"
+                    />
+                    <input
+                      type="text"
+                      value={newLandmarkName}
+                      onChange={e => setNewLandmarkName(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddLandmark(newLandmarkName, newLandmarkIcon || '📍', 'custom');
+                        }
+                      }}
+                      placeholder="Ex: Bar à bonbons, Terrasse cocktail..."
+                      style={{
+                        flex: 1,
+                        padding: '0.55rem 0.75rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-light)',
+                        background: 'var(--bg-card)',
+                        color: 'var(--text-primary)',
+                        fontSize: '0.8rem',
+                        outline: 'none',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleAddLandmark(newLandmarkName, newLandmarkIcon || '📍', 'custom')}
+                      disabled={!newLandmarkName.trim()}
+                      style={{
+                        padding: '0.55rem 1rem',
+                        borderRadius: '8px',
+                        border: 'none',
+                        background: !newLandmarkName.trim() ? 'var(--glass)' : 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                        color: !newLandmarkName.trim() ? 'var(--text-muted)' : '#fff',
+                        fontWeight: 600,
+                        fontSize: '0.78rem',
+                        cursor: !newLandmarkName.trim() ? 'not-allowed' : 'pointer',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      Ajouter
+                    </button>
+                  </div>
+                </div>
+
+                {/* Liste des repères existants */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      Repères configurés ({floorPlanElements.length}) :
+                    </label>
+                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                      Glissez-les directement sur le plan pour ajuster leur position
+                    </span>
+                  </div>
+
+                  {floorPlanElements.length === 0 ? (
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', margin: '0.5rem 0' }}>
+                      Aucun repère personnalisé configuré. Le repère par défaut « SCÈNE & ESTRADE D'HONNEUR » sera affiché en haut.
+                    </p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '180px', overflowY: 'auto' }}>
+                      {floorPlanElements.map((elem) => (
+                        <div
+                          key={elem.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            background: 'var(--bg-card-hover)',
+                            border: '1px solid var(--border-light)',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.9rem' }}>{elem.icon || '📍'}</span>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>{elem.name}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                              X: {elem.positionX}px, Y: {elem.positionY}px
+                            </span>
+                            <button
+                              onClick={() => handleRemoveLandmark(elem.id)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: '#EF4444',
+                                cursor: 'pointer',
+                                padding: 4,
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                              title="Supprimer ce repère"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => setShowLandmarksModal(false)}
+                    style={{
+                      padding: '0.6rem 1.25rem',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, var(--gold), var(--gold-light))',
+                      color: '#fff',
+                      fontWeight: 600,
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Terminer & Fermer
                   </button>
                 </div>
               </motion.div>

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
     const supabase = getServiceClient();
 
     // 1. Resolve event
-    let eventQuery = supabase.from('events').select('id, name, slug, type, date');
+    let eventQuery = supabase.from('events').select('id, name, slug, type, date, meta');
     if (eventId) {
       eventQuery = eventQuery.eq('id', eventId);
     } else if (slug) {
@@ -149,7 +149,14 @@ export async function GET(req: NextRequest) {
     }
 
     return NextResponse.json({
-      event,
+      event: {
+        id: event.id,
+        name: event.name,
+        slug: event.slug,
+        type: event.type,
+        date: event.date,
+        floorPlanElements: (event.meta as any)?.floorPlanElements || [],
+      },
       tables,
       guests,
       groups,

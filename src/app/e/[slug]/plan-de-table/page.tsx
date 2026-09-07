@@ -31,6 +31,15 @@ interface GroupData {
   color: string;
 }
 
+interface FloorPlanElementData {
+  id: string;
+  name: string;
+  type?: string;
+  icon?: string;
+  positionX: number;
+  positionY: number;
+}
+
 function SeatingPlanContent({ slug }: { slug: string }) {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
@@ -41,6 +50,7 @@ function SeatingPlanContent({ slug }: { slug: string }) {
   const [tables, setTables] = useState<TableData[]>([]);
   const [guests, setGuests] = useState<GuestData[]>([]);
   const [groups, setGroups] = useState<GroupData[]>([]);
+  const [floorPlanElements, setFloorPlanElements] = useState<FloorPlanElementData[]>([]);
   const [currentGuest, setCurrentGuest] = useState<any>(null);
   const [currentTable, setCurrentTable] = useState<TableData | null>(null);
 
@@ -62,6 +72,13 @@ function SeatingPlanContent({ slug }: { slug: string }) {
         setTables(data.tables || []);
         setGuests(data.guests || []);
         setGroups(data.groups || []);
+
+        const rawElements = data.event?.floorPlanElements || [];
+        setFloorPlanElements(
+          rawElements.length > 0
+            ? rawElements
+            : [{ id: 'default-stage', name: "SCÈNE & ESTRADE D'HONNEUR", icon: "✦", positionX: 420, positionY: 30, type: 'stage' }]
+        );
 
         let guestObj = data.currentGuest;
         let tableObj = data.currentTable;
@@ -151,8 +168,12 @@ function SeatingPlanContent({ slug }: { slug: string }) {
       if ((t.positionX || 0) + 240 > maxX) maxX = (t.positionX || 0) + 240;
       if ((t.positionY || 0) + 220 > maxY) maxY = (t.positionY || 0) + 220;
     });
-    return { width: Math.max(1050, maxX), height: Math.max(680, maxY) };
-  }, [tables]);
+    floorPlanElements.forEach(elem => {
+      if ((elem.positionX || 0) + 280 > maxX) maxX = (elem.positionX || 0) + 280;
+      if ((elem.positionY || 0) + 120 > maxY) maxY = (elem.positionY || 0) + 120;
+    });
+    return { width: Math.max(1100, maxX), height: Math.max(700, maxY) };
+  }, [tables, floorPlanElements]);
 
   if (loading) {
     return (
@@ -346,26 +367,43 @@ function SeatingPlanContent({ slug }: { slug: string }) {
           background-image: radial-gradient(circle, #E7DCC5 1px, transparent 1px);
           background-size: 22px 22px;
           overflow: auto;
-          padding: 40px;
+          padding: 40px 360px 160px 40px;
           min-height: 600px;
+          transition: padding-right 0.2s ease;
+        }
+        .seating-plan-wrapper .canvas.sans-sidebar {
+          padding-right: 60px;
         }
 
-        .seating-plan-wrapper .label-scene {
+        .seating-plan-wrapper .label-repere {
           position: absolute;
-          top: 30px; left: 50%;
-          transform: translateX(-50%);
-          display: flex; align-items: center; gap: 8px;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
           background: var(--ivoire-carte);
-          border: 1px solid var(--or-clair);
-          padding: 8px 18px;
+          border: 1.5px dashed var(--or);
+          padding: 7px 16px;
           border-radius: 999px;
           font-family: 'Jost', sans-serif;
-          font-size: 12px;
-          letter-spacing: .08em;
-          font-weight: 500;
+          font-size: 11.5px;
+          letter-spacing: .06em;
+          font-weight: 600;
           color: var(--or);
           white-space: nowrap;
-          z-index: 2;
+          z-index: 3;
+          box-shadow: 0 4px 14px rgba(184,134,60,0.08);
+          user-select: none;
+          pointer-events: none;
+        }
+        .seating-plan-wrapper .label-repere.stage {
+          background: var(--ivoire-carte);
+          border: 1.5px solid var(--or-clair);
+          font-size: 12px;
+          letter-spacing: .08em;
+          box-shadow: 0 6px 18px rgba(184,134,60,0.12);
+        }
+        .seating-plan-wrapper .label-repere .repere-icon {
+          font-size: 13px;
         }
 
         .seating-plan-wrapper .tag-ici {
@@ -424,13 +462,77 @@ function SeatingPlanContent({ slug }: { slug: string }) {
 
         /* ---------- SIDEBAR ---------- */
         .seating-plan-wrapper .sidebar {
-          width: 310px;
+          width: 320px;
           flex-shrink: 0;
           background: var(--ivoire-carte);
           border-left: 1px solid var(--trait);
           display: flex;
           flex-direction: column;
           z-index: 20;
+          position: relative;
+          box-shadow: -4px 0 20px rgba(60,45,20,0.04);
+        }
+
+        .seating-plan-wrapper .drawer-handle {
+          display: none;
+        }
+
+        .seating-plan-wrapper .btn-fermer-sidebar {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: var(--ivoire);
+          border: 1px solid var(--trait);
+          color: var(--encre-douce);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all .15s ease;
+          z-index: 10;
+        }
+        .seating-plan-wrapper .btn-fermer-sidebar:hover {
+          background: var(--or-fond);
+          color: var(--encre);
+          border-color: var(--or);
+        }
+        .seating-plan-wrapper .btn-fermer-sidebar svg {
+          width: 14px;
+          height: 14px;
+        }
+
+        .seating-plan-wrapper .btn-flottant-revoir-table {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          display: inline-flex;
+          align-items: center;
+          gap: 9px;
+          background: var(--ivoire-carte);
+          border: 1.5px solid var(--or);
+          color: var(--encre);
+          padding: 10px 18px;
+          border-radius: 999px;
+          font-family: 'Jost', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          box-shadow: 0 10px 25px -5px rgba(60,45,20,0.18), 0 0 0 3px rgba(200,169,110,0.12);
+          z-index: 40;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .seating-plan-wrapper .btn-flottant-revoir-table:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 30px -5px rgba(60,45,20,0.25), 0 0 0 5px rgba(200,169,110,0.22);
+          background: #fff;
+        }
+        .seating-plan-wrapper .btn-flottant-revoir-table svg {
+          width: 16px;
+          height: 16px;
+          color: var(--or);
         }
 
         .seating-plan-wrapper .sidebar-contenu {
@@ -444,6 +546,7 @@ function SeatingPlanContent({ slug }: { slug: string }) {
           align-items: center;
           gap: 12px;
           margin-bottom: 14px;
+          padding-right: 32px;
         }
         .seating-plan-wrapper .sidebar-icone {
           width: 42px; height: 42px;
@@ -478,41 +581,50 @@ function SeatingPlanContent({ slug }: { slug: string }) {
         }
 
         .seating-plan-wrapper .info-box {
-          display: flex; gap: 10px;
           background: var(--accent-fond);
-          border: 1px solid #EFD3C4;
-          border-radius: 14px;
-          padding: 12px 14px;
-          font-size: 13px;
-          line-height: 1.55;
-          color: #7A4A32;
-          margin-bottom: 22px;
+          border-left: 3px solid var(--accent);
+          border-radius: 0 10px 10px 0;
+          padding: 10px 12px;
+          font-size: 11.5px;
+          color: var(--encre);
+          line-height: 1.45;
+          margin-bottom: 18px;
+          display: flex;
+          gap: 8px;
+          align-items: flex-start;
         }
-        .seating-plan-wrapper .info-box svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; color: var(--accent); }
+        .seating-plan-wrapper .info-box svg {
+          width: 15px; height: 15px;
+          color: var(--accent);
+          flex-shrink: 0;
+          margin-top: 2px;
+        }
 
         .seating-plan-wrapper .section-titre {
-          display: flex; align-items: center; gap: 7px;
-          font-size: 11.5px;
+          font-size: 10.5px;
+          font-weight: 700;
           letter-spacing: .08em;
-          color: var(--encre-douce);
-          font-weight: 500;
-          margin-bottom: 12px;
+          color: var(--or);
+          margin-bottom: 10px;
+          display: flex; align-items: center; gap: 6px;
         }
-        .seating-plan-wrapper .section-titre svg { width: 14px; height: 14px; }
+        .seating-plan-wrapper .section-titre svg { width: 13px; height: 13px; }
 
         .seating-plan-wrapper .convive {
-          display: flex; align-items: center; gap: 10px;
-          padding: 10px 0;
-          border-top: 1px solid var(--trait);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 7px 0;
+          border-bottom: 1px dashed var(--trait);
         }
-        .seating-plan-wrapper .convive:first-of-type { border-top: none; }
+        .seating-plan-wrapper .convive:last-child { border-bottom: none; }
         .seating-plan-wrapper .avatar {
-          width: 32px; height: 32px;
+          width: 28px; height: 28px;
           border-radius: 50%;
-          background: linear-gradient(160deg, var(--or-clair), var(--or));
-          color: #fff;
+          background: var(--or-fond);
+          border: 1px solid var(--or-clair);
           display: flex; align-items: center; justify-content: center;
-          font-size: 13px; font-weight: 600;
+          font-size: 11px; font-weight: 600; color: var(--or);
           flex-shrink: 0;
         }
         .seating-plan-wrapper .convive-nom {
@@ -554,13 +666,36 @@ function SeatingPlanContent({ slug }: { slug: string }) {
 
         @media (max-width: 900px) {
           .seating-plan-wrapper .sidebar {
-            position: absolute;
+            position: fixed;
             bottom: 0; left: 0; right: 0;
             width: 100%;
-            max-height: 45vh;
+            max-height: 52vh;
             border-left: none;
             border-top: 1px solid var(--trait);
-            box-shadow: 0 -10px 25px rgba(0,0,0,0.08);
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.18);
+            z-index: 60;
+          }
+          .seating-plan-wrapper .drawer-handle {
+            display: block;
+            width: 44px;
+            height: 4px;
+            border-radius: 999px;
+            background: #D8CEBC;
+            margin: 10px auto 2px auto;
+            cursor: pointer;
+          }
+          .seating-plan-wrapper .canvas {
+            padding: 24px 20px 280px 20px !important;
+          }
+          .seating-plan-wrapper .canvas.sans-sidebar {
+            padding-bottom: 90px !important;
+          }
+          .seating-plan-wrapper .btn-flottant-revoir-table {
+            bottom: 16px;
+            right: 16px;
+            padding: 8px 14px;
+            font-size: 12px;
           }
           .seating-plan-wrapper .banniere {
             flex-direction: column; align-items: flex-start;
@@ -667,11 +802,7 @@ function SeatingPlanContent({ slug }: { slug: string }) {
 
       {/* ---------- ZONE PRINCIPALE ---------- */}
       <div className="zone-principale">
-        <div className="canvas" ref={containerRef}>
-          <div className="label-scene">
-            ✦ &nbsp;SCÈNE & ESTRADE D'HONNEUR&nbsp; ✦
-          </div>
-
+        <div className={`canvas ${!selectedTable ? 'sans-sidebar' : ''}`} ref={containerRef}>
           <div
             style={{
               position: 'relative',
@@ -682,6 +813,25 @@ function SeatingPlanContent({ slug }: { slug: string }) {
               transition: 'transform 0.15s ease-out',
             }}
           >
+            {/* Repères personnalisés & Scène (Scène, DJ, Buffet, Toilettes...) */}
+            {floorPlanElements.map((elem) => {
+              const isStage = elem.type === 'stage' || elem.name.toLowerCase().includes('scène');
+              return (
+                <div
+                  key={elem.id}
+                  className={`label-repere ${isStage ? 'stage' : ''}`}
+                  style={{
+                    position: 'absolute',
+                    top: `${elem.positionY}px`,
+                    left: `${elem.positionX}px`,
+                  }}
+                >
+                  {elem.icon && <span className="repere-icon">{elem.icon}</span>}
+                  <span>{elem.name}</span>
+                </div>
+              );
+            })}
+
             {tables.map((t, index) => {
               const isUserTable = t.id === activeHighlightedTableId;
               const isSelected = selectedTable?.id === t.id;
@@ -750,6 +900,17 @@ function SeatingPlanContent({ slug }: { slug: string }) {
         {/* ---------- SIDEBAR ---------- */}
         {selectedTable && (
           <aside className="sidebar">
+            <div className="drawer-handle" onClick={() => setSelectedTable(null)} />
+            <button
+              className="btn-fermer-sidebar"
+              onClick={() => setSelectedTable(null)}
+              title="Fermer les détails"
+              aria-label="Fermer les détails"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
             <div className="sidebar-contenu">
               <div className="sidebar-entete">
                 <div className="sidebar-icone">
@@ -831,6 +992,22 @@ function SeatingPlanContent({ slug }: { slug: string }) {
               </Link>
             </div>
           </aside>
+        )}
+
+        {/* Bouton flottant pour rouvrir les détails de la table quand la sidebar est fermée */}
+        {!selectedTable && (
+          <button
+            className="btn-flottant-revoir-table"
+            onClick={() => setSelectedTable(userTable || tables[0] || null)}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 2v8a2 2 0 0 0 4 0V2" />
+              <path d="M8 12v10" />
+              <path d="M18 2c-1.5 1-2 3-2 5s.5 4 2 5c1.5-1 2-3 2-5s-.5-4-2-5Z" />
+              <path d="M18 12v10" />
+            </svg>
+            <span>{userTable ? `Voir ma table (${userTable.name})` : 'Détails de la table'}</span>
+          </button>
         )}
       </div>
     </div>
