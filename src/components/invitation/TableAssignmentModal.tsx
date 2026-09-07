@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, MapPin, X, Users, ArrowRight } from 'lucide-react';
+import { MapPin, X, Users, Utensils } from 'lucide-react';
 
 interface TableAssignmentModalProps {
   isOpen: boolean;
@@ -29,14 +29,17 @@ export default function TableAssignmentModal({
 }: TableAssignmentModalProps) {
   if (!isOpen) return null;
 
+  // Extract first name for the warm greeting (fallback to full guestName)
+  const firstName = guestName?.trim() ? guestName.trim().split(' ')[0] : 'Invité';
+
   return (
     <AnimatePresence>
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
         style={{
-          background: 'rgba(5, 5, 5, 0.78)',
-          backdropFilter: 'blur(10px)',
-          WebkitBackdropFilter: 'blur(10px)',
+          background: 'rgba(20, 18, 15, 0.45)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
         }}
       >
         <motion.div
@@ -44,121 +47,145 @@ export default function TableAssignmentModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 15 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className="relative w-full max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto rounded-3xl p-6 sm:p-8 text-center text-white"
+          className="relative w-full max-w-[390px] sm:max-w-[430px] max-h-[92vh] overflow-y-auto rounded-3xl p-6 sm:p-8 text-center"
           style={{
-            background: 'linear-gradient(170deg, #1C1917 0%, #12100E 100%)',
-            border: '1px solid rgba(212, 175, 55, 0.35)',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(212, 175, 55, 0.12)',
+            background: '#FAF7F2',
+            border: '1px solid rgba(212, 175, 55, 0.3)',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.25), 0 0 35px rgba(212, 175, 55, 0.1)',
           }}
         >
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-            style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: 'rgba(255, 255, 255, 0.6)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-            }}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center transition-colors bg-white/80 hover:bg-white text-stone-500 hover:text-stone-800 border border-stone-200"
             aria-label="Fermer"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
 
-          {/* Top subtle badge */}
-          <div
-            className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[11px] font-semibold tracking-wider uppercase mb-4"
-            style={{
-              background: 'rgba(212, 175, 55, 0.12)',
-              border: '1px solid rgba(212, 175, 55, 0.3)',
-              color: '#E5C07B',
-            }}
-          >
-            <Sparkles size={12} />
-            <span>Placement à table</span>
+          {/* Top Utensils Icon in Gold Circle */}
+          <div className="flex justify-center mb-4">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, #FAF4E8 0%, #F0E3CC 100%)',
+                border: '1px solid #DFC9A7',
+                boxShadow: '0 2px 8px rgba(180, 150, 100, 0.12)',
+              }}
+            >
+              <Utensils size={22} strokeWidth={1.5} className="text-[#A67C38]" />
+            </div>
           </div>
 
-          {/* Guest Greeting */}
-          <h2 className="font-serif text-2xl sm:text-3xl font-bold tracking-wide text-white mb-2">
-            Bonjour {guestName}
+          {/* Tagline */}
+          <p
+            className="text-[10px] sm:text-[11px] uppercase tracking-widest font-semibold mb-1"
+            style={{ color: '#A67C38' }}
+          >
+            Votre table d'honneur
+          </p>
+
+          {/* Greeting */}
+          <h2 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[#1F1D1A] mb-1">
+            Bonjour {firstName}
           </h2>
 
-          {/* Category / Group badge */}
+          {/* Subtitle */}
+          <p className="italic text-xs sm:text-sm text-[#736B5E] mb-3.5">
+            Nous sommes ravis de vous compter parmi nous
+          </p>
+
+          {/* Category / Group Badge */}
           {groupName && (
             <div className="flex justify-center mb-5">
               <span
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium"
                 style={{
-                  background: `${groupColor}15`,
-                  border: `1px solid ${groupColor}35`,
-                  color: groupColor,
+                  background: '#EDF2F8',
+                  border: '1px solid #D3DFEE',
+                  color: '#4B6B94',
                 }}
               >
-                <span>{groupEmoji}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#4B6B94]" />
                 <span>{groupName}</span>
               </span>
             </div>
           )}
 
+          {/* Divider with Center Label */}
+          <div className="relative my-5">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#E8DEC8]" />
+            </div>
+            <div className="relative flex justify-center">
+              <span
+                className="px-3 text-[10px] sm:text-[11px] font-semibold tracking-widest uppercase"
+                style={{
+                  background: '#FAF7F2',
+                  color: '#9C7A4A',
+                }}
+              >
+                Votre table assignée
+              </span>
+            </div>
+          </div>
+
           {/* Table Highlight Card */}
           <div
-            className="rounded-2xl p-5 mb-5 relative overflow-hidden"
+            className="rounded-2xl p-5 mb-5 text-center"
             style={{
-              background: 'linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(212, 175, 55, 0.02) 100%)',
-              border: '1px solid rgba(212, 175, 55, 0.3)',
+              background: 'linear-gradient(180deg, #FDFBF7 0%, #F5EFE3 100%)',
+              border: '1px solid #DFCDB5',
+              boxShadow: '0 2px 10px rgba(180, 150, 100, 0.08)',
             }}
           >
-            <p className="text-[11px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'rgba(255, 255, 255, 0.55)' }}>
-              Votre Table Réception
+            <p
+              className="text-[10px] sm:text-[11px] uppercase tracking-widest font-semibold mb-1"
+              style={{ color: '#A07E48' }}
+            >
+              Table
             </p>
 
-            <div
-              className="font-serif text-2xl sm:text-3xl font-bold tracking-wide"
-              style={{
-                color: '#FFF9ED',
-                textShadow: '0 2px 12px rgba(212, 175, 55, 0.25)',
-              }}
-            >
+            <div className="font-serif text-2xl sm:text-3xl font-bold text-[#1C1917] tracking-tight">
               {tableName}
             </div>
 
             {companions > 0 && (
-              <div className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-lg text-xs" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'rgba(255, 255, 255, 0.7)' }}>
-                <Users size={12} style={{ color: '#D4AF37' }} />
+              <div className="inline-flex items-center gap-1.5 mt-2.5 px-3 py-0.5 rounded-full text-xs text-[#736B5E] bg-white/70 border border-[#E8DEC8]">
+                <Users size={12} style={{ color: '#A07E48' }} />
                 <span>Avec {companions} accompagnant{companions > 1 ? 's' : ''}</span>
               </div>
             )}
           </div>
 
-          <p className="text-xs sm:text-sm text-white/60 leading-relaxed mb-6 px-2">
-            Votre place a été réservée pour cette célébration. Consultez le plan de la salle pour repérer facilement votre table.
+          {/* Descriptive text */}
+          <p className="text-xs sm:text-[13px] leading-relaxed text-[#5C5549] text-center mb-6 max-w-xs mx-auto">
+            Une place privilégiée vous a été préparée pour célébrer ces instants inoubliables. Découvrez l'agencement exact de la salle en consultant le plan de table.
           </p>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col gap-2.5">
+          {/* Two Action Buttons Side-by-Side */}
+          <div className="grid grid-cols-2 gap-3">
             <a
               href={planUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}
-              className="w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-bold text-sm transition-all transform hover:scale-[1.01] active:scale-[0.99] shadow-lg cursor-pointer"
+              className="flex items-center justify-center gap-2 py-3 px-3 rounded-xl font-semibold text-xs sm:text-sm text-white transition-all transform hover:scale-[1.01] active:scale-[0.99] shadow-md cursor-pointer"
               style={{
-                background: 'linear-gradient(135deg, #D4AF37 0%, #B8860B 100%)',
-                color: '#100E0D',
-                boxShadow: '0 4px 18px rgba(212, 175, 55, 0.35)',
+                background: 'linear-gradient(135deg, #B88846 0%, #A2722F 100%)',
+                boxShadow: '0 4px 14px rgba(162, 114, 47, 0.35)',
               }}
             >
-              <MapPin size={16} />
+              <MapPin size={15} />
               <span>Voir le plan de table</span>
-              <ArrowRight size={15} />
             </a>
 
             <button
               type="button"
               onClick={onClose}
-              className="w-full py-2.5 px-4 rounded-xl text-xs font-medium text-white/60 hover:text-white transition-colors"
+              className="flex items-center justify-center py-3 px-3 rounded-xl font-semibold text-xs sm:text-sm text-[#2D2823] transition-colors border border-[#E0D9CD] bg-white hover:bg-[#FAF8F5] cursor-pointer"
             >
-              Accéder à l'invitation
+              Mon invitation
             </button>
           </div>
         </motion.div>
