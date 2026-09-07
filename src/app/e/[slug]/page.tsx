@@ -434,10 +434,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
             groupColor: currentG.groupColor,
           });
 
-          const sessionDismissed = sessionStorage.getItem(`table_modal_dismissed_${event.id}`);
-          if (!sessionDismissed) {
-            setShowTableModal(true);
-          }
+          setShowTableModal(true);
         }
       } catch (e) {
         console.error('Error fetching seating:', e);
@@ -683,12 +680,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
       {seatingInfo && (
         <TableAssignmentModal
           isOpen={showTableModal && !showIntro}
-          onClose={() => {
-            setShowTableModal(false);
-            if (event?.id) {
-              try { sessionStorage.setItem(`table_modal_dismissed_${event.id}`, 'true'); } catch {}
-            }
-          }}
+          onClose={() => setShowTableModal(false)}
           guestName={knownGuest ? `${knownGuest.firstName} ${knownGuest.lastName}` : (urlGuestParam ? decodeURIComponent(urlGuestParam).replace(/-/g, ' ') : '')}
           groupName={seatingInfo.groupName}
           groupEmoji={seatingInfo.groupEmoji}
@@ -706,11 +698,10 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
           animate={{ opacity: 1, y: 0 }}
           className="fixed bottom-6 right-6 z-40"
         >
-          <a
-            href={`/e/${slug}/plan-de-table${urlToken ? `?token=${urlToken}` : urlGuestParam ? `?guest=${urlGuestParam}` : ''}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 text-xs font-bold text-white border border-red-500/50"
+          <button
+            type="button"
+            onClick={() => setShowTableModal(true)}
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 text-xs font-bold text-white border border-red-500/50 cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
               boxShadow: '0 8px 25px rgba(220, 38, 38, 0.45)',
@@ -721,8 +712,8 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
               <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
             </span>
             <span>🍽️ {seatingInfo.tableName}</span>
-            <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold">Plan</span>
-          </a>
+            <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold">Voir</span>
+          </button>
         </motion.div>
       )}
 
