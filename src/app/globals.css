@@ -110,7 +110,7 @@ body {
 }
 @media (max-width: 768px) {
   .hero-invitation-title {
-    font-size: clamp(5.6rem, 17vw, 6.6rem);
+    font-size: clamp(4.9rem, 15.5vw, 5.5rem);
   }
 }
 
