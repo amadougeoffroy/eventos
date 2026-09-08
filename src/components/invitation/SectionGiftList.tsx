@@ -79,8 +79,6 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
               {gifts.filter(g => g.category === cat).map((gift, i) => {
                 const allNames = gift.reservedByName ? gift.reservedByName.split(', ').filter(Boolean) : [];
                 const iOffered = reservedLocally.has(gift.id) || (guestName ? allNames.includes(guestName) : false);
-                const displayNames = iOffered && guestName && !allNames.includes(guestName)
-                  ? [...allNames, guestName] : allNames;
                 return (
                   <motion.div
                     key={gift.id}
@@ -133,14 +131,6 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                           color: 'var(--t-accent, var(--gold))',
                         }}>
                           {gift.price.toLocaleString('fr-FR')} {gift.price >= 500 ? 'FCFA' : '€'}
-                        </div>
-                      )}
-                      {displayNames.length > 0 && (
-                        <div style={{
-                          fontSize: '0.65rem', color: '#22964F', marginTop: '0.3rem',
-                          fontWeight: 600, opacity: 0.85,
-                        }}>
-                          ♥ {displayNames.join(', ')}
                         </div>
                       )}
                     </div>
