@@ -141,13 +141,14 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
 
           {/* Center: "Invitation" */}
           <motion.div
-            style={{ textAlign: 'center', width: '100%', padding: '0 1rem' }}
+            style={{ textAlign: 'center', width: '100%', padding: '0 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
           >
             <h1 className="font-script" style={{
-              fontSize: 'clamp(6rem, 24vw, 8.5rem)', color: '#FFFFFF',
-              fontWeight: 400, lineHeight: 1.05,
-              textShadow: '0 4px 30px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)',
+              fontSize: 'clamp(7.5rem, 32vw, 12rem)', color: '#FFFFFF',
+              fontWeight: 400, lineHeight: 1,
+              whiteSpace: 'nowrap',
+              textShadow: '0 4px 35px rgba(0,0,0,0.75), 0 2px 10px rgba(0,0,0,0.5)',
             }}>
               Invitation
             </h1>
