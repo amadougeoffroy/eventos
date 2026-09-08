@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { eventTypeConfig } from '@/lib/mock-data';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { getTemplate, getDefaultTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
 
 // Invitation section components
 import HeroSlideshow from '@/components/invitation/HeroSlideshow';
+import IntroSplashScreen from '@/components/invitation/IntroSplashScreen';
 import SectionWelcome from '@/components/invitation/SectionWelcome';
 import SectionProgram from '@/components/invitation/SectionProgram';
 import SectionDressCode from '@/components/invitation/SectionDressCode';
@@ -536,98 +537,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   // Intro splash screen
   if (showIntro && event) {
-    const introCfg = eventTypeConfig[event.type];
-    return (
-      <motion.div
-        onClick={handleEnter}
-        style={{
-          minHeight: '100vh', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-          background: 'linear-gradient(180deg, #1a1614 0%, #2a2420 50%, #1a1614 100%)',
-          padding: '2rem', textAlign: 'center', position: 'relative', overflow: 'hidden',
-        }}
-      >
-        {/* Decorative rings */}
-        {[200, 320, 440].map((size, i) => (
-          <motion.div key={i}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 0.06, scale: 1 }}
-            transition={{ delay: 0.3 + i * 0.2, duration: 1.2 }}
-            style={{
-              position: 'absolute', width: size, height: size, borderRadius: '50%',
-              border: '1px solid #D4AF37',
-            }}
-          />
-        ))}
-
-        {/* Emoji */}
-        <motion.div
-          initial={{ scale: 0 }} animate={{ scale: 1 }}
-          transition={{ type: 'spring', damping: 12, stiffness: 150, delay: 0.2 }}
-          style={{ fontSize: '3rem', marginBottom: '1.5rem' }}
-        >
-          {introCfg.emoji}
-        </motion.div>
-
-        {/* Event name */}
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.8 }}
-          className="font-display"
-          style={{
-            fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: 800,
-            background: 'linear-gradient(135deg, #D4AF37, #F0D878, #D4AF37)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            marginBottom: '0.5rem', lineHeight: 1.2,
-          }}
-        >
-          {event.name}
-        </motion.h1>
-
-        {/* Date */}
-        <motion.p
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          transition={{ delay: 0.7, duration: 0.8 }}
-          style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: 500, marginBottom: '2.5rem' }}
-        >
-          {new Date(event.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-        </motion.p>
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
-          }}
-        >
-          <span style={{
-            padding: '0.65rem 2rem', borderRadius: 50,
-            background: 'linear-gradient(135deg, #D4AF37, #C8A96E)',
-            color: '#1a1614', fontWeight: 700, fontSize: '0.85rem',
-            letterSpacing: '0.05em',
-          }}>
-            Ouvrir l&apos;invitation
-          </span>
-          <motion.div
-            animate={{ y: [0, 6, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            <ChevronDown size={20} style={{ color: 'rgba(255,255,255,0.3)' }} />
-          </motion.div>
-        </motion.div>
-
-        {event.backgroundMusicUrl && (
-          <motion.p
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            transition={{ delay: 1.3 }}
-            style={{ position: 'absolute', bottom: 24, color: 'rgba(255,255,255,0.25)', fontSize: '0.65rem' }}
-          >
-            🎵 Avec musique d&apos;ambiance
-          </motion.p>
-        )}
-      </motion.div>
-    );
+    return <IntroSplashScreen event={event} onEnter={handleEnter} />;
   }
 
   return (

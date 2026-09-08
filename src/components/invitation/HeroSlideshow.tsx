@@ -1,19 +1,37 @@
 'use client';
 import { Event } from '@/lib/types';
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { CalendarDays, Clock, MapPin } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin } from 'lucide-react';
 import CountdownUnit from './CountdownUnit';
 
 interface HeroSlideshowProps {
   event: Event;
-  heroSlides?: string[];
+  heroSlides: string[];
   heroVideo?: string;
   cfg: { emoji: string; label: string; color: string };
 }
 
-export default function HeroSlideshow({ event, cfg }: HeroSlideshowProps) {
+export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: HeroSlideshowProps) {
+  const [slideIndex, setSlideIndex] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // Auto-advance slides every 5 seconds (only for multiple slides)
+  useEffect(() => {
+    if (heroSlides.length <= 1) return;
+    const timer = setInterval(() => {
+      setSlideIndex(prev => (prev + 1) % heroSlides.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [heroSlides.length]);
+
+  const prevSlide = useCallback(() => {
+    setSlideIndex(prev => (prev - 1 + heroSlides.length) % heroSlides.length);
+  }, [heroSlides.length]);
+
+  const nextSlide = useCallback(() => {
+    setSlideIndex(prev => (prev + 1) % heroSlides.length);
+  }, [heroSlides.length]);
 
   // Countdown timer
   useEffect(() => {
@@ -33,394 +51,203 @@ export default function HeroSlideshow({ event, cfg }: HeroSlideshowProps) {
     return () => clearInterval(interval);
   }, [event]);
 
-  const handleOpen = () => {
-    const el = document.getElementById('invitation-details');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      window.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-    }
-  };
-
-  const isWedding = event.type === 'wedding';
-  const groom = event.meta?.groomName || 'Frankie';
-  const bride = event.meta?.brideName || 'Mingue';
-
-  // Format date in French: e.g. "Vendredi 4 décembre 2026"
-  const formattedDate = event.date
-    ? new Date(event.date + 'T12:00:00').toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      })
-    : 'Vendredi 4 décembre 2026';
-  const displayDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+  const heroTitle = event.type === 'wedding' && event.meta.groomName && event.meta.brideName
+    ? `${event.meta.groomName} & ${event.meta.brideName}`
+    : event.type === 'birthday' && event.meta.celebrantName && event.meta.age
+    ? `Les ${event.meta.age} ans de ${event.meta.celebrantName}`
+    : event.name;
 
   return (
     <section style={{ position: 'relative' }}>
-      <style>{`
-        :root {
-          --ivoire: #FBF6EE;
-          --ivoire-carte: #FFFDF9;
-          --encre: #2B2420;
-          --encre-douce: #6B6055;
-          --or: #B8863C;
-          --or-clair: #D9AE6C;
-          --or-fonce: #96692A;
-          --or-fond: #F3E4C6;
-          --trait: #E7DCC5;
-        }
-
-        .hero-scene-root {
-          font-family: 'Jost', sans-serif;
-          color: var(--encre);
-          background:
-            radial-gradient(ellipse at top left, #FFFDF8 0%, transparent 55%),
-            radial-gradient(ellipse at bottom right, #F6EEDD 0%, transparent 55%),
-            var(--ivoire);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: hidden;
-          position: relative;
-          min-height: 100vh;
-          min-height: 100dvh;
-          width: 100%;
-        }
-
-        /* texture point fin en fond */
-        .hero-scene-root::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image: radial-gradient(circle, #E7DCC5 1px, transparent 1px);
-          background-size: 26px 26px;
-          opacity: 0.5;
-          pointer-events: none;
-        }
-
-        .scene {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          padding: 60px 30px;
-          z-index: 2;
-        }
-
-        /* cercles concentriques animés, doux */
-        .cercles {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 1px;
-          height: 1px;
-          pointer-events: none;
-          z-index: 1;
-        }
-        .cercle {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          border-radius: 50%;
-          border: 1px solid var(--trait);
-          transform: translate(-50%, -50%);
-          animation: respirer 7s ease-in-out infinite;
-        }
-        .cercle.c1 { width: 260px; height: 260px; animation-delay: 0s; }
-        .cercle.c2 { width: 420px; height: 420px; animation-delay: 0.6s; opacity: 0.75; }
-        .cercle.c3 { width: 600px; height: 600px; animation-delay: 1.2s; opacity: 0.5; }
-
-        @keyframes respirer {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.6; }
-          50% { transform: translate(-50%, -50%) scale(1.03); opacity: 1; }
-        }
-
-        /* monogramme / anneaux entrelacés en line-art doré */
-        .monogramme {
-          position: relative;
-          width: 88px;
-          height: 88px;
-          margin-bottom: 26px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .monogramme svg { width: 100%; height: 100%; }
-
-        .eyebrow {
-          font-size: 12px;
-          letter-spacing: 0.28em;
-          color: var(--or);
-          font-weight: 500;
-          text-transform: uppercase;
-          margin-bottom: 18px;
-        }
-
-        .titre-mariage {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 600;
-          font-style: italic;
-          font-size: 26px;
-          color: var(--encre-douce);
-          margin-bottom: 4px;
-        }
-
-        .noms {
-          font-family: 'Cormorant Garamond', serif;
-          font-weight: 700;
-          font-size: 64px;
-          line-height: 1.05;
-          color: var(--encre);
-          margin-bottom: 18px;
-          display: flex;
-          align-items: center;
-          gap: 18px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .noms .et {
-          font-style: italic;
-          font-weight: 500;
-          font-size: 34px;
-          color: var(--or);
-        }
-
-        .trait-date {
-          display: flex;
-          align-items: center;
-          gap: 14px;
-          margin-bottom: 36px;
-        }
-        .trait-date .ligne { width: 36px; height: 1px; background: var(--or-clair); }
-        .date {
-          font-size: 15px;
-          letter-spacing: 0.05em;
-          color: var(--encre-douce);
-          font-weight: 400;
-        }
-        .date strong { color: var(--encre); font-weight: 500; }
-
-        .btn-ouvrir {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          background: linear-gradient(180deg, #D3A55C, var(--or));
-          color: #FFFBF2;
-          border: none;
-          padding: 17px 40px;
-          border-radius: 999px;
-          font-family: 'Jost', sans-serif;
-          font-size: 15px;
-          font-weight: 500;
-          letter-spacing: 0.02em;
-          cursor: pointer;
-          box-shadow:
-            0 14px 26px -10px rgba(184, 134, 60, 0.55),
-            0 2px 0 rgba(255, 255, 255, 0.4) inset;
-          transition: transform 0.18s ease, box-shadow 0.18s ease;
-        }
-        .btn-ouvrir:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 18px 30px -10px rgba(184, 134, 60, 0.65), 0 2px 0 rgba(255, 255, 255, 0.4) inset;
-        }
-        .btn-ouvrir svg { width: 15px; height: 15px; }
-
-        .scroll-cue {
-          margin-top: 26px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 30px;
-          height: 30px;
-          color: var(--or);
-          background: none;
-          border: none;
-          cursor: pointer;
-          animation: descendre 2s ease-in-out infinite;
-        }
-        .scroll-cue svg { width: 18px; height: 18px; }
-
-        @keyframes descendre {
-          0%, 100% { transform: translateY(0); opacity: 0.5; }
-          50% { transform: translateY(6px); opacity: 1; }
-        }
-
-        @media (max-width: 600px) {
-          .noms { font-size: 42px; gap: 10px; }
-          .noms .et { font-size: 24px; }
-          .cercle.c2, .cercle.c3 { display: none; }
-          .scene { padding: 40px 20px; }
-        }
-      `}</style>
-
-      {/* ── Scène d'accueil poétique (100vh) ── */}
-      <div className="hero-scene-root">
-        <div className="scene">
-          <div className="cercles">
-            <div className="cercle c1" />
-            <div className="cercle c2" />
-            <div className="cercle c3" />
-          </div>
-
+      {/* Photo area — full viewport height */}
+      <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
+        {/* Video or Slideshow photos */}
+        {heroVideo ? (
+          <video
+            autoPlay muted loop playsInline
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover',
+            }}
+            src={heroVideo}
+          />
+        ) : (
+        <AnimatePresence mode="wait">
           <motion.div
-            className="monogramme"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8 }}
-          >
-            <svg viewBox="0 0 100 100" fill="none">
-              <circle cx="38" cy="58" r="19" stroke="#D9AE6C" strokeWidth="2.2" />
-              <circle cx="62" cy="58" r="19" stroke="#B8863C" strokeWidth="2.2" />
-              <path
-                d="M50 18 L54 30 L66 30 L56 37 L60 49 L50 41.5 L40 49 L44 37 L34 30 L46 30 Z"
-                fill="#B8863C"
-                opacity="0.9"
-              />
-            </svg>
-          </motion.div>
+            key={slideIndex}
+            style={{
+              position: 'absolute', inset: '-5%', width: '110%', height: '110%',
+              backgroundImage: `url(${heroSlides[slideIndex]})`,
+              backgroundSize: 'cover', backgroundPosition: 'center center',
+            }}
+            initial={{ opacity: 0, scale: 1.1 }}
+            animate={{
+              opacity: 1,
+              scale: [1.1, 1.0],
+              transition: {
+                opacity: { duration: 0.8, ease: 'easeOut' },
+                scale: { duration: 6, ease: 'linear' },
+              },
+            }}
+            exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.6, ease: 'easeIn' } }}
+          />
+        </AnimatePresence>
+        )}
 
-          <motion.p
-            className="eyebrow"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-          >
-            Vous êtes invité(e)
-          </motion.p>
+        {/* Dark overlay */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'var(--t-hero-overlay, linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.4) 70%, rgba(0,0,0,0.6) 100%))',
+        }} />
 
-          <motion.h1
-            className="titre-mariage"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35, duration: 0.6 }}
-          >
-            {isWedding ? 'Le mariage de' : cfg.label}
-          </motion.h1>
+        {/* Bottom gradient fade */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, height: '40%',
+          background: `linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--t-bg, #FFFFFF) 40%, transparent) 50%, color-mix(in srgb, var(--t-bg, #FFFFFF) 85%, transparent) 75%, var(--t-bg, #FFFFFF) 100%)`,
+          zIndex: 2,
+        }} />
 
+        {/* Content overlay */}
+        <motion.div
+          style={{
+            position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'space-between', height: '100%', padding: '3rem 1.5rem',
+          }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2 }}
+        >
+          {/* Top: icon + event type */}
           <motion.div
-            className="noms"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
+            style={{ textAlign: 'center', paddingTop: '1rem' }}
+            initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
           >
-            {isWedding && groom && bride ? (
-              <>{groom} <span className="et">&</span> {bride}</>
+            {event.type === 'wedding' ? (
+              <div style={{ margin: '0 auto 0.75rem' }}>
+                <svg width="40" height="40" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto' }}>
+                  <circle cx="18" cy="24" r="10" stroke="var(--t-accent, #C8A96E)" strokeWidth="2" fill="none" />
+                  <circle cx="30" cy="24" r="10" stroke="var(--t-accent, #C8A96E)" strokeWidth="2" fill="none" />
+                </svg>
+              </div>
             ) : (
-              <>{event.meta?.celebrantName || event.name}</>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{cfg.emoji}</div>
             )}
+            <div className="font-body" style={{
+              fontSize: '0.7rem', letterSpacing: '0.25em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.85)', fontWeight: 500,
+            }}>
+              {event.type === 'wedding' ? 'Célébration de Mariage' : cfg.label}
+            </div>
           </motion.div>
 
+          {/* Center: "Invitation" */}
           <motion.div
-            className="trait-date"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7, duration: 0.6 }}
+            style={{ textAlign: 'center' }}
+            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <span className="ligne" />
-            <span className="date">{displayDate}</span>
-            <span className="ligne" />
+            <h1 className="font-script hero-invitation-title" style={{
+              color: '#FFFFFF',
+              fontWeight: 400, lineHeight: 1, textShadow: '0 2px 20px rgba(0,0,0,0.3)',
+            }}>
+              Invitation
+            </h1>
           </motion.div>
 
-          <motion.button
-            className="btn-ouvrir"
-            onClick={handleOpen}
-            type="button"
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.85, duration: 0.6 }}
+          {/* Bottom: scroll hint */}
+          <motion.div
+            style={{ textAlign: 'center', paddingBottom: '1rem', zIndex: 5 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
           >
-            Ouvrir l&apos;invitation
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14M13 6l6 6-6 6" />
-            </svg>
-          </motion.button>
+            <div className="font-body" style={{
+              fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase',
+              color: 'rgba(100,90,80,0.6)', marginBottom: '0.5rem',
+            }}>Défiler</div>
+            <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+              <ChevronDown size={22} style={{ color: 'rgba(100,90,80,0.5)', margin: '0 auto' }} />
+            </motion.div>
+          </motion.div>
+        </motion.div>
 
-          <motion.button
-            className="scroll-cue"
-            onClick={handleOpen}
-            type="button"
-            aria-label="Défiler"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.1, duration: 0.6 }}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </motion.button>
-        </div>
+        {/* Slide navigation arrows */}
+        {!heroVideo && heroSlides.length > 1 && (
+          <>
+            <button onClick={prevSlide} aria-label="Photo précédente" style={{
+              position: 'absolute', left: '0.75rem', top: '45%', transform: 'translateY(-50%)', zIndex: 10,
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.25)', color: '#FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
+            }}><ChevronLeft size={22} /></button>
+            <button onClick={nextSlide} aria-label="Photo suivante" style={{
+              position: 'absolute', right: '0.75rem', top: '45%', transform: 'translateY(-50%)', zIndex: 10,
+              width: 44, height: 44, borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+              border: '1px solid rgba(255,255,255,0.25)', color: '#FFFFFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.2s ease',
+            }}><ChevronRight size={22} /></button>
+          </>
+        )}
+
+        {/* Slide indicator dots */}
+        {!heroVideo && heroSlides.length > 1 && (
+          <div style={{
+            position: 'absolute', bottom: '11rem', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 10, display: 'flex', gap: '0.5rem',
+          }}>
+            {heroSlides.map((_, i) => (
+              <button
+                key={i} onClick={() => setSlideIndex(i)} aria-label={`Photo ${i + 1}`}
+                style={{
+                  width: slideIndex === i ? 24 : 8, height: 8, borderRadius: 4,
+                  background: slideIndex === i ? 'var(--t-accent, #C8A96E)' : 'rgba(255,255,255,0.5)',
+                  border: 'none', cursor: 'pointer', transition: 'all 0.3s ease', padding: 0,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* ── Détails & Compte à rebours ci-dessous ── */}
-      <div
-        id="invitation-details"
-        style={{
-          background: 'var(--t-bg, #FFFFFF)',
-          textAlign: 'center',
-          padding: '3rem 1.5rem 3.5rem',
-          borderTop: '1px solid var(--trait, #E7DCC5)',
-        }}
-      >
+      {/* Names + Details below fade */}
+      <div style={{ background: 'var(--t-bg, #FFFFFF)', textAlign: 'center', padding: '2rem 1.5rem 3rem', marginTop: '-1px' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-          <div
-            className="eyebrow"
-            style={{ marginBottom: '1rem', color: 'var(--or, #B8863C)' }}
-          >
-            {isWedding ? 'Bienvenue à notre célébration' : 'Informations & Compte à rebours'}
+          <div className="font-body" style={{
+            fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase',
+            color: 'var(--t-text-muted, var(--text-muted))', marginBottom: '1.5rem',
+          }}>
+            {event.type === 'wedding' ? 'Bienvenue à notre célébration' : 'Vous êtes invité(e) à'}
           </div>
 
-          <div
-            style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontStyle: 'italic',
-              fontSize: '1.1rem',
-              color: 'var(--encre-douce, #6B6055)',
-              marginBottom: '2rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.4rem',
-              alignItems: 'center',
-            }}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <CalendarDays size={16} style={{ color: 'var(--or, #B8863C)' }} /> {displayDate}
-              <span style={{ margin: '0 0.4rem', opacity: 0.5 }}>•</span>
-              <Clock size={16} style={{ color: 'var(--or, #B8863C)' }} /> {event.time}
+          <h2 className="font-display" style={{
+            fontSize: 'clamp(2.5rem, 7vw, 4rem)', fontWeight: 700,
+            color: 'var(--t-text, var(--text))', lineHeight: 1.2, marginBottom: '0.5rem',
+          }}>
+            {event.type === 'wedding' && event.meta.groomName && event.meta.brideName ? (
+              <>{event.meta.groomName}<br /><span className="font-script" style={{ color: 'var(--t-accent, var(--gold))', fontSize: '0.6em', fontWeight: 400 }}>&</span><br />{event.meta.brideName}</>
+            ) : heroTitle}
+          </h2>
+
+          <div className="font-display italic" style={{ fontSize: '1rem', color: 'var(--t-text-muted, var(--text-secondary))', marginTop: '1.5rem', marginBottom: '2rem' }}>
+            <span className="flex items-center justify-center gap-1.5" style={{ marginBottom: '0.25rem' }}>
+              <CalendarDays size={15} /> {new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              <span style={{ margin: '0 0.5rem' }}>•</span>
+              <Clock size={15} /> {event.time}
             </span>
-            {event.venue && (
-              <span className="flex items-center justify-center gap-2" style={{ color: 'var(--encre, #2B2420)', fontWeight: 500 }}>
-                <MapPin size={16} style={{ color: 'var(--or, #B8863C)' }} /> {event.venue}
-              </span>
-            )}
+            <span className="flex items-center justify-center gap-1.5">
+              <MapPin size={15} /> {event.venue}
+            </span>
           </div>
 
-          {/* Compte à rebours */}
-          <motion.div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '1rem',
-              background: 'linear-gradient(135deg, #B8863C, #D9AE6C)',
-              padding: '1.25rem 2rem',
-              borderRadius: '1rem',
-              boxShadow: '0 12px 28px -10px rgba(184,134,60,0.45)',
-            }}
-            initial={{ scale: 0.9, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-          >
+          {/* Countdown */}
+          <motion.div style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '1rem',
+            background: 'linear-gradient(135deg, var(--t-accent, #C8A96E), var(--t-accent, #D4B87A))',
+            padding: '1.25rem 2rem', borderRadius: '1rem',
+          }} initial={{ scale: 0.9, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }}>
             <CountdownUnit value={countdown.days} label="Jours" />
-            <div className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>:</div>
+            <div className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.3)' }}>:</div>
             <CountdownUnit value={countdown.hours} label="Heures" />
-            <div className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>:</div>
+            <div className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.3)' }}>:</div>
             <CountdownUnit value={countdown.minutes} label="Min" />
-            <div className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.4)' }}>:</div>
+            <div className="text-xl font-bold" style={{ color: 'rgba(255,255,255,0.3)' }}>:</div>
             <CountdownUnit value={countdown.seconds} label="Sec" />
           </motion.div>
         </motion.div>
