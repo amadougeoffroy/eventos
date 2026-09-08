@@ -102,7 +102,7 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                   >
                     {/* Icon / Image */}
                     <div style={{
-                      width: 56, height: 56, borderRadius: 14, flexShrink: 0,
+                      width: 50, height: 50, borderRadius: 12, flexShrink: 0,
                       background: 'linear-gradient(135deg, rgba(200,169,110,0.15), rgba(200,169,110,0.05))',
                       border: '1px solid rgba(200,169,110,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -111,23 +111,23 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                       {gift.imageUrl ? (
                         <img src={gift.imageUrl} alt={gift.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontSize: '1.65rem' }}>🎁</span>
+                        <span style={{ fontSize: '1.5rem' }}>🎁</span>
                       )}
                     </div>
 
                     {/* Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--t-text, var(--text))' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--t-text, var(--text))' }}>
                         {gift.name}
                       </div>
                       {gift.description && (
-                        <div style={{ fontSize: '0.85rem', color: 'var(--t-text-muted, var(--text-muted))', marginTop: '0.2rem', lineHeight: 1.45 }}>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--t-text-muted, var(--text-muted))', marginTop: '0.15rem', lineHeight: 1.4 }}>
                           {gift.description}
                         </div>
                       )}
                       {gift.price && (
                         <div style={{
-                          fontSize: '0.95rem', fontWeight: 700, marginTop: '0.3rem',
+                          fontSize: '0.8rem', fontWeight: 700, marginTop: '0.25rem',
                           color: 'var(--t-accent, var(--gold))',
                         }}>
                           {gift.price.toLocaleString('fr-FR')} {gift.price >= 500 ? 'FCFA' : '€'}
@@ -136,17 +136,17 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                     </div>
 
                     {/* Actions */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0, alignItems: 'center' }}>
                       {gift.url && (
                         <a href={gift.url} target="_blank" rel="noopener noreferrer" style={{
-                          width: 40, height: 40, borderRadius: 10,
+                          width: 36, height: 36, borderRadius: 10,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           background: 'var(--t-bg-warm, var(--bg-warm))',
                           border: '1px solid rgba(200,169,110,0.2)',
                           color: 'var(--t-text-muted, var(--text-muted))',
                           textDecoration: 'none',
                         }}>
-                          <ExternalLink size={16} />
+                          <ExternalLink size={14} />
                         </a>
                       )}
                       {!iOffered ? (
@@ -154,29 +154,29 @@ export default function SectionGiftList({ event, gifts, guestName, hasRsvpd, onR
                           onClick={() => handleReserve(gift.id)}
                           disabled={!hasRsvpd}
                           style={{
-                            padding: '0.55rem 0.95rem', borderRadius: 10,
+                            padding: '0.4rem 0.75rem', borderRadius: 10,
                             background: hasRsvpd
                               ? 'linear-gradient(135deg, var(--t-accent, var(--gold)), var(--t-secondary, #B8944F))'
                               : 'var(--t-bg-warm, var(--bg-warm))',
                             color: hasRsvpd ? '#fff' : 'var(--t-text-muted, var(--text-muted))',
-                            fontWeight: 700, fontSize: '0.8rem',
+                            fontWeight: 600, fontSize: '0.7rem',
                             border: hasRsvpd ? 'none' : '1px solid rgba(200,169,110,0.2)',
                             cursor: hasRsvpd ? 'pointer' : 'not-allowed',
                             whiteSpace: 'nowrap',
-                            display: 'flex', alignItems: 'center', gap: '0.35rem',
+                            display: 'flex', alignItems: 'center', gap: '0.3rem',
                             opacity: hasRsvpd ? 1 : 0.6,
                           }}>
-                          <Heart size={14} /> J&apos;offrirai
+                          <Heart size={12} /> J&apos;offrirai
                         </button>
                       ) : (
                         <div style={{
-                          padding: '0.55rem 0.95rem', borderRadius: 10,
+                          padding: '0.4rem 0.75rem', borderRadius: 10,
                           background: 'rgba(34,150,79,0.1)',
-                          color: '#22964F', fontWeight: 700, fontSize: '0.8rem',
-                          display: 'flex', alignItems: 'center', gap: '0.3rem',
+                          color: '#22964F', fontWeight: 600, fontSize: '0.7rem',
+                          display: 'flex', alignItems: 'center', gap: '0.25rem',
                           whiteSpace: 'nowrap',
                         }}>
-                          <Check size={14} /> J&apos;offrirai
+                          <Check size={12} /> J&apos;offrirai
                         </div>
                       )}
                     </div>

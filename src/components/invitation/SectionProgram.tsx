@@ -38,35 +38,35 @@ export default function SectionProgram({ event, venues }: { event: Event; venues
                     background: 'var(--t-card-bg, var(--bg-card))', border: '1px solid var(--t-card-border, var(--border-light))',
                     borderRadius: 14, padding: '0.85rem 1rem',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
                       <span style={{
-                        fontSize: '0.8rem', fontWeight: 700, color: 'var(--t-accent, var(--gold))',
-                        padding: '0.2rem 0.6rem', borderRadius: 6,
+                        fontSize: '0.7rem', fontWeight: 700, color: 'var(--t-accent, var(--gold))',
+                        padding: '0.15rem 0.5rem', borderRadius: 6,
                         background: 'rgba(200,169,110,0.1)',
                       }}>{item.time}</span>
-                      <span style={{ fontSize: '1.15rem' }}>{item.icon}</span>
+                      <span style={{ fontSize: '1rem' }}>{item.icon}</span>
                     </div>
-                    <div className="font-semibold" style={{ fontSize: '1.05rem', color: 'var(--t-text, var(--text))' }}>{item.title}</div>
+                    <div className="font-semibold" style={{ fontSize: '0.9rem' }}>{item.title}</div>
                     {item.description && (
-                      <div style={{ fontSize: '0.9rem', color: 'var(--t-text-muted, var(--text-muted))', marginTop: '0.25rem', lineHeight: 1.5 }}>{item.description}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--t-text-muted, var(--text-muted))', marginTop: '0.15rem' }}>{item.description}</div>
                     )}
                     {venue && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.5rem', gap: '0.5rem', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.85rem', color: 'var(--t-text-muted, var(--text-muted))' }}>
-                          <MapPin size={13} /> {venue.name}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '0.35rem', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: 'var(--t-text-muted, var(--text-muted))' }}>
+                          <MapPin size={11} /> {venue.name}
                         </div>
                         <a
                           href={`https://www.google.com/maps/search/?api=1&query=${(venue.lat && venue.lng) ? `${venue.lat},${venue.lng}` : encodeURIComponent(venue.address || venue.name)}`}
                           target="_blank" rel="noopener noreferrer"
                           style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                            fontSize: '0.75rem', fontWeight: 600, color: 'var(--t-accent, var(--gold))',
-                            padding: '0.25rem 0.6rem', borderRadius: 6,
+                            display: 'inline-flex', alignItems: 'center', gap: '0.2rem',
+                            fontSize: '0.6rem', fontWeight: 600, color: 'var(--t-accent, var(--gold))',
+                            padding: '0.15rem 0.4rem', borderRadius: 5,
                             background: 'rgba(200,169,110,0.1)', textDecoration: 'none',
                             flexShrink: 0,
                           }}
                         >
-                          <Navigation size={11} /> Maps
+                          <Navigation size={9} /> Maps
                         </a>
                       </div>
                     )}

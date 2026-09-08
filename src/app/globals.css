@@ -105,6 +105,15 @@ body {
 .font-script  { font-family: 'Great Vibes', cursive; }
 .font-body    { font-family: 'Inter', sans-serif; }
 
+.hero-invitation-title {
+  font-size: clamp(4.5rem, 14vw, 7.5rem);
+}
+@media (max-width: 768px) {
+  .hero-invitation-title {
+    font-size: clamp(5.6rem, 17vw, 6.6rem);
+  }
+}
+
 /* ── Glass morphism ────────────────────────── */
 .glass {
   background: rgba(255, 255, 255, 0.85);

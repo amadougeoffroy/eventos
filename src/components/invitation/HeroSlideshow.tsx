@@ -117,23 +117,22 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
         >
           {/* Top: icon + event type */}
           <motion.div
-            style={{ textAlign: 'center', paddingTop: '1.5rem' }}
+            style={{ textAlign: 'center', paddingTop: '1rem' }}
             initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.3 }}
           >
             {event.type === 'wedding' ? (
               <div style={{ margin: '0 auto 0.75rem' }}>
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}>
-                  <circle cx="18" cy="24" r="11" stroke="var(--t-accent, #D4B87A)" strokeWidth="2.5" fill="none" />
-                  <circle cx="30" cy="24" r="11" stroke="var(--t-accent, #D4B87A)" strokeWidth="2.5" fill="none" />
+                <svg width="40" height="40" viewBox="0 0 48 48" fill="none" style={{ margin: '0 auto' }}>
+                  <circle cx="18" cy="24" r="10" stroke="var(--t-accent, #C8A96E)" strokeWidth="2" fill="none" />
+                  <circle cx="30" cy="24" r="10" stroke="var(--t-accent, #C8A96E)" strokeWidth="2" fill="none" />
                 </svg>
               </div>
             ) : (
-              <div style={{ fontSize: '2.8rem', marginBottom: '0.5rem', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.4))' }}>{cfg.emoji}</div>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{cfg.emoji}</div>
             )}
             <div className="font-body" style={{
-              fontSize: 'clamp(0.85rem, 3.5vw, 1.05rem)', letterSpacing: '0.22em', textTransform: 'uppercase',
-              color: '#FFFFFF', fontWeight: 600,
-              textShadow: '0 2px 10px rgba(0,0,0,0.6)',
+              fontSize: '0.7rem', letterSpacing: '0.25em', textTransform: 'uppercase',
+              color: 'rgba(255,255,255,0.85)', fontWeight: 500,
             }}>
               {event.type === 'wedding' ? 'Célébration de Mariage' : cfg.label}
             </div>
@@ -141,14 +140,12 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
 
           {/* Center: "Invitation" */}
           <motion.div
-            style={{ textAlign: 'center', width: '100%', padding: '0 0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ textAlign: 'center' }}
             initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <h1 className="font-script" style={{
-              fontSize: 'clamp(7.5rem, 32vw, 12rem)', color: '#FFFFFF',
-              fontWeight: 400, lineHeight: 1,
-              whiteSpace: 'nowrap',
-              textShadow: '0 4px 35px rgba(0,0,0,0.75), 0 2px 10px rgba(0,0,0,0.5)',
+            <h1 className="font-script hero-invitation-title" style={{
+              color: '#FFFFFF',
+              fontWeight: 400, lineHeight: 1, textShadow: '0 2px 20px rgba(0,0,0,0.3)',
             }}>
               Invitation
             </h1>
@@ -156,16 +153,15 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
 
           {/* Bottom: scroll hint */}
           <motion.div
-            style={{ textAlign: 'center', paddingBottom: '1.25rem', zIndex: 5 }}
+            style={{ textAlign: 'center', paddingBottom: '1rem', zIndex: 5 }}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 1.2 }}
           >
             <div className="font-body" style={{
-              fontSize: 'clamp(0.85rem, 3vw, 0.95rem)', letterSpacing: '0.22em', textTransform: 'uppercase',
-              color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem',
-              textShadow: '0 2px 10px rgba(0,0,0,0.7)',
+              fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase',
+              color: 'rgba(100,90,80,0.6)', marginBottom: '0.5rem',
             }}>Défiler</div>
-            <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity }}>
-              <ChevronDown size={28} style={{ color: '#FFFFFF', filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.6))', margin: '0 auto' }} />
+            <motion.div animate={{ y: [0, 6, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+              <ChevronDown size={22} style={{ color: 'rgba(100,90,80,0.5)', margin: '0 auto' }} />
             </motion.div>
           </motion.div>
         </motion.div>
@@ -214,29 +210,29 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
       <div style={{ background: 'var(--t-bg, #FFFFFF)', textAlign: 'center', padding: '2rem 1.5rem 3rem', marginTop: '-1px' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
           <div className="font-body" style={{
-            fontSize: 'clamp(0.85rem, 2.8vw, 1rem)', letterSpacing: '0.22em', textTransform: 'uppercase',
-            color: 'var(--t-text-muted, var(--text-muted))', fontWeight: 600, marginBottom: '1.5rem',
+            fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase',
+            color: 'var(--t-text-muted, var(--text-muted))', marginBottom: '1.5rem',
           }}>
             {event.type === 'wedding' ? 'Bienvenue à notre célébration' : 'Vous êtes invité(e) à'}
           </div>
 
           <h2 className="font-display" style={{
-            fontSize: 'clamp(2.8rem, 8.5vw, 4.5rem)', fontWeight: 700,
-            color: 'var(--t-text, var(--text))', lineHeight: 1.15, marginBottom: '0.5rem',
+            fontSize: 'clamp(2.5rem, 7vw, 4rem)', fontWeight: 700,
+            color: 'var(--t-text, var(--text))', lineHeight: 1.2, marginBottom: '0.5rem',
           }}>
             {event.type === 'wedding' && event.meta.groomName && event.meta.brideName ? (
-              <>{event.meta.groomName}<br /><span className="font-script" style={{ color: 'var(--t-accent, var(--gold))', fontSize: '0.75em', fontWeight: 400 }}>&</span><br />{event.meta.brideName}</>
+              <>{event.meta.groomName}<br /><span className="font-script" style={{ color: 'var(--t-accent, var(--gold))', fontSize: '0.6em', fontWeight: 400 }}>&</span><br />{event.meta.brideName}</>
             ) : heroTitle}
           </h2>
 
-          <div className="font-display italic" style={{ fontSize: 'clamp(1.05rem, 3.5vw, 1.25rem)', color: 'var(--t-text-muted, var(--text-secondary))', marginTop: '1.5rem', marginBottom: '2rem' }}>
-            <span className="flex items-center justify-center gap-1.5" style={{ marginBottom: '0.35rem' }}>
-              <CalendarDays size={18} /> {new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          <div className="font-display italic" style={{ fontSize: '1rem', color: 'var(--t-text-muted, var(--text-secondary))', marginTop: '1.5rem', marginBottom: '2rem' }}>
+            <span className="flex items-center justify-center gap-1.5" style={{ marginBottom: '0.25rem' }}>
+              <CalendarDays size={15} /> {new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
               <span style={{ margin: '0 0.5rem' }}>•</span>
-              <Clock size={18} /> {event.time}
+              <Clock size={15} /> {event.time}
             </span>
             <span className="flex items-center justify-center gap-1.5">
-              <MapPin size={18} /> {event.venue}
+              <MapPin size={15} /> {event.venue}
             </span>
           </div>
 
