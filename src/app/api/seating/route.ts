@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
       .eq('event_id', event.id);
 
     // 5. Map tables
-    const tables = (tableRows || []).map((t: any) => ({
+    let tables = (tableRows || []).map((t: any) => ({
       id: t.id,
       eventId: t.event_id,
       name: t.name || 'Table',
@@ -75,6 +75,23 @@ export async function GET(req: NextRequest) {
       guestIds: Array.isArray(t.guest_ids) ? t.guest_ids : [],
     }));
 
+    // Deduplicate couple table for weddings and ensure no guests are assigned to it
+    if (event.type === 'wedding') {
+      const isMaries = (name: string) => {
+        const n = (name || '').toLowerCase();
+        return n.includes('marié') || n.includes('maries');
+      };
+      let mariesFound = false;
+      tables = tables.filter(t => {
+        if (isMaries(t.name)) {
+          if (mariesFound) return false;
+          mariesFound = true;
+          t.guestIds = []; // No guests assigned to couple table
+        }
+        return true;
+      });
+    }
+
     // 6. Map groups
     const groups = (groupRows || []).map((g: any) => ({
       id: g.id,
@@ -84,17 +101,30 @@ export async function GET(req: NextRequest) {
     }));
 
     // 7. Map guests for seating (only necessary info)
+    const isMariesId = (tableId?: string) => {
+      if (!tableId) return false;
+      const t = tables.find(x => x.id === tableId);
+      if (!t) return false;
+      const n = (t.name || '').toLowerCase();
+      return n.includes('marié') || n.includes('maries');
+    };
+
     const guests = (guestRows || []).map((g: any) => ({
       id: g.id,
       firstName: g.first_name || '',
       lastName: g.last_name || '',
       group: g.group || '',
-      tableId: g.table_id || undefined,
+      tableId: isMariesId(g.table_id) ? undefined : (g.table_id || undefined),
       companions: g.companions || 0,
     }));
 
     // Reconcile: ensure guests have tableId if they are in table.guestIds, and vice versa
     tables.forEach((t) => {
+      const isM = (t.name || '').toLowerCase().includes('marié') || (t.name || '').toLowerCase().includes('maries');
+      if (isM) {
+        t.guestIds = [];
+        return;
+      }
       t.guestIds.forEach((gid: string) => {
         const pureGid = gid.includes('-comp-') ? gid.split('-comp-')[0] : gid;
         const g = guests.find((x) => x.id === pureGid);
@@ -105,7 +135,7 @@ export async function GET(req: NextRequest) {
     });
 
     guests.forEach((g) => {
-      if (g.tableId) {
+      if (g.tableId && !isMariesId(g.tableId)) {
         const t = tables.find((x) => x.id === g.tableId);
         if (t && !t.guestIds.includes(g.id)) {
           t.guestIds.push(g.id);

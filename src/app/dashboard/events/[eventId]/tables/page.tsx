@@ -8,8 +8,8 @@ import { use, useState, useMemo, useRef, useEffect, useCallback, createRef } fro
 import {
   Users, Plus, Table, LayoutGrid, Settings, X, Check, Copy, Edit3, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, UserPlus, Save, RefreshCcw, Search, CheckCircle, Clock, UserX, Sparkles, Zap, MapPin
 } from 'lucide-react';
-import Draggable from 'react-draggable'; // ensure this dependency exists
-import { FloorPlanElement } from '@/lib/types';
+import Draggable from 'react-draggable';
+import { FloorPlanElement, EventTable } from '@/lib/types';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -119,27 +119,65 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
   const brideName = event?.meta?.brideName || tr.bride;
   const groomName = event?.meta?.groomName || tr.groom;
 
+  const isMarieTable = useCallback((tableOrId: EventTable | string | undefined | null) => {
+    if (!tableOrId) return false;
+    if (typeof tableOrId === 'string') {
+      if (tableOrId === MARIES_TABLE_ID) return true;
+      const found = tables.find(t => t.id === tableOrId);
+      if (found) return isMarieTable(found);
+      return false;
+    }
+    const normName = (tableOrId.name || '').trim().toLowerCase();
+    return (
+      tableOrId.id === MARIES_TABLE_ID ||
+      normName === 'table des mariés' ||
+      normName === 'table des maries' ||
+      normName === tr.coupleTable.toLowerCase() ||
+      Boolean((tableOrId as any).isCoupleTable)
+    );
+  }, [tables, MARIES_TABLE_ID, tr.coupleTable]);
+
   useEffect(() => {
     if (!tablesReady || !event) return;
 
-    // 1. Table des Mariés for weddings
-    const mariesExists = tables.find(t => t.id === MARIES_TABLE_ID);
-    if (!mariesExists && event.type === 'wedding') {
-      addTable({
-        id: MARIES_TABLE_ID,
-        eventId,
-        name: tr.coupleTable,
-        capacity: 2,
-        shape: 'square',
-        positionX: 350,
-        positionY: 20,
-        guestIds: [],
+    // 1. Table des Mariés for weddings:
+    // Disposed ONCE, draggable on canvas, NOT deletable, and NO guest assignments allowed
+    if (event.type === 'wedding') {
+      const eventMariesTables = tables.filter(t => t.eventId === eventId && isMarieTable(t));
+      if (eventMariesTables.length === 0) {
+        addTable({
+          id: MARIES_TABLE_ID,
+          eventId,
+          name: tr.coupleTable,
+          capacity: 2,
+          shape: 'square',
+          positionX: 350,
+          positionY: 20,
+          guestIds: [],
+        });
+      } else if (eventMariesTables.length > 1) {
+        // Automatically cleanup duplicates: keep only the first one, delete all extras
+        const [keep, ...duplicates] = eventMariesTables;
+        duplicates.forEach(dup => {
+          removeTable(dup.id);
+        });
+      }
+
+      // Ensure no guests remain assigned to the mariés table
+      eventMariesTables.forEach(t => {
+        if (t.guestIds && t.guestIds.length > 0) {
+          t.guestIds.forEach(gid => {
+            const actualGuestId = gid.includes('-comp-') ? gid.split('-comp-')[0] : gid;
+            updateGuest(actualGuestId, { tableId: undefined });
+          });
+          updateTable(t.id, { guestIds: [] });
+        }
       });
     }
 
     // 2. Auto-create group tables if no user tables exist yet (excluding mariés)
     const eventGuestGroups = guestGroups.filter(g => g.eventId === eventId);
-    const userTables = tables.filter(t => t.eventId === eventId && !isMarieTable(t.id));
+    const userTables = tables.filter(t => t.eventId === eventId && !isMarieTable(t));
     if (userTables.length === 0 && eventGuestGroups.length > 0) {
       const positions: Record<string, { x: number; y: number }> = {};
       eventGuestGroups.forEach((grp, i) => {
@@ -167,9 +205,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
       setDragPositions(prev => ({ ...prev, ...positions }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [event, tablesReady]);
-
-  const isMarieTable = (id: string) => id === MARIES_TABLE_ID;
+  }, [event, tablesReady, tables.length]);
 
   // ---------- Table Creation ----------
   const handleAddTable = () => {
@@ -203,7 +239,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     });
 
     // Remove all existing tables for this event EXCEPT mariés table
-    tables.filter(t => t.eventId === eventId && !isMarieTable(t.id)).forEach(t => removeTable(t.id));
+    tables.filter(t => t.eventId === eventId && !isMarieTable(t.id)).forEach(t => safeRemoveTable(t.id));
 
     const newAssign = {} as Record<string, string>;
     const allNewTableIds = [] as string[];
@@ -331,7 +367,13 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
   };
 
   // ---------- Assignment UI ----------
+  const safeRemoveTable = (tableId: string) => {
+    if (isMarieTable(tableId)) return; // Table des mariés cannot be deleted
+    removeTable(tableId);
+  };
+
   const handleAssign = (guestId: string, tableId: string) => {
+    if (isMarieTable(tableId)) return; // Cannot assign guests to Table des Mariés
     const table = tables.find(t => t.id === tableId);
     if (!table) return;
     if (table.guestIds.length >= table.capacity) return; // capacity guard
@@ -680,7 +722,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                       {t.guestIds.length}/{t.capacity}
                     </span>
                     <button
-                      onClick={() => { if (t.guestIds.length === 0) removeTable(t.id); }}
+                      onClick={() => { if (t.guestIds.length === 0) safeRemoveTable(t.id); }}
                       disabled={t.guestIds.length > 0}
                       title={t.guestIds.length > 0 ? tr.removeBeforeDelete : tr.deleteTable}
                       style={{

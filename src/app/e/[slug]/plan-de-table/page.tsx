@@ -888,8 +888,17 @@ function SeatingPlanContent({ slug }: { slug: string }) {
                       <path d="M18 2c-1.5 1-2 3-2 5s.5 4 2 5c1.5-1 2-3 2-5s-.5-4-2-5Z" />
                       <path d="M18 12v10" />
                     </svg>
-                    <div className="nom">{t.name}</div>
-                    <div className="places">{t.guestIds.length}/{t.capacity} places</div>
+                    {(t.name || '').toLowerCase().includes('marié') || (t.name || '').toLowerCase().includes('maries') ? (
+                      <>
+                        <div className="nom" style={{ color: 'var(--or-dore)', fontWeight: 700 }}>👑 {t.name}</div>
+                        <div className="places" style={{ color: 'var(--or-dore)', fontWeight: 600 }}>Table d&apos;Honneur</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="nom">{t.name}</div>
+                        <div className="places">{t.guestIds.length}/{t.capacity} places</div>
+                      </>
+                    )}
                   </div>
                 </React.Fragment>
               );
@@ -923,7 +932,7 @@ function SeatingPlanContent({ slug }: { slug: string }) {
                 </div>
                 <div>
                   <h2>{selectedTable.name}</h2>
-                  <p>Capacité : {selectedTable.capacity} personnes</p>
+                  <p>{(selectedTable.name || '').toLowerCase().includes('marié') || (selectedTable.name || '').toLowerCase().includes('maries') ? "Réservée pour les Mariés" : `Capacité : ${selectedTable.capacity} personnes`}</p>
                 </div>
               </div>
 
@@ -935,52 +944,82 @@ function SeatingPlanContent({ slug }: { slug: string }) {
                       <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
                       <path d="m9 11 3 3L22 4" />
                     </svg>
-                    C'est votre table réservée pour toute la soirée&nbsp;! Vos proches et convives s'installeront ici.
+                    C&apos;est votre table réservée pour toute la soirée&nbsp;! Vos proches et convives s&apos;installeront ici.
                   </div>
                 </>
               )}
 
-              <div className="section-titre">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-                CONVIVES À CETTE TABLE ({selectedTable.guestIds.length})
-              </div>
-
-              <div>
-                {selectedTable.guestIds.length === 0 ? (
-                  <p style={{ fontSize: '12.5px', color: 'var(--encre-douce)', fontStyle: 'italic', padding: '8px 0' }}>
-                    Aucun invité assigné pour le moment.
+              {(selectedTable.name || '').toLowerCase().includes('marié') || (selectedTable.name || '').toLowerCase().includes('maries') ? (
+                <div style={{
+                  marginTop: '1.25rem',
+                  padding: '1.25rem',
+                  borderRadius: '1rem',
+                  background: 'rgba(200, 169, 110, 0.08)',
+                  border: '1px solid rgba(200, 169, 110, 0.25)',
+                  textAlign: 'center',
+                }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👑 💍</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--or-dore)', marginBottom: '0.35rem' }}>
+                    Table d&apos;Honneur des Mariés
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--encre-douce)', lineHeight: 1.5, margin: 0 }}>
+                    Cette table est spécialement réservée pour les Mariés pour célébrer ce moment inoubliable avec leurs convives.
                   </p>
-                ) : (
-                  selectedTable.guestIds.map((gid) => {
-                    const pureId = gid.includes('-comp-') ? gid.split('-comp-')[0] : gid;
-                    const g = guests.find((x) => x.id === pureId);
-                    const isMe = currentGuest?.id === pureId;
-                    const isCompanion = gid.includes('-comp-');
-                    const compIndex = isCompanion ? gid.split('-comp-')[1] : null;
+                </div>
+              ) : (
+                <>
+                  <div className="section-titre">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                      <circle cx="9" cy="7" r="4" />
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
+                    </svg>
+                    CONVIVES À CETTE TABLE ({selectedTable.guestIds.length})
+                  </div>
 
-                    const displayName = isCompanion
-                      ? `Accompagnant ${(Number(compIndex) || 0) + 1} (${g?.lastName || ''})`
-                      : (g ? `${g.firstName} ${g.lastName}` : 'Invité');
-
-                    const avatarLetter = isCompanion ? 'A' : (g?.firstName?.[0] || 'I');
-
-                    return (
-                      <div className="convive" key={gid}>
-                        <div className="avatar">{avatarLetter}</div>
-                        <div className="convive-nom">
-                          {displayName}
-                          {isMe && <span className="vous-tag">VOUS</span>}
-                        </div>
-                        {g?.group && <div className="convive-role">{g.group}</div>}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+                  <div>
+                    {selectedTable.guestIds.length === 0 ? (
+                      <p style={{ fontSize: '12.5px', color: 'var(--encre-douce)', fontStyle: 'italic', padding: '8px 0' }}>
+                        Aucun invité assigné pour le moment.
+                      </p>
+                    ) : (
+                      selectedTable.guestIds.map((gid) => {
+                        const pureId = gid.includes('-comp-') ? gid.split('-comp-')[0] : gid;
+                        const g = guests.find((x) => x.id === pureId);
+                        const groupObj = groups.find((grp) => grp.name === g?.group);
+                        return (
+                          <div key={gid} className="carte-convive">
+                            <div
+                              className="avatar-initiales"
+                              style={{
+                                background: groupObj ? `${groupObj.color}22` : 'var(--dore-subtil)',
+                                color: groupObj?.color || 'var(--or-dore)',
+                              }}
+                            >
+                              {g ? `${g.firstName[0] || ''}${g.lastName[0] || ''}` : '👥'}
+                            </div>
+                            <div className="convive-infos">
+                              <span className="convive-nom">
+                                {g ? `${g.firstName} ${g.lastName}` : 'Invité'}
+                                {gid.includes('-comp-') && (
+                                  <span style={{ fontSize: '10px', color: 'var(--or-dore)', marginLeft: 6, fontWeight: 500 }}>
+                                    (Accompagnant)
+                                  </span>
+                                )}
+                              </span>
+                              {groupObj && (
+                                <span className="convive-groupe">
+                                  {groupObj.emoji} {groupObj.name}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="sidebar-footer">
