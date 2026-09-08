@@ -696,23 +696,23 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-6 right-6 z-40"
+          className="fixed bottom-6 right-4 sm:right-6 z-40"
         >
           <button
             type="button"
             onClick={() => setShowTableModal(true)}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 text-xs font-bold text-white border border-red-500/50 cursor-pointer"
+            className="flex items-center gap-2.5 px-4 py-3 rounded-full shadow-2xl transition-all hover:scale-105 active:scale-95 text-sm font-bold text-white border border-red-400/60 cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #DC2626 0%, #991B1B 100%)',
               boxShadow: '0 8px 25px rgba(220, 38, 38, 0.45)',
             }}
           >
-            <span className="flex h-2 w-2 relative">
+            <span className="flex h-2.5 w-2.5 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
             </span>
-            <span>🍽️ {seatingInfo.tableName}</span>
-            <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-full uppercase tracking-wider font-semibold">Voir</span>
+            <span className="tracking-wide">🍽️ {seatingInfo.tableName}</span>
+            <span className="text-xs bg-black/40 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Voir</span>
           </button>
         </motion.div>
       )}

@@ -14,7 +14,7 @@ export default function CountdownUnit({ value, label }: { value: number; label: 
       >
         {String(value).padStart(2, '0')}
       </motion.div>
-      <div className="text-xs md:text-sm mt-1 uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</div>
+      <div className="text-xs sm:text-sm mt-1 uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>{label}</div>
     </div>
   );
 }

@@ -111,10 +111,10 @@ export default function TableAssignmentModal({
           .modal-table-overlay .eyebrow {
             text-align: center;
             font-family: 'Jost', sans-serif;
-            font-size: 11.5px;
+            font-size: 12.5px;
             letter-spacing: .16em;
             color: var(--or);
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 10px;
           }
 
@@ -122,7 +122,7 @@ export default function TableAssignmentModal({
             text-align: center;
             font-family: 'Cormorant Garamond', serif;
             font-weight: 600;
-            font-size: 38px;
+            font-size: 40px;
             line-height: 1.15;
             color: var(--encre);
             letter-spacing: .01em;
@@ -132,7 +132,7 @@ export default function TableAssignmentModal({
             text-align: center;
             font-family: 'Cormorant', serif;
             font-style: italic;
-            font-size: 16px;
+            font-size: 17px;
             color: var(--encre-douce);
             margin-top: 6px;
             margin-bottom: 18px;
@@ -147,12 +147,12 @@ export default function TableAssignmentModal({
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            padding: 7px 16px;
+            padding: 8px 18px;
             border-radius: 999px;
             background: var(--bleu-fond);
             color: var(--bleu-etiquette);
-            font-size: 13.5px;
-            font-weight: 500;
+            font-size: 14.5px;
+            font-weight: 600;
             border: 1px solid #DCE3ED;
           }
           .modal-table-overlay .etiquette span.point {
@@ -173,11 +173,11 @@ export default function TableAssignmentModal({
             background: var(--trait);
           }
           .modal-table-overlay .separateur .texte {
-            font-size: 10.5px;
+            font-size: 11.5px;
             letter-spacing: .14em;
             color: var(--or);
             white-space: nowrap;
-            font-weight: 500;
+            font-weight: 600;
           }
 
           .modal-table-overlay .bloc-table {
@@ -199,22 +199,22 @@ export default function TableAssignmentModal({
           }
           .modal-table-overlay .bloc-table .numero {
             font-family: 'Cormorant Garamond', serif;
-            font-size: 13px;
+            font-size: 14px;
             letter-spacing: .1em;
             color: var(--or);
             margin-bottom: 6px;
-            font-weight: 600;
+            font-weight: 700;
           }
           .modal-table-overlay .bloc-table .nom-table {
             font-family: 'Cormorant Garamond', serif;
             font-weight: 700;
-            font-size: 32px;
+            font-size: 34px;
             color: var(--encre);
           }
 
           .modal-table-overlay .description {
             text-align: center;
-            font-size: 14.5px;
+            font-size: 15px;
             line-height: 1.65;
             color: var(--encre-douce);
             max-width: 360px;
@@ -234,8 +234,8 @@ export default function TableAssignmentModal({
             padding: 14px 12px;
             border-radius: 14px;
             font-family: 'Jost', sans-serif;
-            font-size: 14.5px;
-            font-weight: 500;
+            font-size: 15px;
+            font-weight: 600;
             cursor: pointer;
             border: 1px solid transparent;
             text-decoration: none;
@@ -259,7 +259,8 @@ export default function TableAssignmentModal({
 
           @media (max-width: 480px) {
             .modal-table-overlay .carte { padding: 36px 22px 24px; }
-            .modal-table-overlay h1 { font-size: 32px; }
+            .modal-table-overlay h1 { font-size: 34px; }
+            .modal-table-overlay .bloc-table .nom-table { font-size: 30px; }
             .modal-table-overlay .actions { flex-direction: column; }
           }
         `}</style>

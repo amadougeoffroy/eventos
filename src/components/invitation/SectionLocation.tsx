@@ -22,7 +22,7 @@ export default function SectionLocation({ event, itineraryStops }: { event: Even
           <h2 className="font-display text-3xl font-bold mb-2">
             Comment <span className="gradient-gold">nous rejoindre</span>
           </h2>
-          <p className="text-sm" style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>
+          <p className="text-base" style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>
             {itineraryStops.length > 1
               ? "Suivez l'itinéraire entre les différents lieux de la journée"
               : "Retrouvez-nous à l'adresse ci-dessous"}
@@ -54,16 +54,16 @@ export default function SectionLocation({ event, itineraryStops }: { event: Even
             )}
           </div>
 
-          <div style={{ padding: '1rem 1.5rem' }}>
+          <div style={{ padding: '1.25rem 1.5rem' }}>
             <a
               href={itineraryStops.length > 1
                 ? `https://www.google.com/maps/dir/${itineraryStops.map(s => `${s.venue.lat || 0},${s.venue.lng || 0}`).join('/')}`
                 : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.venue + ', ' + (event.venueAddress || ''))}`
               }
               target="_blank" rel="noopener noreferrer" className="btn-secondary"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', textDecoration: 'none', width: '100%' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', textDecoration: 'none', width: '100%', fontSize: '1rem', fontWeight: 600, padding: '0.85rem 1.25rem' }}
             >
-              <Navigation size={16} />
+              <Navigation size={18} />
               {itineraryStops.length > 1 ? "Voir l'itinéraire complet" : 'Ouvrir dans Google Maps'}
             </a>
           </div>
