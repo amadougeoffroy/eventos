@@ -21,13 +21,35 @@ export default function ResetPasswordPage() {
   // The recovery link from the email sets a temporary session once Supabase
   // parses the token out of the URL — wait for that before allowing submit,
   // otherwise updateUser() below fails with a generic "not authenticated".
+  // Supabase's PKCE flow needs the ?code= param exchanged explicitly: it
+  // doesn't always resolve on its own, and failed silently before this fix,
+  // leaving the page stuck on "Vérification du lien..." forever.
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') setReady(true);
     });
-    supabase.auth.getSession().then((result: Awaited<ReturnType<typeof supabase.auth.getSession>>) => {
-      if (result.data.session) setReady(true);
-    });
+
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+
+    (async () => {
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          setError("Ce lien de réinitialisation n'est plus valide. Demandez-en un nouveau depuis la page de connexion.");
+          return;
+        }
+        setReady(true);
+        return;
+      }
+      const result = await supabase.auth.getSession();
+      if (result.data.session) {
+        setReady(true);
+      } else {
+        setError("Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau depuis la page de connexion.");
+      }
+    })();
+
     return () => subscription.unsubscribe();
   }, [supabase]);
 
@@ -140,7 +162,7 @@ export default function ResetPasswordPage() {
                   onChange={e => setConfirmPassword(e.target.value)}
                 />
               </div>
-              <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
+              <button type="submit" className="btn-primary w-full py-3" disabled={loading || !ready}>
                 {loading ? <><Loader2 size={16} className="animate-spin" /> Mise à jour...</> : <>Mettre à jour <ArrowRight size={16} /></>}
               </button>
             </form>
