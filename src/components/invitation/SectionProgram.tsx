@@ -9,7 +9,7 @@ export default function SectionProgram({ event, venues }: { event: Event; venues
     <section style={{ background: 'var(--t-bg-warm, var(--bg-section))', padding: '5rem 1.5rem' }}>
       <div style={{ maxWidth: 576, margin: '0 auto' }}>
         <motion.h2
-          className="font-display text-3xl font-bold"
+          className="font-display section-heading"
           style={{ textAlign: 'center', marginBottom: '3rem' }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
         >

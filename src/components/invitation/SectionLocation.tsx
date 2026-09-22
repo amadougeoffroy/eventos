@@ -19,7 +19,7 @@ export default function SectionLocation({ event, itineraryStops }: { event: Even
           style={{ textAlign: 'center', marginBottom: '2rem' }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
         >
-          <h2 className="font-display text-3xl font-bold mb-2">
+          <h2 className="font-display section-heading mb-2">
             Comment <span className="gradient-gold">nous rejoindre</span>
           </h2>
           <p className="text-sm" style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>

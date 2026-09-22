@@ -34,7 +34,7 @@ export default function SectionSweetMessage({ event, guestName }: { event: Event
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
         >
           <MessageCircleHeart size={32} style={{ color: 'var(--t-accent, var(--gold))', margin: '0 auto 1rem' }} />
-          <h2 className="font-display text-3xl font-bold mb-2">
+          <h2 className="font-display section-heading mb-2">
             Un petit <span className="gradient-gold">mot doux</span>
           </h2>
           <p className="text-sm" style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>

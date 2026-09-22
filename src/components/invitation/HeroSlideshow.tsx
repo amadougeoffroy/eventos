@@ -1,7 +1,7 @@
 'use client';
 import { Event } from '@/lib/types';
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin } from 'lucide-react';
 import CountdownUnit from './CountdownUnit';
 import OrnamentBorder from './OrnamentBorder';
@@ -14,11 +14,20 @@ interface HeroSlideshowProps {
   cfg: { emoji: string; label: string; color: string };
   ornaments?: boolean;
   filmGrain?: boolean;
+  parallax?: boolean;
 }
 
-export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg, ornaments, filmGrain }: HeroSlideshowProps) {
+export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg, ornaments, filmGrain, parallax }: HeroSlideshowProps) {
   const [slideIndex, setSlideIndex] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // Depth effect for templates that opt in (template.animations.parallax):
+  // the photo drifts down slower than the scroll while the overlay content
+  // drifts up and fades, so the hero feels layered instead of a flat banner.
+  const photoRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: photoRef, offset: ['start start', 'end start'] });
+  const imageY = useTransform(scrollYProgress, [0, 1], [0, parallax ? 140 : 0]);
+  const contentY = useTransform(scrollYProgress, [0, 1], [0, parallax ? -70 : 0]);
 
   // Auto-advance slides every 5 seconds (only for multiple slides)
   useEffect(() => {
@@ -64,14 +73,14 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg, ornam
   return (
     <section style={{ position: 'relative' }}>
       {/* Photo area — full viewport height */}
-      <div style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
+      <div ref={photoRef} style={{ position: 'relative', height: '100vh', overflow: 'hidden' }}>
         {/* Video or Slideshow photos */}
         {heroVideo ? (
-          <video
+          <motion.video
             autoPlay muted loop playsInline
             style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover',
+              position: 'absolute', inset: '-12%', width: '124%', height: '124%',
+              objectFit: 'cover', y: imageY,
             }}
             src={heroVideo}
           />
@@ -80,9 +89,10 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg, ornam
           <motion.div
             key={slideIndex}
             style={{
-              position: 'absolute', inset: '-5%', width: '110%', height: '110%',
+              position: 'absolute', inset: '-12%', width: '124%', height: '124%',
               backgroundImage: `url(${heroSlides[slideIndex]})`,
               backgroundSize: 'cover', backgroundPosition: 'center center',
+              y: imageY,
             }}
             initial={{ opacity: 0, scale: 1.1 }}
             animate={{
@@ -126,11 +136,15 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg, ornam
         {/* Corner ornaments — royal & opulence */}
         {ornaments && <OrnamentBorder />}
 
-        {/* Content overlay */}
+        {/* Content overlay — drifts up faster than the scroll on templates
+            that opt into parallax (template.animations.parallax), via the
+            style-bound contentY MotionValue alongside the unrelated
+            initial/animate entrance fade below. */}
         <motion.div
           style={{
             position: 'relative', zIndex: 3, display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'space-between', height: '100%', padding: '3rem 1.5rem',
+            y: contentY,
           }}
           initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.2 }}
         >

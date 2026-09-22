@@ -4,32 +4,57 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Repeating bento rhythm (col-span/row-span out of a 4-col / 140px-row grid)
+// applied by index — gives the grid varied tile sizes instead of a uniform
+// checkerboard, without needing real image dimensions.
+const BENTO_PATTERN: Array<{ col: number; row: number }> = [
+  { col: 2, row: 2 },
+  { col: 1, row: 1 },
+  { col: 1, row: 2 },
+  { col: 2, row: 1 },
+  { col: 1, row: 1 },
+  { col: 1, row: 1 },
+  { col: 2, row: 1 },
+  { col: 2, row: 2 },
+];
+
 export default function SectionGallery({ event }: { event: Event }) {
   const images = (event.heroMedia || []).filter(m => m.type === 'image').map(m => m.url);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  
+
   if (images.length === 0) return null;
-  
+
+  // The bento rhythm only reads well with enough tiles to fill the pattern —
+  // below that, fall back to a plain uniform grid.
+  const useBento = images.length >= 4;
+
   return (
     <section style={{ background: 'var(--t-bg, var(--bg))', padding: '5rem 1.5rem' }}>
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
         <motion.div
           style={{ textAlign: 'center', marginBottom: '3rem' }}
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
         >
           <Camera size={32} style={{ color: 'var(--t-accent, var(--gold))', margin: '0 auto 1rem' }} />
-          <h2 className="font-display text-3xl font-bold mb-2">
+          <h2 className="font-display section-heading mb-2">
             Notre <span className="gradient-gold">galerie</span>
           </h2>
         </motion.div>
 
         {/* Grid */}
-        <div style={{
+        <div className={useBento ? 'gallery-bento-grid' : undefined} style={useBento ? {
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridAutoRows: '140px',
+          gap: '0.75rem',
+        } : {
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
           gap: '0.75rem',
         }}>
-          {images.map((url, i) => (
+          {images.map((url, i) => {
+            const bento = BENTO_PATTERN[i % BENTO_PATTERN.length];
+            return (
             <motion.button
               key={i}
               className="gallery-photo-frame"
@@ -37,12 +62,14 @@ export default function SectionGallery({ event }: { event: Event }) {
               style={{
                 position: 'relative', overflow: 'hidden', cursor: 'pointer',
                 borderRadius: 'var(--t-radius, 14px)', border: 'none', padding: 0,
-                aspectRatio: i % 3 === 0 ? '4/5' : '1/1',
+                ...(useBento
+                  ? { gridColumn: `span ${bento.col}`, gridRow: `span ${bento.row}` }
+                  : { aspectRatio: i % 3 === 0 ? '4/5' : '1/1' }),
               }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
+              initial={{ opacity: 0, scale: 1.04, clipPath: 'inset(12% round 12px)' }}
+              whileInView={{ opacity: 1, scale: 1, clipPath: 'inset(0% round 12px)' }}
+              viewport={{ once: true, margin: '-10%' }}
+              transition={{ duration: 0.7, delay: (i % 8) * 0.08, ease: [0.22, 1, 0.36, 1] }}
               whileHover={{ scale: 1.03 }}
             >
               <img src={url} alt={`Photo ${i + 1}`} style={{
@@ -54,8 +81,18 @@ export default function SectionGallery({ event }: { event: Event }) {
                 opacity: 0, transition: 'opacity 0.3s',
               }} className="gallery-overlay" />
             </motion.button>
-          ))}
+            );
+          })}
         </div>
+
+        {useBento && (
+          <style>{`
+            @media (max-width: 640px) {
+              .gallery-bento-grid { grid-template-columns: repeat(2, 1fr) !important; grid-auto-rows: 110px !important; }
+              .gallery-bento-grid .gallery-photo-frame { grid-column: span 1 !important; grid-row: span 1 !important; }
+            }
+          `}</style>
+        )}
 
         {/* Lightbox */}
         <AnimatePresence>

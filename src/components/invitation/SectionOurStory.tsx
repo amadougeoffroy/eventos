@@ -17,7 +17,7 @@ export default function SectionOurStory({ event }: { event: Event }) {
           initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
         >
           <BookOpen size={32} style={{ color: 'var(--t-accent, var(--gold))', margin: '0 auto 1rem' }} />
-          <h2 className="font-display text-3xl font-bold mb-2">
+          <h2 className="font-display section-heading mb-2">
             Notre <span className="gradient-gold">histoire</span>
           </h2>
         </motion.div>

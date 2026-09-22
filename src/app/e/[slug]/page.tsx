@@ -326,6 +326,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         cfg={cfg}
         ornaments={!!template.specialEffects.ornaments}
         filmGrain={!!template.specialEffects.filmGrain}
+        parallax={!!template.animations.parallax}
       />
     ),
     welcome: () => <SectionWelcome key="welcome" event={event} />,

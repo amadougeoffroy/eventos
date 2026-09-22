@@ -226,6 +226,16 @@
   color: var(--t-bg);
 }
 
+/* Oversized section titles — replaces the uniform text-3xl used on every
+   section, which read as flat/generic. Scales with viewport so it stays
+   editorial-large without overflowing on mobile. */
+[data-template] .section-heading {
+  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   [data-template] .t-section,
