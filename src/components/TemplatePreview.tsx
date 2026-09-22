@@ -14,6 +14,7 @@ import {
   getTemplate,
   getTemplateVariant,
 } from '@/lib/templates/template-registry';
+import { formatEventDateFr } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,23 +48,6 @@ interface TemplatePreviewProps {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Format a date string to a readable French date. */
-function formatDateFr(raw: string): string {
-  if (!raw) return '';
-  try {
-    const d = new Date(raw);
-    if (isNaN(d.getTime())) return raw;
-    return d.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
-  } catch {
-    return raw;
-  }
-}
 
 /** Blend a custom primary color into the palette when it differs from the template default. */
 function blendPalette(
@@ -167,7 +151,7 @@ export default function TemplatePreview({
   }, [variant, primaryColor]);
 
   const isWedding = eventType === 'wedding';
-  const formattedDate = formatDateFr(date);
+  const formattedDate = formatEventDateFr(date);
 
   // Hero images: custom > default (stable reference)
   const defaultImages = variant?.defaultHeroImages ?? [];

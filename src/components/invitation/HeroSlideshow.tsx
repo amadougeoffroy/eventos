@@ -4,15 +4,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronLeft, ChevronRight, CalendarDays, Clock, MapPin } from 'lucide-react';
 import CountdownUnit from './CountdownUnit';
+import OrnamentBorder from './OrnamentBorder';
+import { formatEventDateFr } from '@/lib/utils';
 
 interface HeroSlideshowProps {
   event: Event;
   heroSlides: string[];
   heroVideo?: string;
   cfg: { emoji: string; label: string; color: string };
+  ornaments?: boolean;
+  filmGrain?: boolean;
 }
 
-export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: HeroSlideshowProps) {
+export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg, ornaments, filmGrain }: HeroSlideshowProps) {
   const [slideIndex, setSlideIndex] = useState(0);
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
@@ -106,6 +110,21 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
           background: `linear-gradient(to bottom, transparent 0%, color-mix(in srgb, var(--t-bg, #FFFFFF) 40%, transparent) 50%, color-mix(in srgb, var(--t-bg, #FFFFFF) 85%, transparent) 75%, var(--t-bg, #FFFFFF) 100%)`,
           zIndex: 2,
         }} />
+
+        {/* Film grain — opulence only */}
+        {filmGrain && (
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute', inset: 0, zIndex: 2, opacity: 0.15,
+              mixBlendMode: 'overlay', pointerEvents: 'none',
+              backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
+            }}
+          />
+        )}
+
+        {/* Corner ornaments — royal & opulence */}
+        {ornaments && <OrnamentBorder />}
 
         {/* Content overlay */}
         <motion.div
@@ -227,7 +246,7 @@ export default function HeroSlideshow({ event, heroSlides, heroVideo, cfg }: Her
 
           <div className="font-display italic" style={{ fontSize: '1rem', color: 'var(--t-text-muted, var(--text-secondary))', marginTop: '1.5rem', marginBottom: '2rem' }}>
             <span className="flex items-center justify-center gap-1.5" style={{ marginBottom: '0.25rem' }}>
-              <CalendarDays size={15} /> {new Date(event.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+              <CalendarDays size={15} /> {formatEventDateFr(event.date, { weekday: false })}
               <span style={{ margin: '0 0.5rem' }}>•</span>
               <Clock size={15} /> {event.time}
             </span>

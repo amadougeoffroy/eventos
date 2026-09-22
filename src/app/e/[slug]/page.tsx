@@ -42,80 +42,16 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     if (contextEvent) { setPublicLoading(false); return; }
 
     const fetchPublicEvent = async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-
-      const { data: evtRow } = await supabase
-        .from('events')
-        .select('*')
-        .eq('slug', slug)
-        .single();
-
-      if (evtRow) {
-        const { data: programRows } = await supabase
-          .from('program_items')
-          .select('*')
-          .eq('event_id', evtRow.id)
-          .order('sort_order', { ascending: true });
-
-        const program = (programRows || []).map((row: any) => ({
-          id: row.id,
-          time: row.time || '',
-          title: row.title || '',
-          description: row.description || '',
-          icon: row.icon || '🎉',
-          venueId: row.venue_id || undefined,
-        }));
-
-        const { data: venueRows } = await supabase
-          .from('venues')
-          .select('*')
-          .eq('event_id', evtRow.id);
-
-        const mappedVenues = (venueRows || []).map((v: any) => ({
-          id: v.id, eventId: v.event_id, name: v.name,
-          address: v.address, lat: v.lat, lng: v.lng,
-          emoji: v.emoji, type: v.type,
-        }));
-
-        // Also fetch any venues linked to program items that might belong to another event
-        const missingVenueIds = program
-          .map((p: any) => p.venueId)
-          .filter((vId: any): vId is string => Boolean(vId) && !mappedVenues.some((mv: any) => mv.id === vId));
-
-        if (missingVenueIds.length > 0) {
-          const { data: extraVenues } = await supabase
-            .from('venues')
-            .select('*')
-            .in('id', missingVenueIds);
-
-          if (extraVenues) {
-            extraVenues.forEach((v: any) => {
-              mappedVenues.push({
-                id: v.id, eventId: v.event_id, name: v.name,
-                address: v.address, lat: v.lat, lng: v.lng,
-                emoji: v.emoji, type: v.type,
-              });
-            });
-          }
+      try {
+        const res = await fetch(`/api/public/event?slug=${encodeURIComponent(slug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublicEvent(data.event);
+          setPublicVenues(data.venues || []);
+          setPublicGroups(data.groups || []);
         }
-
-        setPublicVenues(mappedVenues);
-
-        const { dbEventToApp } = await import('@/lib/supabase/mappers');
-        setPublicEvent({ ...dbEventToApp(evtRow), program });
-
-        const { data: groupRows } = await supabase
-          .from('guest_groups')
-          .select('*')
-          .eq('event_id', evtRow.id)
-          .order('created_at', { ascending: true });
-
-        if (groupRows) {
-          setPublicGroups(groupRows.map((g: any) => ({
-            id: g.id, name: g.name, emoji: g.emoji || '👥', color: g.color || '#C8A96E',
-          })));
-        }
+      } catch (e) {
+        console.error('Error fetching public event:', e);
       }
       setPublicLoading(false);
     };
@@ -136,27 +72,14 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   useEffect(() => {
     if (!event) return;
     const loadPublicGifts = async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('gifts')
-        .select('*')
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: true });
-      if (data) {
-        setPublicGifts(data.map((row: any) => ({
-          id: row.id,
-          eventId: row.event_id,
-          name: row.name || '',
-          description: row.description || '',
-          price: row.price ? Number(row.price) : undefined,
-          url: row.url || '',
-          imageUrl: row.image_url || '',
-          reservedBy: row.reserved_by || undefined,
-          reservedByName: row.reserved_by_name || undefined,
-          reserved: row.reserved || false,
-          category: row.category || 'Général',
-        })));
+      try {
+        const res = await fetch(`/api/public/gifts?slug=${encodeURIComponent(slug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublicGifts(data.gifts || []);
+        }
+      } catch (e) {
+        console.error('Error fetching public gifts:', e);
       }
     };
     loadPublicGifts();
@@ -182,56 +105,29 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   useEffect(() => {
     if (!event || !event.meta?.menuSurveyEnabled) return;
     const loadMenu = async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      const { data: cats } = await supabase
-        .from('menu_categories')
-        .select('*')
-        .eq('event_id', event.id)
-        .order('sort_order', { ascending: true });
-      if (cats) {
-        setPublicMenuCategories(cats.map((r: any) => ({
-          id: r.id, eventId: r.event_id, name: r.name || '',
-          icon: r.icon || '🍽️', order: r.sort_order ?? 0,
-        })));
-      }
-      const { data: items } = await supabase
-        .from('menu_items')
-        .select('*')
-        .eq('event_id', event.id)
-        .order('created_at', { ascending: true });
-      if (items) {
-        setPublicMenuItems(items.map((r: any) => ({
-          id: r.id, eventId: r.event_id, categoryId: r.category_id,
-          name: r.name || '', description: r.description || '',
-          tags: r.tags || [], status: r.status === 'inactive' ? 'draft' as const : 'active' as const,
-          votes: r.votes ?? 0,
-        })));
+      try {
+        const res = await fetch(`/api/public/menu?slug=${encodeURIComponent(slug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setPublicMenuCategories(data.categories || []);
+          setPublicMenuItems(data.items || []);
+        }
+      } catch (e) {
+        console.error('Error fetching public menu:', e);
       }
     };
     loadMenu();
-  }, [event?.id, event?.meta?.menuSurveyEnabled]);
+  }, [event?.id, event?.meta?.menuSurveyEnabled, slug]);
 
   const handleSurveySubmit = async (selectedItemIds: string[]) => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const supabase = createClient();
-    // Increment votes for each selected item
-    for (const itemId of selectedItemIds) {
-      try {
-        const { error } = await supabase.rpc('increment_menu_vote', { item_id: itemId });
-        if (error) {
-          // Fallback: manual increment
-          const item = publicMenuItems.find(i => i.id === itemId);
-          if (item) {
-            await supabase.from('menu_items').update({ votes: (item.votes || 0) + 1 }).eq('id', itemId);
-          }
-        }
-      } catch {
-        const item = publicMenuItems.find(i => i.id === itemId);
-        if (item) {
-          await supabase.from('menu_items').update({ votes: (item.votes || 0) + 1 }).eq('id', itemId);
-        }
-      }
+    try {
+      await fetch('/api/public/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, itemIds: selectedItemIds }),
+      });
+    } catch (e) {
+      console.error('Error submitting menu survey:', e);
     }
     // Save voted state in localStorage
     if (event) {
@@ -240,17 +136,20 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
   };
 
   const handlePublicReserve = async (giftId: string, guestFullName: string) => {
-    const { createClient } = await import('@/lib/supabase/client');
-    const supabase = createClient();
-    // Append name to existing names (multiple guests can offer the same gift)
-    const existing = publicGifts.find(g => g.id === giftId);
-    const currentNames = existing?.reservedByName || '';
-    const namesList = currentNames ? currentNames.split(', ').filter(Boolean) : [];
-    if (!namesList.includes(guestFullName)) namesList.push(guestFullName);
-    const newNames = namesList.join(', ');
-    await supabase.from('gifts').update({ reserved: true, reserved_by_name: newNames }).eq('id', giftId);
-    setPublicGifts(prev => prev.map(g => g.id === giftId ? { ...g, reserved: true, reservedByName: newNames } : g));
-    if (typeof updateGift === 'function') updateGift(giftId, { reserved: true, reservedByName: newNames });
+    try {
+      const res = await fetch('/api/public/gifts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug, giftId, guestFullName }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPublicGifts(prev => prev.map(g => g.id === giftId ? data.gift : g));
+        if (typeof updateGift === 'function') updateGift(giftId, { reserved: true, reservedByName: data.gift.reservedByName });
+      }
+    } catch (e) {
+      console.error('Error reserving gift:', e);
+    }
   };
 
   // ── Personalized link: detect known guest from URL ──
@@ -265,72 +164,32 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
     const storageKey = `eventos_rsvp_${event.id}`;
 
     const fetchGuest = async () => {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
+      try {
+        // 3. Fallback: restore from localStorage (guest who filled the form without personalized link)
+        let storedGuestId: string | undefined;
+        if (!urlToken && !urlGuestParam) {
+          try {
+            const saved = localStorage.getItem(storageKey);
+            if (saved) storedGuestId = JSON.parse(saved)?.guestId;
+          } catch {}
+        }
+        if (!urlToken && !urlGuestParam && !storedGuestId) return;
 
-      let row: any = null;
+        const params = new URLSearchParams({ slug });
+        if (urlToken) params.set('token', urlToken);
+        if (urlGuestParam) params.set('name', urlGuestParam);
+        if (storedGuestId) params.set('guestId', storedGuestId);
 
-      // 1. Try by URL token
-      if (urlToken) {
-        const { data } = await supabase
-          .from('guests')
-          .select('*')
-          .eq('event_id', event.id)
-          .eq('token', urlToken)
-          .single();
-        row = data;
-      }
-
-      // 2. Fallback: match by URL name
-      if (!row && urlGuestParam) {
-        const nameParts = decodeURIComponent(urlGuestParam).replace(/-/g, ' ');
-        const [first, ...rest] = nameParts.split(' ');
-        const { data: nameRow } = await supabase
-          .from('guests')
-          .select('*')
-          .eq('event_id', event.id)
-          .ilike('first_name', first)
-          .ilike('last_name', rest.join(' ') || '')
-          .single();
-        row = nameRow;
-      }
-
-      // 3. Fallback: restore from localStorage (guest who filled the form without personalized link)
-      if (!row && !urlToken && !urlGuestParam) {
-        try {
-          const saved = localStorage.getItem(storageKey);
-          if (saved) {
-            const { guestId } = JSON.parse(saved);
-            if (guestId) {
-              const { data } = await supabase
-                .from('guests')
-                .select('*')
-                .eq('id', guestId)
-                .single();
-              row = data;
-            }
-          }
-        } catch {}
-      }
-
-      if (row) {
-        const guest: Guest = {
-          id: row.id,
-          eventId: row.event_id,
-          firstName: row.first_name || '',
-          lastName: row.last_name || '',
-          phone: row.phone || '',
-          group: row.group || 'Invités',
-          rsvpStatus: row.rsvp_status || 'pending',
-          token: row.token || '',
-          companions: row.companions || 0,
-          allergies: row.allergies || '',
-          dietaryRestrictions: [],
-          respondedAt: row.updated_at || undefined,
-        };
-        setKnownGuest(guest);
-        // Persist to localStorage for future refreshes
-        localStorage.setItem(storageKey, JSON.stringify({ guestId: row.id }));
+        const res = await fetch(`/api/public/guest?${params.toString()}`);
+        if (!res.ok) return;
+        const { guest } = await res.json();
+        if (guest) {
+          setKnownGuest(guest as Guest);
+          // Persist to localStorage for future refreshes
+          localStorage.setItem(storageKey, JSON.stringify({ guestId: guest.id }));
+        }
+      } catch (e) {
+        console.error('Error fetching guest:', e);
       }
     };
     fetchGuest();
@@ -399,33 +258,16 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         const guestIdQuery = knownGuest?.id || '';
         if (!tokenQuery && !guestIdQuery && !urlGuestParam) return;
 
-        const res = await fetch(`/api/seating?slug=${encodeURIComponent(slug)}&token=${encodeURIComponent(tokenQuery)}&guestId=${encodeURIComponent(guestIdQuery)}`);
+        const params = new URLSearchParams({ slug });
+        if (tokenQuery) params.set('token', tokenQuery);
+        if (guestIdQuery) params.set('guestId', guestIdQuery);
+        if (urlGuestParam) params.set('guestName', urlGuestParam);
+
+        const res = await fetch(`/api/seating?${params.toString()}`);
         if (!res.ok) return;
         const data = await res.json();
 
-        let currentG = data.currentGuest;
-        if (!currentG && urlGuestParam) {
-          const rawName = decodeURIComponent(urlGuestParam).toLowerCase().replace(/-/g, ' ');
-          const match = (data.guests || []).find((g: any) => {
-            const full = `${g.firstName} ${g.lastName}`.toLowerCase();
-            return full.includes(rawName) || rawName.includes(g.firstName.toLowerCase());
-          });
-          if (match) {
-            const assignedTableId = match.tableId || (data.tables || []).find((t: any) => t.guestIds.includes(match.id))?.id;
-            const table = (data.tables || []).find((t: any) => t.id === assignedTableId);
-            const grp = (data.groups || []).find((gr: any) => gr.name === match.group);
-            if (table) {
-              currentG = {
-                firstName: match.firstName,
-                lastName: match.lastName,
-                tableName: table.name,
-                group: match.group,
-                groupEmoji: grp?.emoji,
-                groupColor: grp?.color,
-              };
-            }
-          }
-        }
+        const currentG = data.currentGuest;
 
         if (currentG?.tableName) {
           setSeatingInfo({
@@ -475,7 +317,17 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   // ── Section rendering based on template config ──
   const sectionRenderers: Record<string, () => React.ReactNode> = {
-    hero: () => <HeroSlideshow key="hero" event={event} heroSlides={heroSlides} heroVideo={event.heroType === 'video' ? (event.heroVideo || '/default_video.mp4') : undefined} cfg={cfg} />,
+    hero: () => (
+      <HeroSlideshow
+        key="hero"
+        event={event}
+        heroSlides={heroSlides}
+        heroVideo={event.heroType === 'video' ? (event.heroVideo || '/default_video.mp4') : undefined}
+        cfg={cfg}
+        ornaments={!!template.specialEffects.ornaments}
+        filmGrain={!!template.specialEffects.filmGrain}
+      />
+    ),
     welcome: () => <SectionWelcome key="welcome" event={event} />,
     program: () => <SectionProgram key="program" event={event} venues={allVenues} />,
     dressCode: () => <SectionDressCode key="dressCode" event={event} />,
@@ -490,6 +342,7 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
         addGuest={addGuest}
         menuSurveyEnabled={!!event.meta?.menuSurveyEnabled && publicMenuCategories.length > 0}
         onOpenSurvey={() => setShowMenuSurvey(true)}
+        particleType={variant?.particles}
         onRsvpComplete={(guest) => {
           setKnownGuest(guest);
           try { localStorage.setItem(`eventos_rsvp_${event.id}`, JSON.stringify({ guestId: guest.id })); } catch {}
@@ -537,13 +390,14 @@ export default function GuestLandingPage({ params }: { params: Promise<{ slug: s
 
   // Intro splash screen
   if (showIntro && event) {
-    return <IntroSplashScreen event={event} onEnter={handleEnter} />;
+    return <IntroSplashScreen event={event} onEnter={handleEnter} accentColor={variant?.palette.accent} />;
   }
 
   return (
     <div
       className="min-h-screen overflow-x-hidden"
       data-template={templateId}
+      data-layout={template.layout}
       style={{
         background: 'var(--t-bg, var(--bg))',
         color: 'var(--t-text, var(--text))',

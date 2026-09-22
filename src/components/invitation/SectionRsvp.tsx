@@ -14,9 +14,10 @@ interface SectionRsvpProps {
   onRsvpComplete?: (guest: Guest) => void;
   menuSurveyEnabled?: boolean;
   onOpenSurvey?: () => void;
+  particleType?: string;
 }
 
-export default function SectionRsvp({ event, knownGuest, groups, updateGuest, addGuest, onRsvpComplete, menuSurveyEnabled, onOpenSurvey }: SectionRsvpProps) {
+export default function SectionRsvp({ event, knownGuest, groups, updateGuest, addGuest, onRsvpComplete, menuSurveyEnabled, onOpenSurvey, particleType }: SectionRsvpProps) {
   const [rsvpChoice, setRsvpChoice] = useState<'confirmed' | 'declined' | 'maybe' | null>(null);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
@@ -48,83 +49,35 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
     if (!guestName.trim() || !event) return;
 
     try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
+      const res = await fetch('/api/public/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(
+          knownGuest
+            ? { slug: event.slug, guestId: knownGuest.id, token: knownGuest.token, rsvpChoice, companions, allergies }
+            : { slug: event.slug, rsvpChoice, guestName: guestName.trim(), guestPhone, guestGroup, companions, allergies }
+        ),
+      });
+
+      if (!res.ok) {
+        console.error('RSVP save error:', await res.text().catch(() => res.statusText));
+        return;
+      }
+
+      const { guest } = await res.json();
 
       if (knownGuest) {
-        await supabase.from('guests').update({
-          rsvp_status: rsvpChoice,
-          companions,
-          allergies,
-          updated_at: new Date().toISOString(),
-        }).eq('id', knownGuest.id);
-
         updateGuest(knownGuest.id, {
           rsvpStatus: rsvpChoice,
           companions,
           allergies,
-          respondedAt: new Date().toISOString(),
+          respondedAt: guest.respondedAt,
         });
-
-        onRsvpComplete?.({ ...knownGuest, rsvpStatus: rsvpChoice, companions, allergies });
-      } else {
-        const [first, ...rest] = guestName.trim().split(' ');
-        const token = `tok-${Date.now()}`;
-
-        const { data: inserted, error: insertErr } = await supabase.from('guests').insert({
-          event_id: event.id,
-          first_name: first,
-          last_name: rest.join(' ') || '',
-          phone: guestPhone || null,
-          group: guestGroup || 'Invités',
-          rsvp_status: rsvpChoice,
-          token,
-          companions,
-          allergies: allergies || null,
-          source: 'rsvp',
-        }).select().single();
-
-        if (insertErr) {
-          console.error('RSVP insert error:', JSON.stringify(insertErr));
-          return;
-        }
-
-        // Sync context state without re-inserting (addGuest would cause a duplicate)
-        if (typeof addGuest === 'function') {
-          // We pass the real Supabase ID so AppContext won't create a duplicate
-          addGuest({
-            id: inserted?.id || `g-${Date.now()}`,
-            eventId: event.id,
-            firstName: first,
-            lastName: rest.join(' ') || '',
-            phone: guestPhone,
-            group: guestGroup || 'Invités',
-            rsvpStatus: rsvpChoice,
-            token,
-            companions,
-            privateMessage: privateMsg,
-            allergies,
-            dietaryRestrictions: [],
-            respondedAt: new Date().toISOString(),
-            source: 'rsvp' as const,
-          });
-
-          onRsvpComplete?.({
-            id: inserted?.id || `g-${Date.now()}`,
-            eventId: event.id,
-            firstName: first,
-            lastName: rest.join(' ') || '',
-            phone: guestPhone,
-            group: guestGroup || 'Invités',
-            rsvpStatus: rsvpChoice,
-            token,
-            companions,
-            allergies,
-            dietaryRestrictions: [],
-            respondedAt: new Date().toISOString(),
-          });
-        }
+      } else if (typeof addGuest === 'function') {
+        addGuest({ ...guest, privateMessage: privateMsg });
       }
+
+      onRsvpComplete?.(guest);
     } catch (e) {
       console.error('RSVP save error:', e);
     }
@@ -138,7 +91,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
 
   return (
     <section style={{ background: 'var(--t-bg-warm, var(--bg-section))', padding: '5rem 1.5rem', position: 'relative' }}>
-      {showConfetti && <ParticleSystem type="stars" />}
+      {showConfetti && <ParticleSystem type={particleType || 'stars'} />}
       <div style={{ maxWidth: 512, margin: '0 auto' }}>
         <motion.div
           style={{ textAlign: 'center', marginBottom: '2.5rem' }}

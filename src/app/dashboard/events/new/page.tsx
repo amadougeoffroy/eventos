@@ -12,6 +12,7 @@ import { VenueFormModal, VenueFormData } from '@/components/VenueFormModal';
 import TemplateSelector from '@/components/TemplateSelector';
 import TemplatePreview from '@/components/TemplatePreview';
 import { createClient } from '@/lib/supabase/client';
+import { uploadEventMedia } from '@/lib/uploadEventMedia';
 import { getDefaultTemplate, getTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
 import type { HeroType } from '@/lib/templates/template-registry';
 import {
@@ -85,6 +86,7 @@ export default function NewEventPage() {
   const [heroType, setHeroType] = useState<HeroType>('image');
   const [heroImages, setHeroImages] = useState<string[]>([]);
   const [hideDefault, setHideDefault] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState('');
   const [heroVideo, setHeroVideo] = useState<string>('/default_video.mp4');
 
   // Companions
@@ -238,10 +240,12 @@ export default function NewEventPage() {
   };
 
   const [isCreatingEvent, setIsCreatingEvent] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const handleCreate = async () => {
     if (isCreatingEvent) return;
     setIsCreatingEvent(true);
+    setCreateError('');
     try {
       const slug = generateSlug();
       const template = getDefaultTemplate(eventType);
@@ -302,6 +306,7 @@ export default function NewEventPage() {
       router.push('/dashboard');
     } catch (err) {
       console.error('Error creating event:', err);
+      setCreateError(tr.createError);
       setIsCreatingEvent(false);
     }
   };
@@ -751,43 +756,30 @@ export default function NewEventPage() {
                           style={{ display: 'none' }}
                           onChange={async (e) => {
                             const file = e.target.files?.[0];
+                            e.target.value = '';
                             if (!file) return;
-                            // Upload to Supabase Storage
-                            const sb = createClient();
-                            const ext = file.name.split('.').pop() || 'jpg';
-                            const path = `hero/${crypto.randomUUID()}.${ext}`;
-                            const { error } = await sb.storage
-                              .from('event-media')
-                              .upload(path, file, { cacheControl: '31536000', upsert: false });
-                            if (error) {
-                              console.error('Upload error:', error);
-                              // Fallback to base64 if storage fails
-                              const reader = new FileReader();
-                              reader.onload = () => {
-                                const dataUrl = reader.result as string;
-                                if (heroType === 'image') setHeroImages([dataUrl]);
-                                else setHeroImages(prev => [...prev, dataUrl]);
-                                setHideDefault(true);
-                              };
-                              reader.readAsDataURL(file);
-                            } else {
-                              const { data: urlData } = sb.storage
-                                .from('event-media')
-                                .getPublicUrl(path);
-                              const publicUrl = urlData.publicUrl;
+                            setHeroUploadError('');
+                            try {
+                              const publicUrl = await uploadEventMedia(file, 'hero');
                               if (heroType === 'image') {
                                 setHeroImages([publicUrl]);
                               } else {
                                 setHeroImages(prev => [...prev, publicUrl]);
                               }
                               setHideDefault(true);
+                            } catch (err) {
+                              console.error('Upload error:', err);
+                              setHeroUploadError(tr.uploadError);
                             }
-                            e.target.value = '';
                           }}
                         />
                       </label>
                     )}
                   </div>
+
+                  {heroUploadError && (
+                    <p style={{ color: '#DC3545', fontSize: '0.75rem', margin: '0 0 0.75rem' }}>{heroUploadError}</p>
+                  )}
 
                   {/* Restore default button */}
                   {(hideDefault || hasCustom) && defaultImage && (
@@ -877,30 +869,24 @@ export default function NewEventPage() {
                             style={{ display: 'none' }}
                             onChange={async (e) => {
                               const file = e.target.files?.[0];
-                              if (!file) return;
-                              const sb = createClient();
-                              const ext = file.name.split('.').pop() || 'mp4';
-                              const path = `hero-video/${crypto.randomUUID()}.${ext}`;
-                              const { error } = await sb.storage
-                                .from('event-media')
-                                .upload(path, file, { cacheControl: '31536000', upsert: false });
-                              if (error) {
-                                console.error('Upload error:', error);
-                                // Fallback to object URL if storage fails
-                                const objectUrl = URL.createObjectURL(file);
-                                setHeroVideo(objectUrl);
-                              } else {
-                                const { data: urlData } = sb.storage
-                                  .from('event-media')
-                                  .getPublicUrl(path);
-                                setHeroVideo(urlData.publicUrl);
-                              }
                               e.target.value = '';
+                              if (!file) return;
+                              setHeroUploadError('');
+                              try {
+                                setHeroVideo(await uploadEventMedia(file, 'hero-video'));
+                              } catch (err) {
+                                console.error('Upload error:', err);
+                                setHeroUploadError(tr.uploadError);
+                              }
                             }}
                           />
                         </label>
                       )}
                     </div>
+
+                    {heroUploadError && (
+                      <p style={{ color: '#DC3545', fontSize: '0.75rem', margin: '0 0 0.75rem' }}>{heroUploadError}</p>
+                    )}
 
                     {/* Restore default video button */}
                     {heroVideo !== '/default_video.mp4' && (
@@ -1172,6 +1158,15 @@ export default function NewEventPage() {
             )}
 
             {/* Navigation buttons */}
+            {createError && (
+              <div style={{
+                marginTop: '1.5rem', padding: '0.65rem 0.85rem', borderRadius: 10,
+                background: 'rgba(220,53,69,0.08)', border: '1px solid rgba(220,53,69,0.2)',
+                color: '#DC3545', fontSize: '0.8rem', fontWeight: 500,
+              }}>
+                {createError}
+              </div>
+            )}
             <div className="new-event-nav" style={{
               display: 'flex', gap: '0.75rem', marginTop: '1.5rem',
               paddingBottom: '2rem',

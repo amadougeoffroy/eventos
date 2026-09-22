@@ -21,6 +21,7 @@ export function dbEventToApp(row: Record<string, unknown>): Event {
     secondaryColor: (row.secondary_color as string) || '#F7C5CC',
     dressCode: (row.dress_code as string) || '',
     welcomeMessage: (row.welcome_message as string) || '',
+    currency: (row.currency as string) || 'FCFA',
     allowCompanions: (row.allow_companions as boolean) || false,
     maxCompanions: (row.max_companions as number) || 2,
     program: [], // Loaded separately from program_items table
@@ -56,6 +57,7 @@ export function appEventToDb(event: Partial<Event> & { userId?: string }) {
   if (event.secondaryColor !== undefined) payload.secondary_color = event.secondaryColor;
   if (event.dressCode !== undefined) payload.dress_code = event.dressCode;
   if (event.welcomeMessage !== undefined) payload.welcome_message = event.welcomeMessage;
+  if (event.currency !== undefined) payload.currency = event.currency;
   if (event.allowCompanions !== undefined) payload.allow_companions = event.allowCompanions;
   if (event.maxCompanions !== undefined) payload.max_companions = event.maxCompanions;
   if (event.meta !== undefined) payload.meta = event.meta;

@@ -1,55 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createServerClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-
-function getServiceClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false },
-  });
-}
-
-async function getAuthUser(request: NextRequest) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-  // 1. Check Bearer token in Authorization header
-  const authHeader = request.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    const serviceClient = getServiceClient();
-    const { data: { user }, error } = await serviceClient.auth.getUser(token);
-    if (!error && user) return user;
-  }
-
-  // 2. Check cookies
-  try {
-    const cookieStore = await cookies();
-    const serverClient = createServerClient(supabaseUrl, anonKey, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Can happen in Server Components
-          }
-        },
-      },
-    });
-    const { data: { user } } = await serverClient.auth.getUser();
-    return user || null;
-  } catch (err) {
-    console.error('Error reading cookies in /api/venues:', err);
-    return null;
-  }
-}
+import { getServiceClient } from '@/lib/supabase/service';
+import { getAuthUser } from '@/lib/supabase/auth-server';
 
 // GET /api/venues?eventId=...
 export async function GET(request: NextRequest) {

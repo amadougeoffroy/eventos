@@ -57,6 +57,7 @@ export interface Event {
   secondaryColor: string;
   dressCode?: string;
   welcomeMessage?: string;
+  currency?: string; // ISO-ish code shown next to prices (gifts...), e.g. 'FCFA', 'EUR'
   allowCompanions?: boolean;
   maxCompanions?: number;
   program: ProgramItem[];

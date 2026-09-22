@@ -7,8 +7,6 @@ import { motion } from 'framer-motion';
 import { use, useMemo, useState } from 'react';
 import { Radio, Circle, CheckCircle2, Clock, ChefHat, Truck } from 'lucide-react';
 
-let statusLabels: Record<string, { label: string; color: string }>;
-
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
   visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.45 } })
@@ -21,7 +19,7 @@ export default function LivePage({ params }: { params: Promise<{ eventId: string
   const tr = t('live');
   const event = events.find(e => e.id === eventId);
 
-  statusLabels = {
+  const statusLabels: Record<string, { label: string; color: string }> = {
     pending:   { label: tr.waiting, color: '#DC8C28' },
     preparing: { label: tr.preparing, color: '#FB923C' },
     ready:     { label: tr.ready, color: '#5B8DB8' },

@@ -121,11 +121,19 @@
   --t-section-gap: 4rem;
 }
 
-/* Polaroid effect for images */
-[data-template="boheme"] .hero-image-container {
-  transform: rotate(-2deg);
-  border: 12px solid #FEFCF8;
+/* Polaroid effect — bohème gallery photos look like scattered snapshots.
+   (The hover scale is already handled by SectionGallery's whileHover, which
+   sets its own inline transform and takes precedence over these at rest.) */
+[data-template="boheme"] .gallery-photo-frame {
+  border: 10px solid #FEFCF8;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  transform: rotate(-2deg);
+}
+[data-template="boheme"] .gallery-photo-frame:nth-child(3n+2) {
+  transform: rotate(1.5deg);
+}
+[data-template="boheme"] .gallery-photo-frame:nth-child(3n+3) {
+  transform: rotate(-1deg);
 }
 
 /* ─── Opulence (Premium) ─── */
@@ -224,8 +232,34 @@
   [data-template] .t-section-warm {
     padding: 3rem 1rem;
   }
-  
+
   [data-template] .t-card {
     padding: 1.5rem;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Layout treatment (template.layout: classic | modern | editorial)
+   Only overrides CSS custom properties and class-based selectors —
+   most section components style themselves via inline `style`, which
+   always wins over a stylesheet rule, so this intentionally stays to
+   what can genuinely take effect: card radius/spacing (consumed via
+   var(--t-radius) / var(--t-section-gap)) and heading treatment.
+   ═══════════════════════════════════════════════════════════ */
+
+/* Modern — crisp, geometric: sharp corners, tighter tracking */
+[data-layout="modern"] {
+  --t-radius: 4px;
+}
+[data-layout="modern"] .font-display {
+  letter-spacing: 0.01em;
+}
+
+/* Editorial — magazine-like: more generous corners and breathing room */
+[data-layout="editorial"] {
+  --t-radius: 22px;
+  --t-section-gap: 6rem;
+}
+[data-layout="editorial"] .font-display {
+  letter-spacing: 0.02em;
 }

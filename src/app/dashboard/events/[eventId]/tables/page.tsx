@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import Draggable from 'react-draggable';
 import { FloorPlanElement, EventTable } from '@/lib/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -30,6 +31,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
   // ---------- State ----------
   const [showAddModal, setShowAddModal] = useState(false);
   const [showSmartModal, setShowSmartModal] = useState(false);
+  const [showSmartConfirm, setShowSmartConfirm] = useState(false);
   const [showLandmarksModal, setShowLandmarksModal] = useState(false);
   const [newLandmarkName, setNewLandmarkName] = useState('');
   const [newLandmarkIcon, setNewLandmarkIcon] = useState('✦');
@@ -249,7 +251,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     Object.entries(grouped).forEach(([groupName, members]) => {
       const numTables = Math.ceil(members.length / cap);
       for (let ti = 0; ti < numTables; ti++) {
-        const tableId = `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+        const tableId = crypto.randomUUID();
         const slice = members.slice(ti * cap, (ti + 1) * cap);
         const tableName = numTables > 1 ? `${groupName} ${ti + 1}` : groupName;
 
@@ -285,6 +287,16 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     setDragPositions(positions);
     setAssignments(newAssign);
     setShowSmartModal(false);
+    setShowSmartConfirm(false);
+  };
+
+  const requestSmartOrganize = () => {
+    const hasExistingTables = tables.some(t => t.eventId === eventId && !isMarieTable(t.id));
+    if (hasExistingTables) {
+      setShowSmartConfirm(true);
+    } else {
+      smartOrganize();
+    }
   };
 
   // ---------- Drag handling ----------
@@ -1067,7 +1079,7 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                     }}
                   >{tr.cancel}</button>
                   <button
-                    onClick={smartOrganize}
+                    onClick={requestSmartOrganize}
                     disabled={allRows.length === 0}
                     style={{
                       flex: 1, padding: '0.65rem', borderRadius: 10, border: 'none',
@@ -1329,6 +1341,17 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
             </motion.div>
           )}
         </AnimatePresence>
+
+        <ConfirmModal
+          open={showSmartConfirm}
+          title={tr.smartOrgTitle}
+          message={tr.smartWarning}
+          confirmLabel={tr.apply}
+          cancelLabel={tr.cancel}
+          variant="warning"
+          onConfirm={smartOrganize}
+          onCancel={() => setShowSmartConfirm(false)}
+        />
       </main>
     </div>
   );

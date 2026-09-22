@@ -5,13 +5,14 @@ import { useApp } from '@/context/AppContext';
 import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
-import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, Tag, User, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Gift, Plus, Pencil, Trash2, ExternalLink, Search, X, Package, User, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import ConfirmModal from '@/components/ConfirmModal';
 
 type Offerer = { name: string; gift: string; price: number };
 type SortKey = 'name' | 'gift' | 'price';
 type SortDir = 'asc' | 'desc';
 
-function OfferersTable({ offerers }: { offerers: Offerer[] }) {
+function OfferersTable({ offerers, currency }: { offerers: Offerer[]; currency: string }) {
   const { t, lang } = useThemeLanguage();
   const tr = t('gifts');
   const tc = t('common');
@@ -125,7 +126,7 @@ function OfferersTable({ offerers }: { offerers: Offerer[] }) {
                   </td>
                   <td style={{ padding: '0.6rem 1rem', color: 'var(--text-muted)' }}>🎁 {o.gift}</td>
                   <td style={{ padding: '0.6rem 1rem', textAlign: 'right', fontWeight: 700, color: 'var(--gold)' }}>
-                    {o.price ? `${o.price.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}€` : '—'}
+                    {o.price ? `${o.price.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} ${currency}` : '—'}
                   </td>
                 </tr>
               ))}
@@ -180,6 +181,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState<{ name: string; description: string; price: string; url: string; imageUrl: string; category: string }>({
     name: '', description: '', price: '', url: '', imageUrl: '', category: tr.defaultCategory,
@@ -244,7 +246,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
       });
     } else {
       addGift({
-        id: `gift-${Date.now()}`,
+        id: crypto.randomUUID(),
         eventId,
         name: form.name,
         description: form.description,
@@ -259,7 +261,8 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
   };
 
   const handleDelete = (id: string) => {
-    if (confirm(tr.deleteConfirm)) removeGift(id);
+    const g = eventGifts.find(gi => gi.id === id);
+    setDeleteTarget({ id, name: g?.name || '' });
   };
 
   return (
@@ -288,7 +291,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
           {[
             { label: tr.total, value: stats.total, color: '#5B8DB8', icon: Gift },
             { label: tr.willBeOffered, value: stats.reserved, color: '#22964F', icon: Package },
-            { label: tr.totalValue, value: `${stats.totalValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')}€`, color: '#C8A96E', icon: Gift },
+            { label: tr.totalValue, value: `${stats.totalValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} ${event.currency || 'FCFA'}`, color: '#C8A96E', icon: Gift },
           ].map((s, i) => (
             <motion.div key={s.label} custom={i} variants={fadeUp} initial="hidden" animate="visible"
               className="card" style={{
@@ -410,7 +413,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
                       padding: '0.15rem 0.5rem', borderRadius: 6,
                       background: 'rgba(200,169,110,0.1)', fontSize: '0.75rem',
                       fontWeight: 700, color: 'var(--gold)',
-                    }}>{gift.price.toLocaleString('fr-FR')} {gift.price >= 500 ? 'FCFA' : '€'}</span>
+                    }}>{gift.price.toLocaleString('fr-FR')} {event.currency || 'FCFA'}</span>
                   )}
                   <span style={{
                     padding: '0.15rem 0.5rem', borderRadius: 6,
@@ -459,7 +462,7 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
             }
           });
           if (offerers.length === 0) return null;
-          return <OfferersTable offerers={offerers} />;
+          return <OfferersTable offerers={offerers} currency={event.currency || 'FCFA'} />;
         })()}
 
         {/* Modal */}
@@ -528,6 +531,17 @@ export default function GiftsPage({ params }: { params: Promise<{ eventId: strin
             </motion.div>
           )}
         </AnimatePresence>
+
+        <ConfirmModal
+          open={!!deleteTarget}
+          title={tr.deleteConfirm}
+          message={deleteTarget?.name || ''}
+          confirmLabel={tc.delete}
+          cancelLabel={tc.cancel}
+          variant="danger"
+          onConfirm={() => { if (deleteTarget) removeGift(deleteTarget.id); setDeleteTarget(null); }}
+          onCancel={() => setDeleteTarget(null)}
+        />
       </main>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface TableAssignmentModalProps {
@@ -24,6 +24,15 @@ export default function TableAssignmentModal({
   companions = 0,
   planUrl,
 }: TableAssignmentModalProps) {
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   // Extract first name (e.g. "Raissa")
@@ -32,6 +41,9 @@ export default function TableAssignmentModal({
   return (
     <AnimatePresence>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Votre table d'honneur"
         className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 modal-table-overlay"
         style={{
           background: 'rgba(30, 24, 18, 0.45)',
@@ -47,9 +59,9 @@ export default function TableAssignmentModal({
             --ivoire-carte: #FFFDF9;
             --encre: #2B2420;
             --encre-douce: #6B6055;
-            --or: #B8863C;
-            --or-clair: #D9AE6C;
-            --or-fond: #F3E4C6;
+            --or: var(--t-accent, #B8863C);
+            --or-clair: var(--t-accent, #D9AE6C);
+            --or-fond: color-mix(in srgb, var(--t-accent, #D9AE6C) 22%, #F3E4C6);
             --trait: #E7DCC5;
             --bleu-etiquette: #5B6E8C;
             --bleu-fond: #EAEEF4;

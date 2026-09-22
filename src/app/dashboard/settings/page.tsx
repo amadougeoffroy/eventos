@@ -3,6 +3,7 @@ import Sidebar from '@/components/Sidebar';
 import { useApp } from '@/context/AppContext';
 import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import ConfirmModal from '@/components/ConfirmModal';
 import {
@@ -91,11 +92,77 @@ export default function SettingsPage() {
   // Danger zone
   const [dangerOpen, setDangerOpen] = useState(false);
   const [confirmDeleteAccount, setConfirmDeleteAccount] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+  const router = useRouter();
+
+  // Change password
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSaved, setPasswordSaved] = useState(false);
 
   const handleSaveProfile = async () => {
     await updateProfile({ name: profileName, email: profileEmail, phone: profilePhone });
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2000);
+  };
+
+  const handleUpdatePassword = async () => {
+    setPasswordError('');
+    if (newPassword.length < 8) {
+      setPasswordError(tr.passwordTooShort);
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setPasswordError(tr.passwordMismatch);
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        setPasswordError(tr.passwordUpdateError);
+      } else {
+        setPasswordSaved(true);
+        setNewPassword('');
+        setConfirmNewPassword('');
+        setTimeout(() => { setPasswordSaved(false); setShowPasswordForm(false); }, 1500);
+      }
+    } catch {
+      setPasswordError(tr.passwordUpdateError);
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setConfirmDeleteAccount(false);
+    setDeletingAccount(true);
+    setDeleteError('');
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch('/api/account/delete', {
+        method: 'POST',
+        headers: session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || 'delete failed');
+      }
+      await supabase.auth.signOut();
+      router.push('/login');
+    } catch (e) {
+      console.error('Error deleting account:', e);
+      setDeleteError(tr.deleteAccountError);
+      setDeletingAccount(false);
+    }
   };
 
   return (
@@ -127,7 +194,11 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <div className="font-semibold">{profileName}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.memberSince} Mai 2026</div>
+                    {currentUser.createdAt && (
+                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                        {tr.memberSince} {new Date(currentUser.createdAt).toLocaleDateString(lang === 'en' ? 'en-US' : 'fr-FR', { month: 'long', year: 'numeric' })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -148,10 +219,38 @@ export default function SettingsPage() {
                 <div>
                   <label className="label"><Shield size={12} style={{ display: 'inline', marginRight: 4 }} />{tr.password}</label>
                   <input className="input" type="password" value="••••••••" readOnly style={{ cursor: 'not-allowed', opacity: 0.7 }} />
-                  <button className="text-xs" style={{
-                    color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer',
-                    marginTop: '0.35rem', fontWeight: 500,
-                  }}>{tr.changePassword}</button>
+                  <button
+                    className="text-xs"
+                    onClick={() => setShowPasswordForm(v => !v)}
+                    style={{
+                      color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer',
+                      marginTop: '0.35rem', fontWeight: 500,
+                    }}
+                  >{tr.changePassword}</button>
+
+                  {showPasswordForm && (
+                    <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                      <input
+                        className="input" type="password" placeholder={tr.newPassword}
+                        value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                      />
+                      <input
+                        className="input" type="password" placeholder={tr.confirmPassword}
+                        value={confirmNewPassword} onChange={e => setConfirmNewPassword(e.target.value)}
+                      />
+                      {passwordError && (
+                        <p className="text-xs" style={{ color: '#DC3545' }}>{passwordError}</p>
+                      )}
+                      <button
+                        onClick={handleUpdatePassword}
+                        disabled={passwordSaving}
+                        className="btn-primary"
+                        style={{ alignSelf: 'flex-start', opacity: passwordSaving ? 0.6 : 1 }}
+                      >
+                        {passwordSaved ? <><Check size={16} /> {tr.passwordUpdated}</> : <><Save size={16} /> {tr.updatePassword}</>}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <button onClick={handleSaveProfile} className="btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.25rem' }}>
@@ -276,8 +375,11 @@ export default function SettingsPage() {
                   <p className="text-sm" style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
                     {tr.dangerDesc}
                   </p>
-                  <button className="btn-danger" onClick={() => setConfirmDeleteAccount(true)}>
-                    <Trash2 size={16} /> {tr.deleteAccount}
+                  {deleteError && (
+                    <p className="text-sm" style={{ color: '#DC3545', marginBottom: '0.75rem' }}>{deleteError}</p>
+                  )}
+                  <button className="btn-danger" onClick={() => setConfirmDeleteAccount(true)} disabled={deletingAccount} style={{ opacity: deletingAccount ? 0.6 : 1 }}>
+                    <Trash2 size={16} /> {deletingAccount ? tr.deletingAccount : tr.deleteAccount}
                   </button>
                 </div>
               )}
@@ -295,10 +397,7 @@ export default function SettingsPage() {
         confirmLabel={tr.deleteAccountConfirm}
         cancelLabel={tr.deleteAccountCancel}
         variant="danger"
-        onConfirm={() => {
-          setConfirmDeleteAccount(false);
-          alert(lang === 'en' ? 'Account deleted (simulation)' : 'Compte supprimé (simulation)');
-        }}
+        onConfirm={handleDeleteAccount}
         onCancel={() => setConfirmDeleteAccount(false)}
       />
     </div>

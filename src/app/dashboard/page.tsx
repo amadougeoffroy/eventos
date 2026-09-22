@@ -21,7 +21,7 @@ const fadeUp = {
 };
 
 export default function DashboardPage() {
-  const { events, guests } = useApp();
+  const { events, guests, currentUser } = useApp();
   const { t, lang } = useThemeLanguage();
   const tr = t('dashboard');
 
@@ -112,7 +112,7 @@ export default function DashboardPage() {
               className="font-display text-3xl font-bold mb-1"
               initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
             >
-              {tr.welcome}, <span className="gradient-gold">Amadou</span> 👋
+              {tr.welcome}{currentUser?.name ? <>, <span className="gradient-gold">{currentUser.name.split(' ')[0]}</span></> : ''} 👋
             </motion.h1>
             <p style={{ color: 'var(--text-muted)' }}>{tr.subtitle}</p>
           </div>

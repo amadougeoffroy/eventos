@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS events (
   secondary_color TEXT DEFAULT '#F7C5CC',
   dress_code TEXT DEFAULT '',
   welcome_message TEXT DEFAULT '',
+  currency TEXT DEFAULT 'FCFA',
   allow_companions BOOLEAN DEFAULT FALSE,
   max_companions INTEGER DEFAULT 2,
   plan TEXT DEFAULT 'essentiel' CHECK (plan IN ('essentiel', 'pro', 'premium')),
@@ -206,15 +207,10 @@ CREATE POLICY "Access own menu_items" ON menu_items FOR ALL
 CREATE POLICY "Access own orders" ON orders FOR ALL
   USING (event_id IN (SELECT id FROM events WHERE user_id = auth.uid()));
 
--- Guests: accès public en lecture pour les pages d'invitation (via token)
-CREATE POLICY "Public can read guest by token" ON guests FOR SELECT
-  USING (true); -- Le filtrage se fait via token côté API
-CREATE POLICY "Public can update RSVP" ON guests FOR UPDATE
-  USING (true); -- Contrôlé côté API
-
--- Events: accès public en lecture pour les pages d'invitation (via slug)
-CREATE POLICY "Public can read event by slug" ON events FOR SELECT
-  USING (true); -- Les pages /e/[slug] sont publiques
+-- Pas de policy publique sur `guests`/`events` : les pages d'invitation
+-- publiques (/e/[slug]) passent par les routes API /api/public/* et
+-- /api/seating, qui utilisent la clé service-role (bypass RLS) et scopent
+-- chaque requête en code applicatif. Voir migrations/011_secure_public_access.sql.
 
 -- ═══════════════════════════════════════════════════════════
 -- AUTO-CREATE PROFILE on signup

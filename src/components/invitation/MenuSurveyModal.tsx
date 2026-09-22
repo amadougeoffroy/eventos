@@ -16,6 +16,14 @@ interface MenuSurveyModalProps {
 export default function MenuSurveyModal({
   event, categories, items, guestName, onClose, onSubmit,
 }: MenuSurveyModalProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   // One selection per category
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
@@ -43,6 +51,9 @@ export default function MenuSurveyModal({
     return (
       <motion.div
         className="modal-overlay"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Merci pour votre réponse"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose}
       >
@@ -88,6 +99,9 @@ export default function MenuSurveyModal({
   return (
     <motion.div
       className="modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Sondage Menu"
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={onClose}
       style={{ zIndex: 2000 }}

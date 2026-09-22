@@ -3,13 +3,15 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Event } from '@/lib/types';
+import { formatEventDateFr } from '@/lib/utils';
 
 interface IntroSplashScreenProps {
   event: Event;
   onEnter: () => void;
+  accentColor?: string;
 }
 
-export default function IntroSplashScreen({ event, onEnter }: IntroSplashScreenProps) {
+export default function IntroSplashScreen({ event, onEnter, accentColor }: IntroSplashScreenProps) {
   // Extract couple / celebrant names cleanly
   const { subtitle, person1, person2, singleTitle } = useMemo(() => {
     const isWedding = event.type === 'wedding';
@@ -53,22 +55,11 @@ export default function IntroSplashScreen({ event, onEnter }: IntroSplashScreenP
     return { subtitle: 'Célébration', person1: null, person2: null, singleTitle: event.name };
   }, [event]);
 
-  // Formatted date
-  const formattedDate = useMemo(() => {
-    if (!event.date) return '';
-    try {
-      const d = new Date(event.date + 'T12:00:00');
-      const str = d.toLocaleDateString('fr-FR', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-      return str.charAt(0).toUpperCase() + str.slice(1);
-    } catch {
-      return event.date;
-    }
-  }, [event.date]);
+  // Formatted date — noon offset avoids a timezone off-by-one-day shift
+  const formattedDate = useMemo(
+    () => (event.date ? formatEventDateFr(`${event.date}T12:00:00`) : ''),
+    [event.date]
+  );
 
   return (
     <motion.div
@@ -77,6 +68,7 @@ export default function IntroSplashScreen({ event, onEnter }: IntroSplashScreenP
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.8 } }}
+      style={accentColor ? ({ '--intro-accent': accentColor } as React.CSSProperties) : undefined}
     >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Cormorant:ital@1&family=Jost:wght@400;500;600&display=swap');
@@ -86,10 +78,10 @@ export default function IntroSplashScreen({ event, onEnter }: IntroSplashScreenP
           --ivoire-carte: #FFFDF9;
           --encre: #2B2420;
           --encre-douce: #6B6055;
-          --or: #B8863C;
-          --or-clair: #D9AE6C;
-          --or-fonce: #96692A;
-          --or-fond: #F3E4C6;
+          --or: var(--intro-accent, #B8863C);
+          --or-clair: color-mix(in srgb, var(--intro-accent, #D9AE6C) 75%, white);
+          --or-fonce: color-mix(in srgb, var(--intro-accent, #96692A) 75%, black);
+          --or-fond: color-mix(in srgb, var(--intro-accent, #D9AE6C) 22%, #F3E4C6);
           --trait: #E7DCC5;
 
           position: fixed;

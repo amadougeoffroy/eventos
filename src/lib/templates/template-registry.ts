@@ -43,7 +43,6 @@ export interface TemplateDesign {
   specialEffects: {
     filmGrain?: boolean;
     polaroid?: boolean;
-    glitch?: boolean;
     ornaments?: boolean;
   };
   sections: string[];
@@ -88,14 +87,15 @@ const SECTIONS_PREMIUM: string[] = [
 
 /**
  * Helper — return the single default hero image path for a given type & template.
- * Only classique, romance and royal have dedicated images per event type.
- * Other templates fall back to classique.
+ * classique/romance/royal ship real photography (.png); moderne/boheme/opulence
+ * use generated palette-matched SVG compositions (.svg) instead of falling back
+ * to classique's photos, so every template has its own on-brand default.
  */
-const TEMPLATES_WITH_IMAGES = ['classique', 'romance', 'royal'];
+const RASTER_TEMPLATES = new Set(['classique', 'romance', 'royal']);
 
 function heroImages(type: string, template: string, _count: number): string[] {
-  const base = TEMPLATES_WITH_IMAGES.includes(template) ? template : 'classique';
-  return [`/templates/defaults/${type}/${base}-1.png`];
+  const ext = RASTER_TEMPLATES.has(template) ? 'png' : 'svg';
+  return [`/templates/defaults/${type}/${template}-1.${ext}`];
 }
 
 // ---------------------------------------------------------------------------
@@ -716,7 +716,7 @@ const opulence: TemplateDesign = {
   heroTypes: ['image', 'slideshow', 'video'],
   layout: 'modern',
   animations: { entrance: 'scaleIn', transition: 'fade', parallax: true },
-  specialEffects: { ornaments: true },
+  specialEffects: { ornaments: true, filmGrain: true },
   sections: [...SECTIONS_PREMIUM],
   variants: {
     wedding: {

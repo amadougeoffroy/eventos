@@ -1,9 +1,6 @@
 'use client';
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from 'react';
 import { Event, Guest, GuestGroup, EventTable, MenuItem, MenuCategory, Order, Venue, GiftItem } from '@/lib/types';
-import {
-  mockOrders
-} from '@/lib/mock-data';
 import { createClient } from '@/lib/supabase/client';
 import { dbEventToApp, appEventToDb } from '@/lib/supabase/mappers';
 
@@ -20,7 +17,7 @@ interface AppState {
   orders: Order[];
   currentUser: {
     id: string; name: string; email: string; avatar?: string;
-    phone?: string;
+    phone?: string; createdAt?: string;
     notifEmail?: boolean; notifSms?: boolean; notifRsvp?: boolean; notifReminder?: boolean;
   };
   authLoading: boolean;
@@ -82,7 +79,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           let profile: any = null;
           const { data: p1, error: profileErr } = await supabase
             .from('profiles')
-            .select('full_name, email, avatar_url, phone, notif_email, notif_sms, notif_rsvp, notif_reminder')
+            .select('full_name, email, avatar_url, phone, created_at, notif_email, notif_sms, notif_rsvp, notif_reminder')
             .eq('id', user.id)
             .single();
           if (!profileErr) {
@@ -91,7 +88,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             // Columns might not exist yet — fetch basic profile
             const { data: p2 } = await supabase
               .from('profiles')
-              .select('full_name, email, avatar_url, phone')
+              .select('full_name, email, avatar_url, phone, created_at')
               .eq('id', user.id)
               .single();
             profile = p2;
@@ -103,13 +100,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
             email: profile?.email || user.email || '',
             avatar: profile?.avatar_url || undefined,
             phone: profile?.phone || '',
+            createdAt: profile?.created_at || user.created_at || undefined,
             notifEmail: profile?.notif_email ?? true,
             notifSms: profile?.notif_sms ?? false,
             notifRsvp: profile?.notif_rsvp ?? true,
             notifReminder: profile?.notif_reminder ?? true,
           });
         }
-      } catch {} finally {
+      } catch (err) {
+        console.error('Error fetching current user:', err);
+      } finally {
         setAuthLoading(false);
       }
     };
@@ -341,22 +341,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [gifts, setGifts] = useState<GiftItem[]>([]);
   const [menuCategories, setMenuCategories] = useState<MenuCategory[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
 
-  // Load guests from Supabase
+  // Load guests from Supabase (reuses `events` already loaded above instead of
+  // re-querying the events table for the same user's event ids)
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || eventsLoading) return;
+    if (events.length === 0) return;
 
     const loadGuests = async () => {
-      const { data: userEvents } = await supabase
-        .from('events')
-        .select('id')
-        .eq('user_id', userId);
-
-      if (!userEvents || userEvents.length === 0) return;
-
-      const eventIds = userEvents.map((e: any) => e.id);
+      const eventIds = events.map(e => e.id);
       const { data, error } = await supabase
         .from('guests')
         .select('*')
@@ -385,20 +380,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     };
     loadGuests();
-  }, [userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, eventsLoading]);
 
   // Load menu categories & items from Supabase
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || eventsLoading) return;
+    if (events.length === 0) return;
 
     const loadMenu = async () => {
-      const { data: userEvents } = await supabase
-        .from('events')
-        .select('id')
-        .eq('user_id', userId);
-
-      if (!userEvents || userEvents.length === 0) return;
-      const eventIds = userEvents.map((e: any) => e.id);
+      const eventIds = events.map(e => e.id);
 
       // Load categories
       const { data: catRows, error: catErr } = await supabase
@@ -439,18 +430,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
 
     loadMenu();
-  }, [userId, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, eventsLoading]);
 
   // Load gifts from Supabase
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || eventsLoading) return;
+    if (events.length === 0) return;
     const loadGifts = async () => {
-      const { data: userEvents } = await supabase
-        .from('events')
-        .select('id')
-        .eq('user_id', userId);
-      if (!userEvents || userEvents.length === 0) return;
-      const eventIds = userEvents.map((e: any) => e.id);
+      const eventIds = events.map(e => e.id);
       const { data, error } = await supabase
         .from('gifts')
         .select('*')
@@ -474,18 +462,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     };
     loadGifts();
-  }, [userId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, eventsLoading]);
 
   // Load orders from Supabase
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || eventsLoading) return;
+    if (events.length === 0) return;
     const loadOrders = async () => {
-      const { data: userEvents } = await supabase
-        .from('events')
-        .select('id')
-        .eq('user_id', userId);
-      if (!userEvents || userEvents.length === 0) return;
-      const eventIds = userEvents.map((e: any) => e.id);
+      const eventIds = events.map(e => e.id);
 
       const { data, error } = await supabase
         .from('orders')
@@ -493,7 +478,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         .in('event_id', eventIds)
         .order('created_at', { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (!error && data) {
         setOrders(data.map((row: any) => ({
           id: row.id,
           eventId: row.event_id,
@@ -505,7 +490,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     };
     loadOrders();
-  }, [userId, supabase]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, eventsLoading]);
 
   // ═══════════════════════════════════════════════════════════
   // GUEST GROUPS — Supabase powered 🚀
@@ -687,7 +673,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               localStorage.removeItem('eventos-venues');
             }
           }
-        } catch {
+        } catch (err) {
+          console.error('Error migrating localStorage venues:', err);
           try { localStorage.removeItem('eventos-venues'); } catch {}
         }
       }
@@ -715,7 +702,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         phone: guest.phone || null,
         group: guest.group || 'Invités',
         rsvp_status: guest.rsvpStatus || 'pending',
-        token: guest.token || `tok-${Date.now()}`,
+        token: guest.token || crypto.randomUUID(),
         companions: guest.companions || 0,
         allergies: guest.allergies || null,
         side: guest.side || null,
@@ -817,19 +804,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [tablesReady, setTablesReady] = useState(false);
   const GUEST_IDS_KEY = 'eventos-table-guestids';
 
-  // Helper: load/save guestIds from localStorage as fallback
+  // `event_tables.guest_ids` in Supabase is the source of truth. This
+  // localStorage copy only exists as a same-device fallback for the brief
+  // window between an optimistic table-assignment update and its Supabase
+  // write confirming — it is not meant to be a second source of truth, and
+  // can fall out of sync across devices/browsers. Helper: load/save guestIds
+  // from localStorage as fallback
   const loadGuestIdsFallback = (): Record<string, string[]> => {
-    try { return JSON.parse(localStorage.getItem(GUEST_IDS_KEY) || '{}'); } catch { return {}; }
+    try { return JSON.parse(localStorage.getItem(GUEST_IDS_KEY) || '{}'); } catch (err) { console.warn('Could not read guestIds fallback:', err); return {}; }
   };
   const saveGuestIdsFallback = (map: Record<string, string[]>) => {
-    try { localStorage.setItem(GUEST_IDS_KEY, JSON.stringify(map)); } catch {}
+    try { localStorage.setItem(GUEST_IDS_KEY, JSON.stringify(map)); } catch (err) { console.warn('Could not save guestIds fallback:', err); }
   };
 
   // Load tables from Supabase
   useEffect(() => {
     if (!userId) return;
     const loadTables = async () => {
-      const userEvents = events.filter(e => e.id && e.id !== 'evt-001' && e.id !== 'evt-002');
+      const userEvents = events.filter(e => e.id);
       if (userEvents.length === 0) { setTablesReady(true); return; }
       const eventIds = userEvents.map((e: any) => e.id);
       const { data, error } = await supabase
@@ -1228,17 +1220,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   }, [supabase, userId]);
 
+  // Memoized so a single entity update doesn't force every consumer of
+  // useApp() across the dashboard to re-render.
+  const value = useMemo(() => ({
+    events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders, gifts,
+    currentUser, authLoading, eventsLoading,
+    addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
+    addGuestGroup, updateGuestGroup, removeGuestGroup,
+    addTable, updateTable, removeTable, addMenuItem, updateMenuItem, removeMenuItem, addMenuCategory, updateMenuCategory, removeMenuCategory,
+    addOrder, updateOrder, addVenue, updateVenue, removeVenue,
+    addGift, updateGift, removeGift,
+    updateProfile,
+  }), [
+    events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders, gifts,
+    currentUser, authLoading, eventsLoading,
+    addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
+    addGuestGroup, updateGuestGroup, removeGuestGroup,
+    addTable, updateTable, removeTable, addMenuItem, updateMenuItem, removeMenuItem, addMenuCategory, updateMenuCategory, removeMenuCategory,
+    addOrder, updateOrder, addVenue, updateVenue, removeVenue,
+    addGift, updateGift, removeGift,
+    updateProfile,
+  ]);
+
   return (
-    <AppContext.Provider value={{
-      events, guests, guestGroups, tables, tablesReady, menuCategories, menuItems, venues, orders, gifts,
-      currentUser, authLoading, eventsLoading,
-      addEvent, updateEvent, removeEvent, addGuest, updateGuest, removeGuest,
-      addGuestGroup, updateGuestGroup, removeGuestGroup,
-      addTable, updateTable, removeTable, addMenuItem, updateMenuItem, removeMenuItem, addMenuCategory, updateMenuCategory, removeMenuCategory,
-      addOrder, updateOrder, addVenue, updateVenue, removeVenue,
-      addGift, updateGift, removeGift,
-      updateProfile,
-    }}>
+    <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );

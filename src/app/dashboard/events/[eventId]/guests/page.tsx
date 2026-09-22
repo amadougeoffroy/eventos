@@ -6,17 +6,13 @@ import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
 import { RSVPStatus } from '@/lib/types';
+import ConfirmModal from '@/components/ConfirmModal';
+import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import {
-  Users, Plus, Search, Filter, Send, Download, UserCheck, Clock,
-  UserX, HelpCircle, Trash2, X, Copy, Check, TrendingUp, Edit3, UserPlus, AlertTriangle,
+  Users, Plus, Search, Filter, Download, UserCheck, Clock,
+  UserX, HelpCircle, Trash2, X, Copy, Check, TrendingUp, Edit3, UserPlus,
   ArrowUpDown, ChevronLeft, ChevronRight, MessageSquare
 } from 'lucide-react';
-
-const WhatsAppIcon = ({ size = 14 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={{ color: '#25D366' }}>
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-  </svg>
-);
 
 const statusConfigBase: Record<string, { badge: string; icon: React.ElementType; color: string }> = {
   confirmed: { badge: 'badge-confirmed', icon: UserCheck, color: '#22964F' },
@@ -130,8 +126,13 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   }, [eventGuests]);
 
   const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
     return displayRows.filter(g => {
-      const matchSearch = `${g.firstName} ${g.lastName}`.toLowerCase().includes(search.toLowerCase());
+      const matchSearch = !q
+        || `${g.firstName} ${g.lastName}`.toLowerCase().includes(q)
+        || g.email.toLowerCase().includes(q)
+        || g.phone.toLowerCase().includes(q)
+        || g.group.toLowerCase().includes(q);
       const matchStatus = filterStatus === 'all' || g.rsvpStatus === filterStatus;
       const matchGroup = filterGroup === 'all' || g.group === filterGroup;
       return matchSearch && matchStatus && matchGroup;
@@ -196,12 +197,30 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   const handleAddGuest = () => {
     if (!newGuest.firstName || !newGuest.lastName) return;
     addGuest({
-      id: `g-${Date.now()}`, eventId, ...newGuest,
-      rsvpStatus: 'pending', token: `tok-${Date.now()}`,
+      id: crypto.randomUUID(), eventId, ...newGuest,
+      rsvpStatus: 'pending', token: crypto.randomUUID(),
       companions: 0, dietaryRestrictions: [], source: 'manual',
     });
     setNewGuest({ firstName: '', lastName: '', email: '', phone: '', group: '' });
     setShowAddModal(false);
+  };
+
+  const csvEscape = (value: string) => (/[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
+
+  const handleExportCsv = () => {
+    const header = [tr.firstName, tr.lastName, tr.email, tr.phone, tr.group, tr.status, tr.companionsAbbr.replace(' {n}', '').replace('{n}', '')];
+    const rows = eventGuests.map(g => [
+      g.firstName, g.lastName, g.email || '', g.phone || '', g.group,
+      statusConfig[g.rsvpStatus]?.label || g.rsvpStatus, String(g.companions),
+    ]);
+    const csv = [header, ...rows].map(row => row.map(csvEscape).join(',')).join('\n');
+    const blob = new Blob([`﻿${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${event?.slug || 'invites'}-guests.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const openEditModal = (guestId: string) => {
@@ -263,7 +282,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
             <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{event.name}</p>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            <button className="btn-secondary"><Download size={16} /> {tr.export}</button>
+            <button className="btn-secondary" onClick={handleExportCsv} disabled={eventGuests.length === 0} style={{ opacity: eventGuests.length === 0 ? 0.5 : 1 }}><Download size={16} /> {tr.export}</button>
             <button className="btn-primary" onClick={() => setShowAddModal(true)}><Plus size={16} /> {tr.addGuest}</button>
           </div>
         </div>
@@ -427,10 +446,10 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                     {copiedId === row.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
                                   </button>
                                   {(event?.plan === 'pro' || event?.plan === 'premium') && (
-                                    <button className="btn-ghost p-1.5" title={tr.sendSms}><MessageSquare size={14} /></button>
+                                    <button className="btn-ghost p-1.5" disabled title={tr.comingSoon} style={{ opacity: 0.4, cursor: 'not-allowed' }}><MessageSquare size={14} /></button>
                                   )}
                                   {event?.plan === 'premium' && (
-                                    <button className="btn-ghost p-1.5" title={tr.sendWhatsapp}><WhatsAppIcon size={14} /></button>
+                                    <button className="btn-ghost p-1.5" disabled title={tr.comingSoon} style={{ opacity: 0.4, cursor: 'not-allowed' }}><WhatsAppIcon size={14} /></button>
                                   )}
                                 </>
                               )}
@@ -640,90 +659,16 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         </AnimatePresence>
 
         {/* Delete Confirmation Modal */}
-        <AnimatePresence>
-          {deleteTarget && (
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{
-                position: 'fixed', inset: 0, zIndex: 1100,
-                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
-              }}
-              onClick={() => setDeleteTarget(null)}
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ type: 'spring', damping: 22, stiffness: 300 }}
-                onClick={e => e.stopPropagation()}
-                style={{
-                  background: 'var(--bg-card)', borderRadius: 20, padding: '2rem',
-                  maxWidth: 400, width: '100%', textAlign: 'center',
-                  border: '1px solid rgba(220,53,69,0.15)',
-                  boxShadow: '0 25px 60px rgba(0,0,0,0.3), 0 0 40px rgba(220,53,69,0.08)',
-                }}
-              >
-                {/* Animated warning icon */}
-                <motion.div
-                  initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
-                  style={{
-                    width: 64, height: 64, borderRadius: '50%', margin: '0 auto 1.25rem',
-                    background: 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))',
-                    border: '2px solid rgba(220,53,69,0.2)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <AlertTriangle size={28} style={{ color: '#DC3545' }} />
-                </motion.div>
-
-                <h3 className="font-display" style={{ fontSize: '1.15rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)' }}>
-                  {tr.deleteConfirm}
-                </h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '0.25rem', lineHeight: 1.5 }}>
-                  {tr.aboutToDelete}
-                </p>
-                <p style={{
-                  fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)',
-                  marginBottom: '1.5rem', padding: '0.5rem 1rem', borderRadius: 10,
-                  background: 'rgba(220,53,69,0.06)', border: '1px solid rgba(220,53,69,0.1)',
-                  display: 'inline-block',
-                }}>
-                  {deleteTarget.name || tr.guestFallback}
-                </p>
-                <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                  {tr.irreversible}
-                </p>
-
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                  <button
-                    onClick={() => setDeleteTarget(null)}
-                    style={{
-                      flex: 1, padding: '0.7rem', borderRadius: 12,
-                      background: 'var(--glass)', border: '1px solid var(--border-light)',
-                      color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.82rem',
-                      cursor: 'pointer', transition: 'background 0.2s',
-                    }}
-                  >
-                    {tr.cancel}
-                  </button>
-                  <button
-                    onClick={() => { removeGuest(deleteTarget.id); setDeleteTarget(null); }}
-                    style={{
-                      flex: 1, padding: '0.7rem', borderRadius: 12,
-                      background: 'linear-gradient(135deg, #DC3545, #C82333)',
-                      border: 'none', color: '#fff', fontWeight: 600, fontSize: '0.82rem',
-                      cursor: 'pointer', transition: 'opacity 0.2s',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    {tr.delete}
-                  </button>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <ConfirmModal
+          open={!!deleteTarget}
+          title={tr.deleteConfirm}
+          message={`${tr.aboutToDelete} ${deleteTarget?.name || tr.guestFallback}. ${tr.irreversible}`}
+          confirmLabel={tr.delete}
+          cancelLabel={tr.cancel}
+          variant="danger"
+          onConfirm={() => { if (deleteTarget) removeGuest(deleteTarget.id); setDeleteTarget(null); }}
+          onCancel={() => setDeleteTarget(null)}
+        />
       </main>
     </div>
   );

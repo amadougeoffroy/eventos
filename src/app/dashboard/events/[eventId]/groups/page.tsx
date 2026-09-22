@@ -29,6 +29,7 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', emoji: '👪', color: '#C8A96E', description: '' });
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tc.eventNotFound}</p></main></div>;
 
@@ -55,13 +56,11 @@ export default function GroupsPage({ params }: { params: Promise<{ eventId: stri
     if (editingId) {
       updateGuestGroup(editingId, form);
     } else {
-      addGuestGroup({ id: `grp-${Date.now()}`, eventId, ...form });
+      addGuestGroup({ id: crypto.randomUUID(), eventId, ...form });
     }
     setShowAddModal(false);
     setEditingId(null);
   };
-
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
     removeGuestGroup(id);

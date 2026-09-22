@@ -108,12 +108,6 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
   const groomGuests = eventGuests.filter(g => g.side === 'groom').length;
   const bothGuests = eventGuests.filter(g => g.side === 'both').length;
   const noSideGuests = eventGuests.filter(g => !g.side).length;
-  const avgResponseTime = useMemo(() => {
-    const withResponse = eventGuests.filter(g => g.respondedAt && g.rsvpStatus !== 'pending');
-    if (withResponse.length === 0) return null;
-    // We can't compute actual response time without createdAt, just show total responded
-    return withResponse.length;
-  }, [eventGuests]);
 
   // ─── RSVP Timeline ───
   const timeline = useMemo(() => {
@@ -136,15 +130,15 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
     { label: tr.confirmed, value: confirmed, pct: total > 0 ? Math.round((confirmed / total) * 100) : 0, color: '#22964F' },
     { label: tr.pending, value: pending, pct: total > 0 ? Math.round((pending / total) * 100) : 0, color: '#DC8C28' },
     { label: tr.declined, value: declined, pct: total > 0 ? Math.round((declined / total) * 100) : 0, color: '#DC3545' },
-    { label: 'Peut-être', value: maybe, pct: total > 0 ? Math.round((maybe / total) * 100) : 0, color: '#A78BFA' },
+    { label: tr.maybe, value: maybe, pct: total > 0 ? Math.round((maybe / total) * 100) : 0, color: '#A78BFA' },
   ];
 
   // ─── Companions breakdown ───
   const companionsByStatus = useMemo(() => [
-    { label: 'Confirmés', count: confirmedCompanions, color: '#22964F' },
-    { label: 'En attente', count: eventGuests.filter(g => g.rsvpStatus === 'pending').reduce((s, g) => s + g.companions, 0), color: '#DC8C28' },
-    { label: 'Peut-être', count: eventGuests.filter(g => g.rsvpStatus === 'maybe').reduce((s, g) => s + g.companions, 0), color: '#A78BFA' },
-  ].filter(c => c.count > 0), [eventGuests, confirmedCompanions]);
+    { label: tr.confirmed, count: confirmedCompanions, color: '#22964F' },
+    { label: tr.pending, count: eventGuests.filter(g => g.rsvpStatus === 'pending').reduce((s, g) => s + g.companions, 0), color: '#DC8C28' },
+    { label: tr.maybe, count: eventGuests.filter(g => g.rsvpStatus === 'maybe').reduce((s, g) => s + g.companions, 0), color: '#A78BFA' },
+  ].filter(c => c.count > 0), [eventGuests, confirmedCompanions, tr]);
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tc.eventNotFound}</p></main></div>;
 
@@ -200,17 +194,17 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
           {[
             {
               label: isPast ? tr.finished : tr.countdown,
-              value: isPast ? 'Passé' : daysLeft === 0 ? "Aujourd'hui !" : `${daysLeft}`,
-              sub: isPast ? `depuis ${Math.abs(daysLeft)} jours` : daysLeft === 0 ? '' : daysLeft === 1 ? 'jour restant' : 'jours restants',
+              value: isPast ? tr.past : daysLeft === 0 ? tr.today : `${daysLeft}`,
+              sub: isPast ? tr.sinceDays.replace('{n}', String(Math.abs(daysLeft))) : daysLeft === 0 ? '' : daysLeft === 1 ? tr.dayLeft : tr.daysLeft,
               icon: Calendar, color: isPast ? '#DC3545' : daysLeft <= 7 ? '#FB923C' : '#5B8DB8',
               bg: isPast ? 'linear-gradient(135deg, rgba(220,53,69,0.12), rgba(220,53,69,0.04))'
                 : daysLeft <= 7 ? 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))'
                 : 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))',
             },
-            { label: tr.totalGuests, value: total, sub: `${totalWithCompanions} avec accomp.`, icon: Users, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
-            { label: tr.confirmed, value: confirmed, sub: `${confirmedWithCompanions} personnes`, icon: TrendingUp, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
-            { label: 'Taux RSVP', value: `${total > 0 ? Math.round((responded / total) * 100) : 0}%`, sub: `${responded}/${total} ont répondu`, icon: PieChart, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))' },
-            { label: 'Plats menu', value: evtItems.length, sub: `${evtCategories.length} catégories`, icon: UtensilsCrossed, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))' },
+            { label: tr.totalGuests, value: total, sub: `${totalWithCompanions} ${tr.withCompanionsAbbr}`, icon: Users, color: '#5B8DB8', bg: 'linear-gradient(135deg, rgba(91,141,184,0.12), rgba(91,141,184,0.04))' },
+            { label: tr.confirmed, value: confirmed, sub: `${confirmedWithCompanions} ${tr.people}`, icon: TrendingUp, color: '#22964F', bg: 'linear-gradient(135deg, rgba(34,150,79,0.12), rgba(34,150,79,0.04))' },
+            { label: tr.rsvpRate, value: `${total > 0 ? Math.round((responded / total) * 100) : 0}%`, sub: `${responded}/${total} ${tr.respondedSuffix}`, icon: PieChart, color: '#C8A96E', bg: 'linear-gradient(135deg, rgba(200,169,110,0.12), rgba(200,169,110,0.04))' },
+            { label: tr.menuDishes, value: evtItems.length, sub: `${evtCategories.length} ${tr.categories}`, icon: UtensilsCrossed, color: '#FB923C', bg: 'linear-gradient(135deg, rgba(251,146,60,0.12), rgba(251,146,60,0.04))' },
           ].map((s, i) => {
             const Icon = s.icon;
             return (
@@ -261,8 +255,8 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--bg-card)' }} />
               </div>
               <div>
-                <div className="text-xs font-semibold">{responded}/{total} réponses</div>
-                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{pending} en attente</div>
+                <div className="text-xs font-semibold">{responded}/{total} {tr.responsesSuffix}</div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{pending} {tr.pending.toLowerCase()}</div>
               </div>
             </div>
           </SectionCard>
@@ -307,7 +301,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                   })}
                 </div>
                 <div style={{ display: 'flex', gap: '1rem', marginTop: '0.85rem', justifyContent: 'center' }}>
-                  {[{ label: 'Confirmé', color: '#22964F' }, { label: 'Décliné', color: '#DC3545' }, { label: 'Peut-être', color: '#A78BFA' }].map(l => (
+                  {[{ label: tr.confirmed, color: '#22964F' }, { label: tr.declined, color: '#DC3545' }, { label: tr.maybe, color: '#A78BFA' }].map(l => (
                     <span key={l.label} className="text-xs" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-muted)' }}>
                       <span style={{ width: 8, height: 8, borderRadius: 2, background: l.color, display: 'inline-block' }} />
                       {l.label}
@@ -317,7 +311,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
               </div>
             ) : (
               <p className="text-sm" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
-                Aucune réponse enregistrée pour le moment
+                {tr.noResponsesYet}
               </p>
             )}
           </SectionCard>
@@ -343,12 +337,12 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                   </div>
                 );
               })}
-              {groups.length === 0 && <p className="text-sm" style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Aucun groupe</p>}
+              {groups.length === 0 && <p className="text-sm" style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>{tr.noGroupsYet}</p>}
             </div>
           </SectionCard>
 
           {/* ════════ Companions ════════ */}
-          <SectionCard title="Accompagnants" icon={Heart} iconColor="#E879A0" delay={8}>
+          <SectionCard title={tr.companions} icon={Heart} iconColor="#E879A0" delay={8}>
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               padding: '1rem', marginBottom: '1rem', borderRadius: 14,
@@ -357,19 +351,19 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
             }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ fontSize: '2rem', fontWeight: 700, color: '#E879A0', lineHeight: 1 }}>{totalCompanions}</div>
-                <div className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>accompagnants déclarés</div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '0.25rem' }}>{tr.companionsDeclared}</div>
               </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
               {companionsByStatus.map(c => (
-                <MiniBadge key={c.label} label={`${c.label}`} value={`${c.count} accomp.`} color={c.color} />
+                <MiniBadge key={c.label} label={`${c.label}`} value={`${c.count} ${tr.companionsAbbr}`} color={c.color} />
               ))}
-              <MiniBadge label="Total personnes attendues" value={confirmedWithCompanions} color="#C8A96E" />
+              <MiniBadge label={tr.totalPeopleExpected} value={confirmedWithCompanions} color="#C8A96E" />
             </div>
           </SectionCard>
 
           {/* ════════ Tables & Logistique ════════ */}
-          <SectionCard title="Tables & Logistique" icon={Table2} iconColor="#8B5CF6" delay={9}>
+          <SectionCard title={tr.tablesLogistics} icon={Table2} iconColor="#8B5CF6" delay={9}>
             {evtTables.length > 0 ? (
               <>
                 {/* Occupancy gauge */}
@@ -397,26 +391,26 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold" style={{ fontSize: '0.9rem' }}>Taux d&apos;occupation</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{assignedGuests}/{totalSeats} places assignées</div>
+                    <div className="font-semibold" style={{ fontSize: '0.9rem' }}>{tr.occupancyRate}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{assignedGuests}/{totalSeats} {tr.seatsAssigned}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <MiniBadge label="Nombre de tables" value={evtTables.length} color="#8B5CF6" />
-                  <MiniBadge label="Tables complètes" value={`${fullTables}/${evtTables.length}`} color="#22964F" />
-                  <MiniBadge label="Tables vides" value={emptyTables} color="#DC8C28" />
-                  <MiniBadge label="Places totales" value={totalSeats} color="#5B8DB8" />
+                  <MiniBadge label={tr.tableCount} value={evtTables.length} color="#8B5CF6" />
+                  <MiniBadge label={tr.fullTables} value={`${fullTables}/${evtTables.length}`} color="#22964F" />
+                  <MiniBadge label={tr.emptyTables} value={emptyTables} color="#DC8C28" />
+                  <MiniBadge label={tr.totalSeats} value={totalSeats} color="#5B8DB8" />
                 </div>
               </>
             ) : (
               <p className="text-sm" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>
-                Aucune table configurée
+                {tr.noTablesConfigured}
               </p>
             )}
           </SectionCard>
 
           {/* ════════ Survey / Menu ════════ */}
-          <SectionCard title="Sondage menu" icon={BarChart3} iconColor="#FB923C" delay={10}>
+          <SectionCard title={tr.menuSurvey} icon={BarChart3} iconColor="#FB923C" delay={10}>
             {evtItems.length > 0 ? (
               <>
                 {/* Participation rate */}
@@ -432,8 +426,8 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                     fontSize: '1rem', fontWeight: 700, color: '#FB923C',
                   }}>{surveyRate}%</div>
                   <div>
-                    <div className="text-sm font-medium">Taux de participation</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>~{surveyParticipants} votants sur {confirmed} confirmés</div>
+                    <div className="text-sm font-medium">{tr.participationRate}</div>
+                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.votersOutOfConfirmed.replace('{a}', String(surveyParticipants)).replace('{b}', String(confirmed))}</div>
                   </div>
                 </div>
 
@@ -441,7 +435,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 {bestPerCategory.length > 0 && (
                   <div>
                     <div className="text-xs font-medium" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      🏆 Plat préféré par catégorie
+                      🏆 {tr.bestDishPerCategory}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {bestPerCategory.map(({ category, item }) => (
@@ -469,7 +463,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 {topItems.length > 0 && (
                   <div style={{ marginTop: '1rem' }}>
                     <div className="text-xs font-medium" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Top 5 des plats
+                      {tr.top5Dishes}
                     </div>
                     <div className="space-y-2">
                       {topItems.map((item, i) => {
@@ -499,7 +493,7 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 )}
               </>
             ) : (
-              <p className="text-sm" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>Aucun plat au menu</p>
+              <p className="text-sm" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>{tr.noMenuItems}</p>
             )}
           </SectionCard>
 
@@ -531,26 +525,30 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                     </div>
                   </div>
                   <div>
-                    <div className="font-semibold" style={{ fontSize: '0.9rem' }}>{reservedGifts}/{totalGifts} réservés</div>
+                    <div className="font-semibold" style={{ fontSize: '0.9rem' }}>{reservedGifts}/{totalGifts} {tr.reservedGiftsLabel.toLowerCase()}</div>
                     <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {reservedGiftValue > 0 ? `${reservedGiftValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} € sur ${totalGiftValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} €` : tr.noValueSet}
+                      {reservedGiftValue > 0
+                        ? tr.valueOutOf
+                            .replace('{a}', `${reservedGiftValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} ${event.currency || 'FCFA'}`)
+                            .replace('{b}', `${totalGiftValue.toLocaleString(lang === 'en' ? 'en-US' : 'fr-FR')} ${event.currency || 'FCFA'}`)
+                        : tr.noValueSet}
                     </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <MiniBadge label="Cadeaux réservés" value={reservedGifts} color="#22964F" />
-                  <MiniBadge label="Cadeaux disponibles" value={totalGifts - reservedGifts} color="#DC8C28" />
-                  {reservedGiftValue > 0 && <MiniBadge label="Valeur réservée" value={`${reservedGiftValue.toLocaleString('fr-FR')} €`} color="#E879A0" />}
-                  {totalGiftValue > 0 && <MiniBadge label="Valeur totale liste" value={`${totalGiftValue.toLocaleString('fr-FR')} €`} color="#5B8DB8" />}
+                  <MiniBadge label={tr.reservedGiftsLabel} value={reservedGifts} color="#22964F" />
+                  <MiniBadge label={tr.availableGifts} value={totalGifts - reservedGifts} color="#DC8C28" />
+                  {reservedGiftValue > 0 && <MiniBadge label={tr.reservedValue} value={`${reservedGiftValue.toLocaleString('fr-FR')} ${event.currency || 'FCFA'}`} color="#E879A0" />}
+                  {totalGiftValue > 0 && <MiniBadge label={tr.totalListValue} value={`${totalGiftValue.toLocaleString('fr-FR')} ${event.currency || 'FCFA'}`} color="#5B8DB8" />}
                 </div>
               </>
             ) : (
-              <p className="text-sm" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>Aucun cadeau configuré</p>
+              <p className="text-sm" style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)' }}>{tr.noGiftsConfigured}</p>
             )}
           </SectionCard>
 
           {/* ════════ Dietary ════════ */}
-          <SectionCard title="Régimes alimentaires" icon={UtensilsCrossed} iconColor="#22964F" delay={12}>
+          <SectionCard title={tr.dietaryRestrictionsTitle} icon={UtensilsCrossed} iconColor="#22964F" delay={12}>
             {diets.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {diets.map(([name, count]) => (
@@ -568,12 +566,12 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                 ))}
               </div>
             ) : (
-              <p className="text-sm" style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>Aucun régime renseigné</p>
+              <p className="text-sm" style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)' }}>{tr.noDietInfo}</p>
             )}
           </SectionCard>
 
           {/* ════════ Engagement ════════ */}
-          <SectionCard title="Engagement" icon={Zap} iconColor="#F59E0B" delay={13}>
+          <SectionCard title={tr.engagement} icon={Zap} iconColor="#F59E0B" delay={13}>
             {/* Messages privés */}
             <div style={{
               display: 'flex', alignItems: 'center', gap: '1rem',
@@ -590,24 +588,24 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
               </div>
               <div>
                 <div style={{ fontSize: '1.5rem', fontWeight: 700, color: '#F59E0B', lineHeight: 1 }}>{privateMessages}</div>
-                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>message{privateMessages > 1 ? 's' : ''} privé{privateMessages > 1 ? 's' : ''} reçu{privateMessages > 1 ? 's' : ''}</div>
+                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{privateMessages > 1 ? tr.privateMessages : tr.privateMessage}</div>
               </div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-              <MiniBadge label="Visites du lien" value={event.views || 0} color="#8B5CF6" />
-              <MiniBadge label="Réponses reçues" value={`${responded}/${total}`} color="#22964F" />
-              <MiniBadge label="Taux de réponse" value={`${total > 0 ? Math.round((responded / total) * 100) : 0}%`} color="#5B8DB8" />
-              <MiniBadge label="Taux de conversion" value={`${(event.views || 0) > 0 ? Math.round((responded / (event.views || 1)) * 100) : 0}%`} color="#C8A96E" />
-              <MiniBadge label="Restrictions alimentaires" value={`${guestsWithAllergies} invité${guestsWithAllergies > 1 ? 's' : ''}`} color="#DC8C28" />
-              {totalVotes > 0 && <MiniBadge label="Votes sondage menu" value={totalVotes} color="#FB923C" />}
+              <MiniBadge label={tr.linkVisits} value={event.views || 0} color="#8B5CF6" />
+              <MiniBadge label={tr.responsesReceived} value={`${responded}/${total}`} color="#22964F" />
+              <MiniBadge label={tr.responseRate} value={`${total > 0 ? Math.round((responded / total) * 100) : 0}%`} color="#5B8DB8" />
+              <MiniBadge label={tr.conversionRate} value={`${(event.views || 0) > 0 ? Math.round((responded / (event.views || 1)) * 100) : 0}%`} color="#C8A96E" />
+              <MiniBadge label={tr.dietaryRestrictionsLabel} value={`${guestsWithAllergies} ${guestsWithAllergies > 1 ? tr.guests : tr.guest}`} color="#DC8C28" />
+              {totalVotes > 0 && <MiniBadge label={tr.menuSurveyVotes} value={totalVotes} color="#FB923C" />}
             </div>
 
             {/* Côté marié(e) */}
             {(brideGuests > 0 || groomGuests > 0) && (
               <div style={{ marginTop: '1rem' }}>
                 <div className="text-xs font-medium" style={{ color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  Répartition par côté
+                  {tr.sideBreakdown}
                 </div>
                 <div style={{
                   display: 'flex', height: 28, borderRadius: 8, overflow: 'hidden',
@@ -671,9 +669,9 @@ export default function StatsPage({ params }: { params: Promise<{ eventId: strin
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.4rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  {brideGuests > 0 && <span className="text-xs" style={{ color: '#E879A0' }}>👰 Mariée: {brideGuests}</span>}
-                  {groomGuests > 0 && <span className="text-xs" style={{ color: '#5B8DB8' }}>🤵 Marié: {groomGuests}</span>}
-                  {bothGuests > 0 && <span className="text-xs" style={{ color: '#C8A96E' }}>💑 Les deux: {bothGuests}</span>}
+                  {brideGuests > 0 && <span className="text-xs" style={{ color: '#E879A0' }}>👰 {tr.brideLabel}: {brideGuests}</span>}
+                  {groomGuests > 0 && <span className="text-xs" style={{ color: '#5B8DB8' }}>🤵 {tr.groomLabel}: {groomGuests}</span>}
+                  {bothGuests > 0 && <span className="text-xs" style={{ color: '#C8A96E' }}>💑 {tr.bothLabel}: {bothGuests}</span>}
                 </div>
               </div>
             )}

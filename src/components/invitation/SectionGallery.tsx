@@ -32,6 +32,7 @@ export default function SectionGallery({ event }: { event: Event }) {
           {images.map((url, i) => (
             <motion.button
               key={i}
+              className="gallery-photo-frame"
               onClick={() => setLightboxIndex(i)}
               style={{
                 position: 'relative', overflow: 'hidden', cursor: 'pointer',

@@ -1,17 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-function getServiceClient() {
-  if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Supabase service configuration missing');
-  }
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { persistSession: false },
-  });
-}
+import { getServiceClient } from '@/lib/supabase/service';
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,6 +8,7 @@ export async function GET(req: NextRequest) {
     const eventId = searchParams.get('eventId');
     const token = searchParams.get('token');
     const guestId = searchParams.get('guestId');
+    const guestName = searchParams.get('guestName');
 
     if (!slug && !eventId) {
       return NextResponse.json({ error: 'slug or eventId is required' }, { status: 400 });
@@ -178,6 +167,38 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Fallback: match by name (e.g. a shared, non-personalized link with ?guest=First-Last).
+    // Done here, server-side, so the client never has to receive the full guest roster to search it itself.
+    if (!currentGuest && guestName) {
+      const rawName = decodeURIComponent(guestName).toLowerCase().replace(/-/g, ' ');
+      const match = guests.find((g) => {
+        const full = `${g.firstName} ${g.lastName}`.toLowerCase();
+        return full.includes(rawName) || rawName.includes(g.firstName.toLowerCase());
+      });
+
+      if (match) {
+        const matchRow = (guestRows || []).find((g: any) => g.id === match.id);
+        const tableObj = tables.find((t) => t.id === match.tableId);
+        const groupObj = groups.find((grp) => grp.name === match.group);
+
+        currentGuest = {
+          id: match.id,
+          firstName: match.firstName,
+          lastName: match.lastName,
+          group: match.group || 'Invités',
+          groupEmoji: groupObj?.emoji || '👥',
+          groupColor: groupObj?.color || '#C8A96E',
+          companions: matchRow?.companions || 0,
+          tableId: match.tableId || null,
+          tableName: tableObj?.name || null,
+        };
+
+        if (tableObj) {
+          currentTable = tableObj;
+        }
+      }
+    }
+
     return NextResponse.json({
       event: {
         id: event.id,
@@ -187,9 +208,6 @@ export async function GET(req: NextRequest) {
         date: event.date,
         floorPlanElements: (event.meta as any)?.floorPlanElements || [],
       },
-      tables,
-      guests,
-      groups,
       currentGuest,
       currentTable,
     });

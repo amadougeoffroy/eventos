@@ -10,6 +10,7 @@ import { eventTypeConfig, planConfig } from '@/lib/mock-data';
 import { ProgramItem } from '@/lib/types';
 import ConfirmModal from '@/components/ConfirmModal';
 import { getTemplate, getTemplateVariant } from '@/lib/templates/template-registry';
+import { uploadEventMedia } from '@/lib/uploadEventMedia';
 import {
   CalendarDays, MapPin, Clock, Users, CheckCircle2, XCircle, HelpCircle,
   Send, UtensilsCrossed, LayoutGrid, Radio, ArrowRight, ExternalLink, Copy, TrendingUp,
@@ -81,6 +82,8 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
 
   const [origin, setOrigin] = useState('');
   useEffect(() => { setOrigin(window.location.origin); }, []);
+
+  const [mediaUploadError, setMediaUploadError] = useState('');
 
   const openAddProgram = () => {
     setEditingProgram(null);
@@ -487,20 +490,26 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                     })}
                   </div>
 
+                  {mediaUploadError && (
+                    <p style={{ color: '#DC3545', fontSize: '0.75rem', margin: '0 0 0.75rem' }}>{mediaUploadError}</p>
+                  )}
+
                   {/* Upload area based on selected type */}
                   {heroType === 'image' && (
                     <div>
                       <input type="file" id="hero-file-input" accept="image/*" style={{ display: 'none' }}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (!file || !event) return;
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            const dataUrl = ev.target?.result as string;
-                            if (dataUrl) updateEvent(eventId, { heroImages: [dataUrl] });
-                          };
-                          reader.readAsDataURL(file);
                           e.target.value = '';
+                          if (!file || !event) return;
+                          setMediaUploadError('');
+                          try {
+                            const url = await uploadEventMedia(file, `${eventId}/hero`);
+                            updateEvent(eventId, { heroImages: [url] });
+                          } catch (err) {
+                            console.error('Hero image upload error:', err);
+                            setMediaUploadError(tr.uploadError);
+                          }
                         }}
                       />
                       {event.heroImages && event.heroImages.length > 0 ? (
@@ -525,21 +534,25 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                   {heroType === 'slideshow' && (
                     <div>
                       <input type="file" id="hero-file-input" accept="image/*" multiple style={{ display: 'none' }}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const files = e.target.files;
+                          e.target.value = '';
                           if (!files || !event) return;
                           const maxImg = plan === 'premium' ? 10 : 5;
                           const current = event.heroImages || [];
                           if (current.length >= maxImg) return;
-                          Array.from(files).slice(0, maxImg - current.length).forEach(file => {
-                            const reader = new FileReader();
-                            reader.onload = (ev) => {
-                              const dataUrl = ev.target?.result as string;
-                              if (dataUrl) updateEvent(eventId, { heroImages: [...(event.heroImages || []), dataUrl] });
-                            };
-                            reader.readAsDataURL(file);
-                          });
-                          e.target.value = '';
+                          setMediaUploadError('');
+                          const toUpload = Array.from(files).slice(0, maxImg - current.length);
+                          try {
+                            const uploaded: string[] = [];
+                            for (const file of toUpload) {
+                              uploaded.push(await uploadEventMedia(file, `${eventId}/hero`));
+                            }
+                            updateEvent(eventId, { heroImages: [...current, ...uploaded] });
+                          } catch (err) {
+                            console.error('Slideshow image upload error:', err);
+                            setMediaUploadError(tr.uploadError);
+                          }
                         }}
                       />
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.6rem' }}>
@@ -586,16 +599,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                   {heroType === 'video' && (
                     <div>
                       <input type="file" id="hero-video-input" accept="video/mp4,video/webm,video/ogg" style={{ display: 'none' }}
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            const dataUrl = ev.target?.result as string;
-                            if (dataUrl) updateEvent(eventId, { heroVideo: dataUrl });
-                          };
-                          reader.readAsDataURL(file);
                           e.target.value = '';
+                          if (!file) return;
+                          setMediaUploadError('');
+                          try {
+                            const url = await uploadEventMedia(file, `${eventId}/hero-video`);
+                            updateEvent(eventId, { heroVideo: url });
+                          } catch (err) {
+                            console.error('Hero video upload error:', err);
+                            setMediaUploadError(tr.uploadError);
+                          }
                         }}
                       />
                       {event.heroVideo ? (
@@ -650,16 +665,18 @@ export default function EventDetailPage({ params }: { params: Promise<{ eventId:
                   type="file" id="music-file-input"
                   accept=".mp3,.m4a,.ogg,.wav,.aac,audio/mpeg,audio/mp4,audio/ogg,audio/wav,audio/aac"
                   style={{ display: 'none' }}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = (ev) => {
-                      const dataUrl = ev.target?.result as string;
-                      if (dataUrl) updateEvent(eventId, { backgroundMusicUrl: dataUrl });
-                    };
-                    reader.readAsDataURL(file);
                     e.target.value = '';
+                    if (!file) return;
+                    setMediaUploadError('');
+                    try {
+                      const url = await uploadEventMedia(file, `${eventId}/music`);
+                      updateEvent(eventId, { backgroundMusicUrl: url });
+                    } catch (err) {
+                      console.error('Background music upload error:', err);
+                      setMediaUploadError(tr.uploadError);
+                    }
                   }}
                 />
                 {event.backgroundMusicUrl ? (
