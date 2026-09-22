@@ -18,7 +18,7 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
   const [showPassword, setShowPassword] = useState(false);
-  const [isRegister, setIsRegister] = useState(false);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [slideIndex, setSlideIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -43,7 +43,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      if (isRegister) {
+      if (mode === 'register') {
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -53,6 +53,12 @@ export default function LoginPage() {
         });
         if (signUpError) throw signUpError;
         setSuccess('Compte créé ! Vérifiez votre email pour confirmer.');
+      } else if (mode === 'forgot') {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (resetError) throw resetError;
+        setSuccess('Email envoyé ! Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.');
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
@@ -76,10 +82,14 @@ export default function LoginPage() {
   const formContent = (
     <>
       <h2 className="font-display text-2xl font-bold mb-1">
-        {isRegister ? 'Créer un compte' : 'Bienvenue'}
+        {mode === 'register' ? 'Créer un compte' : mode === 'forgot' ? 'Mot de passe oublié' : 'Bienvenue'}
       </h2>
       <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-        {isRegister ? 'Inscrivez-vous pour créer vos événements' : 'Connectez-vous à votre espace'}
+        {mode === 'register'
+          ? 'Inscrivez-vous pour créer vos événements'
+          : mode === 'forgot'
+          ? 'Entrez votre email, on vous envoie un lien pour le réinitialiser'
+          : 'Connectez-vous à votre espace'}
       </p>
 
       {error && (
@@ -102,7 +112,7 @@ export default function LoginPage() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {isRegister && (
+        {mode === 'register' && (
           <div>
             <label className="label">Nom complet</label>
             <input className="input" placeholder="Amadou Geoffroy" required value={fullName} onChange={e => setFullName(e.target.value)} />
@@ -112,30 +122,53 @@ export default function LoginPage() {
           <label className="label">Email</label>
           <input className="input" type="email" placeholder="amadou@email.com" required value={email} onChange={e => setEmail(e.target.value)} />
         </div>
-        <div>
-          <label className="label">Mot de passe</label>
-          <div className="relative">
-            <input className="input pr-10" type={showPassword ? 'text' : 'password'} placeholder="••••••••" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} />
-            <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setShowPassword(!showPassword)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+        {mode !== 'forgot' && (
+          <div>
+            <div className="flex items-center justify-between">
+              <label className="label mb-0">Mot de passe</label>
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot'); setError(''); setSuccess(''); }}
+                  style={{ color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 500 }}
+                >
+                  Mot de passe oublié ?
+                </button>
+              )}
+            </div>
+            <div className="relative" style={{ marginTop: '0.4rem' }}>
+              <input className="input pr-10" type={showPassword ? 'text' : 'password'} placeholder="••••••••" required minLength={6} value={password} onChange={e => setPassword(e.target.value)} />
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2" onClick={() => setShowPassword(!showPassword)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         <div style={{ paddingTop: '0.25rem' }}>
           <button type="submit" className="btn-primary w-full py-3" disabled={loading}>
-            {loading ? <><Loader2 size={16} className="animate-spin" /> Chargement...</> : <>{isRegister ? 'Créer mon compte' : 'Se connecter'} <ArrowRight size={16} /></>}
+            {loading
+              ? <><Loader2 size={16} className="animate-spin" /> Chargement...</>
+              : <>{mode === 'register' ? 'Créer mon compte' : mode === 'forgot' ? 'Envoyer le lien' : 'Se connecter'} <ArrowRight size={16} /></>}
           </button>
         </div>
       </form>
 
       <div className="divider" />
 
-      <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-        {isRegister ? 'Déjà un compte ?' : "Pas encore de compte ?"}{' '}
-        <button onClick={() => setIsRegister(!isRegister)} style={{ color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
-          {isRegister ? 'Se connecter' : "S'inscrire"}
-        </button>
-      </p>
+      {mode === 'forgot' ? (
+        <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+          <button onClick={() => { setMode('login'); setError(''); setSuccess(''); }} style={{ color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            Retour à la connexion
+          </button>
+        </p>
+      ) : (
+        <p className="text-center text-sm" style={{ color: 'var(--text-muted)' }}>
+          {mode === 'register' ? 'Déjà un compte ?' : "Pas encore de compte ?"}{' '}
+          <button onClick={() => { setMode(mode === 'register' ? 'login' : 'register'); setError(''); setSuccess(''); }} style={{ color: 'var(--gold)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>
+            {mode === 'register' ? 'Se connecter' : "S'inscrire"}
+          </button>
+        </p>
+      )}
     </>
   );
 
