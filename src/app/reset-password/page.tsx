@@ -166,9 +166,9 @@ export default function ResetPasswordPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label className="label">Nouveau mot de passe</label>
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '1.25rem' }}>
+                <label className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>Nouveau mot de passe</label>
                 <div className="relative">
                   <input
                     className="input pr-10"
@@ -184,8 +184,8 @@ export default function ResetPasswordPage() {
                   </button>
                 </div>
               </div>
-              <div>
-                <label className="label">Confirmer le mot de passe</label>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="label" style={{ display: 'block', marginBottom: '0.5rem' }}>Confirmer le mot de passe</label>
                 <input
                   className="input"
                   type={showPassword ? 'text' : 'password'}
