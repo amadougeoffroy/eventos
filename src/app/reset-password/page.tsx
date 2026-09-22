@@ -33,6 +33,7 @@ export default function ResetPasswordPage() {
 
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const tokenHash = params.get('token_hash');
     const code = params.get('code');
     const errorDescription = params.get('error_description') || hashParams.get('error_description');
 
@@ -42,6 +43,20 @@ export default function ResetPasswordPage() {
     }
 
     (async () => {
+      // token_hash (set via the email template) verifies server-side and
+      // works even when the link is opened in a different browser/device
+      // than the one that requested it — unlike the PKCE ?code= exchange
+      // below, which requires the original browser's stored code_verifier.
+      if (tokenHash) {
+        const { error: otpError } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+        if (cancelled) return;
+        if (otpError) {
+          setError("Ce lien de réinitialisation n'est plus valide. Demandez-en un nouveau depuis la page de connexion.");
+          return;
+        }
+        setReady(true);
+        return;
+      }
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
         if (cancelled) return;
