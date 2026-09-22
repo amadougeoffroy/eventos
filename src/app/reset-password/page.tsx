@@ -25,32 +25,51 @@ export default function ResetPasswordPage() {
   // doesn't always resolve on its own, and failed silently before this fix,
   // leaving the page stuck on "Vérification du lien..." forever.
   useEffect(() => {
+    let cancelled = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
       if (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN') setReady(true);
     });
 
     const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const code = params.get('code');
+    const errorDescription = params.get('error_description') || hashParams.get('error_description');
+
+    if (errorDescription) {
+      setError(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+      return;
+    }
 
     (async () => {
       if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (cancelled) return;
         if (exchangeError) {
           setError("Ce lien de réinitialisation n'est plus valide. Demandez-en un nouveau depuis la page de connexion.");
           return;
         }
         setReady(true);
-        return;
-      }
-      const result = await supabase.auth.getSession();
-      if (result.data.session) {
-        setReady(true);
-      } else {
-        setError("Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau depuis la page de connexion.");
       }
     })();
 
-    return () => subscription.unsubscribe();
+    // The default email link uses a #access_token hash fragment, which the
+    // SDK parses asynchronously on mount — give it time before concluding
+    // the link is invalid, otherwise this races ahead of onAuthStateChange.
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        setReady(prev => {
+          if (!prev) setError('Ce lien de réinitialisation est invalide ou a expiré. Demandez-en un nouveau depuis la page de connexion.');
+          return prev;
+        });
+      }
+    }, 6000);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, [supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
