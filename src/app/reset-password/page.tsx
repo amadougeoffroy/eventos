@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -17,6 +17,7 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [ready, setReady] = useState(false);
+  const successRef = useRef(false);
 
   // The recovery link from the email sets a temporary session once Supabase
   // parses the token out of the URL — wait for that before allowing submit,
@@ -87,6 +88,16 @@ export default function ResetPasswordPage() {
     };
   }, [supabase]);
 
+  // Verifying the recovery link signs the browser in so updateUser() below
+  // can work — but if the user leaves this page without finishing (closes
+  // the tab, navigates to /login), that session would otherwise stick
+  // around and get them silently auto-logged-in on their next visit.
+  useEffect(() => {
+    return () => {
+      if (!successRef.current) supabase.auth.signOut();
+    };
+  }, [supabase]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -104,6 +115,7 @@ export default function ResetPasswordPage() {
     try {
       const { error: updateError } = await supabase.auth.updateUser({ password });
       if (updateError) throw updateError;
+      successRef.current = true;
       setSuccess(true);
       setTimeout(() => {
         router.push('/dashboard');
