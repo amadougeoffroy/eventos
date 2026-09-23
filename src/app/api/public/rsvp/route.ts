@@ -12,6 +12,7 @@ function mapGuestRow(row: any) {
     rsvpStatus: row.rsvp_status || 'pending',
     token: row.token || '',
     companions: row.companions || 0,
+    companionDetails: row.companion_names || [],
     allergies: row.allergies || '',
     dietaryRestrictions: [] as string[],
     respondedAt: row.updated_at || undefined,
@@ -45,6 +46,14 @@ export async function POST(req: NextRequest) {
 
     const companions = Number(body.companions) || 0;
     const allergies = body.allergies || null;
+    const companionNames = Array.isArray(body.companionDetails)
+      ? body.companionDetails
+          .slice(0, companions)
+          .map((c: any) => ({
+            name: typeof c?.name === 'string' ? c.name.trim().slice(0, 100) : '',
+            relation: typeof c?.relation === 'string' ? c.relation.trim().slice(0, 50) : '',
+          }))
+      : [];
 
     // Known guest → update, but only if it truly belongs to this event, and only
     // if the caller can identify it by its id or token (both are opaque, unguessable values).
@@ -62,6 +71,7 @@ export async function POST(req: NextRequest) {
         .update({
           rsvp_status: rsvpChoice,
           companions,
+          companion_names: companionNames,
           allergies,
           updated_at: new Date().toISOString(),
         })
@@ -94,6 +104,7 @@ export async function POST(req: NextRequest) {
         group: body.guestGroup || 'Invités',
         rsvp_status: rsvpChoice,
         companions,
+        companion_names: companionNames,
         allergies,
         source: 'rsvp',
       })

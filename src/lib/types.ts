@@ -108,6 +108,7 @@ export interface Guest {
   allergies?: string;
   dietaryRestrictions?: string[];
   companions: number;
+  companionDetails?: { name: string; relation: string }[];
   privateMessage?: string;
   respondedAt?: string;
   menuChoices?: Record<string, string>; // categoryId -> menuItemId

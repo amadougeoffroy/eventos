@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS guests (
   rsvp_status TEXT DEFAULT 'pending' CHECK (rsvp_status IN ('pending', 'confirmed', 'declined', 'maybe')),
   token TEXT UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(12), 'hex'),
   companions INTEGER DEFAULT 0,
+  companion_names JSONB DEFAULT '[]'::jsonb,
   table_id UUID DEFAULT NULL,
   allergies TEXT DEFAULT '',
   dietary_restrictions TEXT[] DEFAULT '{}',

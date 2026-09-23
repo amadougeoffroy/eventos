@@ -370,6 +370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           rsvpStatus: row.rsvp_status || 'pending',
           token: row.token || '',
           companions: row.companions || 0,
+          companionDetails: row.companion_names || [],
           tableId: row.table_id || undefined,
           allergies: row.allergies || '',
           dietaryRestrictions: row.dietary_restrictions || [],
@@ -704,6 +705,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         rsvp_status: guest.rsvpStatus || 'pending',
         token: guest.token || crypto.randomUUID(),
         companions: guest.companions || 0,
+        companion_names: guest.companionDetails || [],
         allergies: guest.allergies || null,
         side: guest.side || null,
         source: guest.source || 'manual',
@@ -734,6 +736,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (updates.group !== undefined) payload.group = updates.group;
     if (updates.rsvpStatus !== undefined) payload.rsvp_status = updates.rsvpStatus;
     if (updates.companions !== undefined) payload.companions = updates.companions;
+    if (updates.companionDetails !== undefined) payload.companion_names = updates.companionDetails;
     if (updates.allergies !== undefined) payload.allergies = updates.allergies;
     if (updates.tableId !== undefined) payload.table_id = updates.tableId;
     if (updates.side !== undefined) payload.side = updates.side;

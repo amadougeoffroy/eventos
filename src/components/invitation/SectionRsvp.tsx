@@ -54,8 +54,8 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(
           knownGuest
-            ? { slug: event.slug, guestId: knownGuest.id, token: knownGuest.token, rsvpChoice, companions, allergies }
-            : { slug: event.slug, rsvpChoice, guestName: guestName.trim(), guestPhone, guestGroup, companions, allergies }
+            ? { slug: event.slug, guestId: knownGuest.id, token: knownGuest.token, rsvpChoice, companions, companionDetails, allergies }
+            : { slug: event.slug, rsvpChoice, guestName: guestName.trim(), guestPhone, guestGroup, companions, companionDetails, allergies }
         ),
       });
 
@@ -70,6 +70,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
         updateGuest(knownGuest.id, {
           rsvpStatus: rsvpChoice,
           companions,
+          companionDetails: guest.companionDetails,
           allergies,
           respondedAt: guest.respondedAt,
         });

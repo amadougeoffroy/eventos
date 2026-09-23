@@ -46,6 +46,7 @@ type DisplayRow = {
   source?: 'manual' | 'rsvp';
   companionIndex?: number;
   parentName?: string;
+  companionRelation?: string;
 };
 
 export default function GuestsPage({ params }: { params: Promise<{ eventId: string }> }) {
@@ -71,6 +72,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   const [editingGuest, setEditingGuest] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleteCompanionTarget, setDeleteCompanionTarget] = useState<{ guestId: string; index: number; name: string } | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
@@ -101,13 +103,17 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         source: g.source,
         isCompanion: false,
       });
-      // Companion rows
+      // Companion rows — use the real name captured on the RSVP form when
+      // available, falling back to "Accompagnant N" for companions added
+      // before that was tracked (or added manually with just a count).
       for (let i = 0; i < g.companions; i++) {
+        const detail = g.companionDetails?.[i];
+        const realName = detail?.name?.trim();
         rows.push({
           id: `${g.id}-comp-${i}`,
           guestId: g.id,
-          firstName: tr.companionN.replace('{n}', String(i + 1)),
-          lastName: tr.ofGuest.replace('{name}', g.firstName),
+          firstName: realName || tr.companionN.replace('{n}', String(i + 1)),
+          lastName: '',
           email: '',
           phone: '',
           group: g.group,
@@ -119,6 +125,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           isCompanion: true,
           companionIndex: i + 1,
           parentName: `${g.firstName} ${g.lastName}`,
+          companionRelation: detail?.relation || undefined,
         });
       }
     });
@@ -250,6 +257,17 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
     });
     setShowEditModal(false);
     setEditingGuest(null);
+  };
+
+  const removeCompanion = (guestId: string, index: number) => {
+    const g = eventGuests.find(gu => gu.id === guestId);
+    if (!g) return;
+    const details = [...(g.companionDetails || [])];
+    details.splice(index, 1);
+    updateGuest(guestId, {
+      companions: Math.max(0, g.companions - 1),
+      companionDetails: details,
+    });
   };
 
   const copyLink = (row: DisplayRow) => {
@@ -405,6 +423,11 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                   {row.source === 'rsvp' ? tr.viaLink : tr.addedManually}
                                 </span>
                               )}
+                              {row.isCompanion && (
+                                <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                                  {tr.companionOf.replace('{name}', row.parentName || '')}
+                                </div>
+                              )}
                               {row.side && !row.isCompanion && (
                                 <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
                                   {row.side === 'bride' ? tr.brideSide : row.side === 'groom' ? tr.groomSide : ''}
@@ -456,7 +479,13 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                               <button className="btn-ghost p-1.5" onClick={() => setDeleteTarget({ id: row.guestId, name: `${row.firstName} ${row.lastName}`.trim() })} title={tr.delete}><Trash2 size={14} style={{ color: '#F87171' }} /></button>
                             </div>
                           ) : (
-                            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>
+                            <button
+                              className="btn-ghost p-1.5"
+                              onClick={() => setDeleteCompanionTarget({ guestId: row.guestId, index: (row.companionIndex || 1) - 1, name: row.firstName })}
+                              title={tr.delete}
+                            >
+                              <Trash2 size={14} style={{ color: '#F87171' }} />
+                            </button>
                           )}
                         </td>
                       </motion.tr>
@@ -668,6 +697,21 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
           variant="danger"
           onConfirm={() => { if (deleteTarget) removeGuest(deleteTarget.id); setDeleteTarget(null); }}
           onCancel={() => setDeleteTarget(null)}
+        />
+
+        {/* Remove Companion Confirmation Modal */}
+        <ConfirmModal
+          open={!!deleteCompanionTarget}
+          title={tr.deleteCompanionConfirm}
+          message={`${tr.aboutToDeleteCompanion} ${deleteCompanionTarget?.name || tr.guestFallback}. ${tr.irreversible}`}
+          confirmLabel={tr.delete}
+          cancelLabel={tr.cancel}
+          variant="danger"
+          onConfirm={() => {
+            if (deleteCompanionTarget) removeCompanion(deleteCompanionTarget.guestId, deleteCompanionTarget.index);
+            setDeleteCompanionTarget(null);
+          }}
+          onCancel={() => setDeleteCompanionTarget(null)}
         />
       </main>
     </div>
