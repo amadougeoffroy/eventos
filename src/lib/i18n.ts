@@ -560,6 +560,8 @@ const translations = {
       guestFallback: 'Invité',
       irreversible: 'Cette action est irréversible.',
       autoRegistered: '📨 Auto-inscrit',
+      sendLinkWhatsapp: 'Envoyer le lien par WhatsApp',
+      sendLinkEmail: 'Envoyer le lien par email',
     },
     en: {
       title: 'Guest management',
@@ -623,6 +625,8 @@ const translations = {
       guestFallback: 'Guest',
       irreversible: 'This action is irreversible.',
       autoRegistered: '📨 Auto-registered',
+      sendLinkWhatsapp: 'Send the link via WhatsApp',
+      sendLinkEmail: 'Send the link via email',
     },
   },
 

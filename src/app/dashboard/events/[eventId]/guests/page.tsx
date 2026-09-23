@@ -78,6 +78,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(15);
   const [newGuest, setNewGuest] = useState({ firstName: '', lastName: '', email: '', phone: '', group: '' });
+  const [sendEmailOnAdd, setSendEmailOnAdd] = useState(true);
   const [editForm, setEditForm] = useState({ firstName: '', lastName: '', email: '', phone: '', group: '', rsvpStatus: 'pending' as RSVPStatus });
 
   const groups = useMemo(() => [...new Set(eventGuests.map(g => g.group))], [eventGuests]);
@@ -201,15 +202,38 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   };
   const confirmRate = stats.invites > 0 ? Math.round((stats.confirmed / stats.invites) * 100) : 0;
 
-  const handleAddGuest = () => {
+  const handleAddGuest = async () => {
     if (!newGuest.firstName || !newGuest.lastName) return;
+    const token = crypto.randomUUID();
     addGuest({
       id: crypto.randomUUID(), eventId, ...newGuest,
-      rsvpStatus: 'pending', token: crypto.randomUUID(),
+      rsvpStatus: 'pending', token,
       companions: 0, dietaryRestrictions: [], source: 'manual',
     });
+
+    const shouldSendEmail = sendEmailOnAdd && !!newGuest.email.trim();
+    const emailToSend = newGuest.email;
+    const nameToSend = `${newGuest.firstName} ${newGuest.lastName}`.trim();
+    const linkToSend = event ? `${window.location.origin}/e/${event.slug}?guest=${encodeURIComponent(`${newGuest.firstName}-${newGuest.lastName}`)}&token=${token}` : '';
+
     setNewGuest({ firstName: '', lastName: '', email: '', phone: '', group: '' });
+    setSendEmailOnAdd(true);
     setShowAddModal(false);
+
+    // Fire-and-forget: the guest is already added, so the email send
+    // happens in the background rather than blocking the modal close.
+    if (shouldSendEmail && event) {
+      fetch('/api/send-invite-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: emailToSend,
+          guestName: nameToSend,
+          eventName: event.name,
+          link: linkToSend,
+        }),
+      }).catch(e => console.error('send-invite-email error:', e));
+    }
   };
 
   const csvEscape = (value: string) => (/[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value);
@@ -614,8 +638,28 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                       {eventGuestGroups.map(g => <option key={g.id} value={g.name}>{g.emoji} {g.name}</option>)}
                     </select>
                   </div>
+
+                  <div style={{ paddingTop: '0.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                    <label className="text-sm flex items-center gap-2" style={{ opacity: 0.5, cursor: 'not-allowed' }} title={tr.comingSoon}>
+                      <input type="checkbox" disabled />
+                      {tr.sendLinkWhatsapp}
+                      <span style={{
+                        fontSize: '0.6rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: 4,
+                        background: 'var(--glass)', color: 'var(--text-muted)',
+                      }}>{tr.comingSoon}</span>
+                    </label>
+                    <label className="text-sm flex items-center gap-2" style={{ cursor: newGuest.email.trim() ? 'pointer' : 'not-allowed', opacity: newGuest.email.trim() ? 1 : 0.5 }}>
+                      <input
+                        type="checkbox"
+                        checked={sendEmailOnAdd && !!newGuest.email.trim()}
+                        disabled={!newGuest.email.trim()}
+                        onChange={e => setSendEmailOnAdd(e.target.checked)}
+                      />
+                      {tr.sendLinkEmail}
+                    </label>
+                  </div>
                 </div>
-                <div className="flex gap-3 mt-6">
+                <div className="flex gap-3" style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-light)' }}>
                   <button className="btn-secondary flex-1" onClick={() => setShowAddModal(false)}>{tr.cancel}</button>
                   <button className="btn-primary flex-1" onClick={handleAddGuest}>{tr.add}</button>
                 </div>

@@ -45,10 +45,12 @@ Eventos utilise Supabase comme backend (auth, base de données, storage) — Dok
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
    C'est nécessaire car ces deux valeurs sont injectées dans le bundle JavaScript envoyé au navigateur au moment du build, pas lues dynamiquement au démarrage.
-3. Dans la section **Environment Variables** (runtime), renseigne les 3 mêmes variables que dans `.env.local` :
+3. Dans la section **Environment Variables** (runtime), renseigne les variables de `.env.local` :
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
+   - `BREVO_API_KEY` (clé API Brevo, pour l'envoi du lien d'invitation par email depuis le dashboard)
+   - `BREVO_SENDER_EMAIL` / `BREVO_SENDER_NAME` (optionnel — adresse et nom d'expéditeur, doivent correspondre à un expéditeur vérifié dans Brevo)
 4. Expose le port `3000` (celui écouté par le serveur `standalone`).
 5. Configure ton domaine (ex: `eventos.tondomaine.com`) dans l'onglet **Domains**, Dokploy génère le certificat SSL automatiquement via Let's Encrypt.
 6. Lance le déploiement. Les futurs `git push` sur `main` peuvent déclencher un redéploiement automatique si tu actives le webhook proposé par Dokploy.
