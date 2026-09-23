@@ -5,8 +5,9 @@ import { useApp } from '@/context/AppContext';
 import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion } from 'framer-motion';
 import { use, useEffect, useMemo, useState } from 'react';
-import { Send, Copy, Check, MessageSquare, Link2, Users, AlertCircle } from 'lucide-react';
+import { Send, Copy, Check, MessageSquare, Link2, Users, AlertCircle, Loader2 } from 'lucide-react';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
+import { eventEmailInfo } from '@/lib/email-templates';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
@@ -23,6 +24,8 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedGeneric, setCopiedGeneric] = useState(false);
   const [baseUrl, setBaseUrl] = useState('');
+  const [sendingReminders, setSendingReminders] = useState(false);
+  const [reminderResult, setReminderResult] = useState<string | null>(null);
   useEffect(() => { setBaseUrl(window.location.origin); }, []);
 
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
@@ -44,6 +47,44 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
 
   const pending = eventGuests.filter(g => g.rsvpStatus === 'pending');
   const sent = eventGuests.filter(g => g.rsvpStatus !== 'pending').length;
+
+  const handleSendReminders = async () => {
+    const withEmail = pending.filter(g => g.email && g.email.trim());
+    if (withEmail.length === 0) {
+      setReminderResult(tr.followUpNoEmail);
+      return;
+    }
+    setSendingReminders(true);
+    setReminderResult(null);
+    const info = eventEmailInfo(event);
+    let successCount = 0;
+    await Promise.all(withEmail.map(async guest => {
+      const link = `${baseUrl}/e/${event.slug}?guest=${encodeURIComponent(`${guest.firstName}-${guest.lastName}`)}&token=${guest.token}`;
+      try {
+        const res = await fetch('/api/send-invite-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: guest.email,
+            guestName: `${guest.firstName} ${guest.lastName}`.trim(),
+            event: info,
+            type: 'reminder',
+            link,
+          }),
+        });
+        if (res.ok) successCount++;
+      } catch (e) {
+        console.error('reminder send error:', e);
+      }
+    }));
+    setSendingReminders(false);
+    const withoutEmail = pending.length - withEmail.length;
+    setReminderResult(
+      withoutEmail > 0
+        ? tr.followUpPartial.replace('{n}', String(successCount)).replace('{m}', String(withoutEmail))
+        : tr.followUpSent.replace('{n}', String(successCount))
+    );
+  };
 
   return (
     <div className="flex">
@@ -212,10 +253,13 @@ export default function InvitationsPage({ params }: { params: Promise<{ eventId:
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{tr.followUpDesc.replace('{n}', String(pending.length))}</p>
               </div>
             </div>
-            <button className="btn-primary" disabled title={tr.comingSoon} style={{ opacity: 0.5, cursor: 'not-allowed' }}>
-              <Send size={16} /> {tr.followUpBtn.replace('{n}', String(pending.length))}
+            <button className="btn-primary" onClick={handleSendReminders} disabled={sendingReminders} style={sendingReminders ? { opacity: 0.6, cursor: 'not-allowed' } : undefined}>
+              {sendingReminders ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+              {sendingReminders ? tr.followUpSending : tr.followUpBtn.replace('{n}', String(pending.length))}
             </button>
-            <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>{tr.comingSoon}</p>
+            {reminderResult && (
+              <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>{reminderResult}</p>
+            )}
           </motion.div>
         )}
       </main>

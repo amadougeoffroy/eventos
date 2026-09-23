@@ -6,10 +6,11 @@ import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo, useRef, useEffect, useCallback, createRef } from 'react';
 import {
-  Users, Plus, Table, LayoutGrid, Settings, X, Check, Copy, Edit3, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, UserPlus, Save, RefreshCcw, Search, CheckCircle, Clock, UserX, Sparkles, Zap, MapPin
+  Users, Plus, Table, LayoutGrid, Settings, X, Check, Copy, Edit3, Trash2, ArrowUpDown, ChevronLeft, ChevronRight, UserPlus, Save, RefreshCcw, Search, CheckCircle, Clock, UserX, Sparkles, Zap, MapPin, Mail, Loader2
 } from 'lucide-react';
 import Draggable from 'react-draggable';
 import { FloorPlanElement, EventTable } from '@/lib/types';
+import { eventEmailInfo } from '@/lib/email-templates';
 import ConfirmModal from '@/components/ConfirmModal';
 
 const fadeUp = {
@@ -43,6 +44,8 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
   const [currentTable, setCurrentTable] = useState<any>(null);
   const [searchGuest, setSearchGuest] = useState('');
   const [hydrated, setHydrated] = useState(false);
+  const [sendingSeatingId, setSendingSeatingId] = useState<string | null>(null);
+  const [seatingSentId, setSeatingSentId] = useState<string | null>(null);
 
   // ---------- Helpers ----------
   const eventGuests = useMemo(() => guests.filter(g => g.eventId === eventId), [guests, eventId]);
@@ -424,6 +427,32 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
     }
   };
 
+  const handleSendSeatingEmail = async (guest: any, table: EventTable) => {
+    if (!event || !guest.email) return;
+    setSendingSeatingId(guest.id);
+    setSeatingSentId(null);
+    try {
+      const planLink = `${window.location.origin}/e/${event.slug}/plan-de-table?token=${guest.token}`;
+      const res = await fetch('/api/send-invite-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: guest.email,
+          guestName: `${guest.firstName} ${guest.lastName}`.trim(),
+          event: eventEmailInfo(event),
+          type: 'seating',
+          tableName: table.name,
+          planLink,
+        }),
+      });
+      if (res.ok) setSeatingSentId(guest.id);
+    } catch (e) {
+      console.error('seating email error:', e);
+    } finally {
+      setSendingSeatingId(null);
+    }
+  };
+
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   return (
@@ -797,15 +826,29 @@ export default function TablesPage({ params }: { params: Promise<{ eventId: stri
                               <span style={{ fontSize: '0.55rem', fontWeight: 600, padding: '0.05rem 0.3rem', borderRadius: 4, background: 'rgba(167,139,250,0.1)', color: '#A78BFA' }}>{tr.companionAbbr}</span>
                             )}
                           </div>
-                          <button
-                            onClick={() => handleUnassign(gid)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 3, borderRadius: 4, color: 'var(--text-muted)', transition: 'color 0.2s' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = '#F87171')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                            title={tr.removeGuest}
-                          >
-                            <X size={12} />
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.1rem' }}>
+                            {!g.isCompanion && g.email && (
+                              <button
+                                onClick={() => handleSendSeatingEmail(g, t)}
+                                disabled={sendingSeatingId === g.id}
+                                style={{ background: 'none', border: 'none', cursor: sendingSeatingId === g.id ? 'not-allowed' : 'pointer', padding: 3, borderRadius: 4, color: seatingSentId === g.id ? '#22964F' : 'var(--text-muted)', transition: 'color 0.2s' }}
+                                onMouseEnter={e => { if (sendingSeatingId !== g.id) e.currentTarget.style.color = 'var(--gold)'; }}
+                                onMouseLeave={e => { if (sendingSeatingId !== g.id) e.currentTarget.style.color = seatingSentId === g.id ? '#22964F' : 'var(--text-muted)'; }}
+                                title={seatingSentId === g.id ? tr.seatingEmailSent : tr.sendSeatingEmail}
+                              >
+                                {sendingSeatingId === g.id ? <Loader2 size={12} className="animate-spin" /> : seatingSentId === g.id ? <Check size={12} /> : <Mail size={12} />}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleUnassign(gid)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 3, borderRadius: 4, color: 'var(--text-muted)', transition: 'color 0.2s' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#F87171')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                              title={tr.removeGuest}
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
                         </div>
                       );
                     })

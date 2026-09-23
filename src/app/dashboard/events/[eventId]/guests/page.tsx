@@ -6,6 +6,7 @@ import { useThemeLanguage } from '@/context/ThemeLanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { use, useState, useMemo } from 'react';
 import { RSVPStatus } from '@/lib/types';
+import { eventEmailInfo } from '@/lib/email-templates';
 import ConfirmModal from '@/components/ConfirmModal';
 import WhatsAppIcon from '@/components/icons/WhatsAppIcon';
 import {
@@ -229,7 +230,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
         body: JSON.stringify({
           to: emailToSend,
           guestName: nameToSend,
-          eventName: event.name,
+          event: eventEmailInfo(event),
           link: linkToSend,
         }),
       }).catch(e => console.error('send-invite-email error:', e));
