@@ -105,7 +105,7 @@ export default function SectionSweetMessage({ event, guestName }: { event: Event
                 >
                   💌
                 </motion.div>
-                <h3 className="font-display text-xl font-bold mb-2">Merci pour ce beau message !</h3>
+                <h3 className="font-display text-xl font-bold mb-2" style={{ color: 'var(--t-card-text, var(--text))' }}>Merci pour ce beau message !</h3>
                 <p className="text-sm" style={{ color: 'var(--t-text-muted, var(--text-muted))', marginBottom: '1rem' }}>Votre mot a été transmis aux organisateurs avec amour.</p>
                 {savedMessage && (
                   <div style={{
@@ -113,7 +113,7 @@ export default function SectionSweetMessage({ event, guestName }: { event: Event
                     background: 'rgba(200,169,110,0.06)',
                     border: '1px solid rgba(200,169,110,0.15)',
                     fontStyle: 'italic', fontSize: '0.85rem',
-                    color: 'var(--t-text, var(--text))',
+                    color: 'var(--t-card-text, var(--text))',
                     lineHeight: 1.6, textAlign: 'left',
                   }}>
                     &ldquo;{savedMessage}&rdquo;

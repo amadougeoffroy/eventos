@@ -361,7 +361,7 @@ export default function SectionRsvp({ event, knownGuest, groups, updateGuest, ad
               {rsvpChoice === 'confirmed' ? (
                 <>
                   <motion.div className="text-6xl mb-4" animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 0.5 }}>🎉</motion.div>
-                  <h3 className="font-display text-2xl font-bold mb-2">Merci {guestName.split(' ')[0]} !</h3>
+                  <h3 className="font-display text-2xl font-bold mb-2" style={{ color: 'var(--t-card-text, var(--text))' }}>Merci {guestName.split(' ')[0]} !</h3>
                   <p style={{ color: 'var(--t-text-muted, var(--text-muted))' }}>Votre présence est confirmée. Nous avons hâte de vous retrouver !</p>
                   {menuSurveyEnabled && onOpenSurvey && (
                     <motion.button

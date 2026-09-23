@@ -90,6 +90,13 @@
   backdrop-filter: blur(12px);
 }
 
+/* .card is patched to a dark background above, so text inside it needs to
+   use the (light) theme text color rather than the light-card default —
+   see --t-card-text usage note near the bottom of this file. */
+[data-template="royal"] {
+  --t-card-text: var(--t-text);
+}
+
 [data-template="royal"]::before {
   content: '';
   position: fixed;
