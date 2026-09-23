@@ -74,6 +74,10 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteCompanionTarget, setDeleteCompanionTarget] = useState<{ guestId: string; index: number; name: string } | null>(null);
+  const [messageTarget, setMessageTarget] = useState<DisplayRow | null>(null);
+  const [messageSendEmail, setMessageSendEmail] = useState(true);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageResult, setMessageResult] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>('name');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [page, setPage] = useState(1);
@@ -304,6 +308,42 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const openMessageModal = (row: DisplayRow) => {
+    const guest = eventGuests.find(g => g.id === row.guestId);
+    if (!guest) return;
+    setMessageResult(null);
+    setMessageSendEmail(!!guest.email?.trim());
+    setMessageTarget(row);
+  };
+
+  const handleSendMessage = async () => {
+    if (!messageTarget || !event) return;
+    const guest = eventGuests.find(g => g.id === messageTarget.guestId);
+    if (!guest || !messageSendEmail || !guest.email?.trim()) return;
+
+    setSendingMessage(true);
+    try {
+      const link = `${window.location.origin}/e/${event.slug}?guest=${encodeURIComponent(`${guest.firstName}-${guest.lastName}`)}&token=${guest.token}`;
+      const res = await fetch('/api/send-invite-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: guest.email,
+          guestName: `${guest.firstName} ${guest.lastName}`.trim(),
+          event: eventEmailInfo(event),
+          type: 'invitation',
+          link,
+        }),
+      });
+      setMessageResult(res.ok ? tr.messageSent : tr.messageError);
+    } catch (e) {
+      console.error('send message error:', e);
+      setMessageResult(tr.messageError);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
   if (!event) return eventsLoading ? <EventLoader /> : <div className="flex"><Sidebar /><main className="main-content"><p>{tr.eventNotFound}</p></main></div>;
 
   const statCards = [
@@ -494,7 +534,7 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                                     {copiedId === row.id ? <Check size={14} style={{ color: '#22964F' }} /> : <Copy size={14} />}
                                   </button>
                                   {(event?.plan === 'pro' || event?.plan === 'premium') && (
-                                    <button className="btn-ghost p-1.5" disabled title={tr.comingSoon} style={{ opacity: 0.4, cursor: 'not-allowed' }}><MessageSquare size={14} /></button>
+                                    <button className="btn-ghost p-1.5" onClick={() => openMessageModal(row)} title={tr.sendMessage}><MessageSquare size={14} /></button>
                                   )}
                                   {event?.plan === 'premium' && (
                                     <button className="btn-ghost p-1.5" disabled title={tr.comingSoon} style={{ opacity: 0.4, cursor: 'not-allowed' }}><WhatsAppIcon size={14} /></button>
@@ -726,6 +766,63 @@ export default function GuestsPage({ params }: { params: Promise<{ eventId: stri
                 <div className="flex gap-3 mt-6">
                   <button className="btn-secondary flex-1" onClick={() => setShowEditModal(false)}>{tr.cancel}</button>
                   <button className="btn-primary flex-1" onClick={handleEditGuest}>{tr.save}</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Send Message Modal ─────────────────── */}
+        <AnimatePresence>
+          {messageTarget && (
+            <motion.div className="modal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setMessageTarget(null)}>
+              <motion.div className="modal" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="font-display text-xl font-semibold">{tr.sendMessageTitle.replace('{name}', `${messageTarget.firstName} ${messageTarget.lastName}`.trim())}</h2>
+                  <button className="btn-ghost p-1.5" onClick={() => setMessageTarget(null)}><X size={18} /></button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <label className="text-sm flex items-center gap-2" style={{ opacity: 0.5, cursor: 'not-allowed' }} title={tr.comingSoon}>
+                    <input type="checkbox" disabled />
+                    {tr.sendLinkWhatsapp}
+                    <span style={{
+                      fontSize: '0.6rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: 4,
+                      background: 'var(--glass)', color: 'var(--text-muted)',
+                    }}>{tr.comingSoon}</span>
+                  </label>
+                  {(() => {
+                    const guest = eventGuests.find(g => g.id === messageTarget.guestId);
+                    const hasEmail = !!guest?.email?.trim();
+                    return (
+                      <label className="text-sm flex items-center gap-2" style={{ cursor: hasEmail ? 'pointer' : 'not-allowed', opacity: hasEmail ? 1 : 0.5 }}>
+                        <input
+                          type="checkbox"
+                          checked={messageSendEmail && hasEmail}
+                          disabled={!hasEmail}
+                          onChange={e => setMessageSendEmail(e.target.checked)}
+                        />
+                        {tr.sendLinkEmail}
+                        {!hasEmail && <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({tr.noEmailOnFile})</span>}
+                      </label>
+                    );
+                  })()}
+                </div>
+
+                {messageResult && (
+                  <p className="text-xs" style={{ color: 'var(--text-muted)', marginTop: '1rem' }}>{messageResult}</p>
+                )}
+
+                <div className="flex gap-3" style={{ marginTop: '2rem', paddingTop: '1.25rem', borderTop: '1px solid var(--border-light)' }}>
+                  <button className="btn-secondary flex-1" onClick={() => setMessageTarget(null)}>{tr.cancel}</button>
+                  <button
+                    className="btn-primary flex-1"
+                    onClick={handleSendMessage}
+                    disabled={sendingMessage || !messageSendEmail}
+                    style={(sendingMessage || !messageSendEmail) ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
+                  >
+                    {sendingMessage ? tr.sending : tr.send}
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
