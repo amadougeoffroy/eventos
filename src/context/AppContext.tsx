@@ -688,9 +688,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Optimistic update
     setGuests(prev => [...prev, guest]);
 
-    // Skip persist if already saved (real UUID from direct Supabase insert, e.g. RSVP form)
-    const isRealUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guest.id);
-    if (isRealUuid) return;
+    // Guests submitted through the public RSVP form are already persisted
+    // by /api/public/rsvp — this call only syncs local state, it shouldn't
+    // insert a second row. Only guests added manually from the dashboard
+    // need a fresh insert below. (Previously this checked whether guest.id
+    // "looked like" a real UUID, but every id is a crypto.randomUUID() now
+    // — manual and RSVP-sourced alike — so that check always matched and
+    // silently skipped persisting every manually-added guest.)
+    if (guest.source === 'rsvp') return;
 
     // Persist to Supabase
     const { data, error } = await supabase
