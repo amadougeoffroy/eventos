@@ -23,6 +23,7 @@
 
   /* ── Text ──────────────────────────── */
   --text: #2D2A26;
+  --text-primary: #2D2A26;
   --text-secondary: #5A5550;
   --text-muted: #9B9590;
 
@@ -65,6 +66,7 @@
   --bg-sidebar: #1E1B18;
 
   --text: #F0EBE3;
+  --text-primary: #F0EBE3;
   --text-secondary: #C5BFB8;
   --text-muted: #8A8480;
 
